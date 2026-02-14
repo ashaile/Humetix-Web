@@ -347,7 +347,7 @@ def download_excel():
                     img_cell.value = "이미지 파일 없음"
                     img_cell.alignment = center_align
             except Exception as e:
-                img_cell.value = "이미지 처리 오류"
+                img_cell.value = f"이미지 오류: {str(e)}"
         else:
             img_cell.value = "사진 없음"
             img_cell.alignment = center_align
