@@ -84,6 +84,7 @@
     <div class="form-card">
         <h2 class="text-center fw-bold text-primary mb-4">입사지원서</h2>
         <form action="/submit" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
             <div class="section-title">1. 신분증 확인</div>
             <div class="mb-4">

@@ -49,6 +49,7 @@
         <p class="text-center text-muted mb-4" style="font-size: 0.9rem;">지원서 관리 페이지 접근을 위해<br>비밀번호를 입력해주세요.</p>
 
         <form action="/login" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="mb-3">
                 <input type="password" name="password" class="form-control" placeholder="비밀번호 입력" required
                     style="padding: 12px;">
