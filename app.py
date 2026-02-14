@@ -182,5 +182,13 @@ def clear_data():
     return "<script>location.href='/humetix_master_99';</script>"
 
 if __name__ == '__main__':
-    # 우선 사이트 복구가 최우선이므로 80번 포트로 강제 실행합니다.
-    app.run(host='0.0.0.0', port=80, debug=False)
+    # SSL 인증서 경로 (서버에 파일이 확인됨)
+    cert_path = '/etc/letsencrypt/live/humetix.com/fullchain.pem'
+    key_path = '/etc/letsencrypt/live/humetix.com/privkey.pem'
+
+    if os.path.exists(cert_path) and os.path.exists(key_path):
+        # 인증서가 있으면 HTTPS (443 포트) 실행
+        app.run(host='0.0.0.0', port=443, ssl_context=(cert_path, key_path))
+    else:
+        # 인증서가 없으면 HTTP (80 포트) 실행 (안전장치)
+        app.run(host='0.0.0.0', port=80, debug=True)
