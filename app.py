@@ -397,4 +397,4 @@ if __name__ == '__main__':
     if os.path.exists(cert_path) and os.path.exists(key_path):
         app.run(host='0.0.0.0', port=443, ssl_context=(cert_path, key_path))
     else:
-        app.run(host='0.0.0.0', port=80, debug=True)
+        app.run(host='0.0.0.0', port=5000, debug=True)
