@@ -182,5 +182,5 @@ def clear_data():
     return "<script>location.href='/humetix_master_99';</script>"
 
 if __name__ == '__main__':
-    # 내 컴퓨터에서 실행할 때 쓰는 설정
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # 우선 사이트 복구가 최우선이므로 80번 포트로 강제 실행합니다.
+    app.run(host='0.0.0.0', port=80, debug=False)
