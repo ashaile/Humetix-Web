@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>주식회사 휴메틱스 (Humetix) - HR Total Solution Partner</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    
+    <style>
+        :root { --primary-color: #0056b3; --dark-color: #1a1a1a; }
+        body { font-family: 'Noto Sans KR', sans-serif; word-break: keep-all; color: #333; }
+        h1, h2, h3, h4, .en-font { font-family: 'Montserrat', sans-serif; }
+        
+        /* 네비게이션바 */
+        .navbar { background: white; box-shadow: 0 2px 15px rgba(0,0,0,0.03); padding: 20px 0; }
+        .nav-link { font-weight: 700; color: #444 !important; margin-left: 25px; font-size: 1rem; transition: 0.3s; }
+        .nav-link:hover { color: var(--primary-color) !important; }
+        .navbar-brand { font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 1.7rem; color: var(--primary-color) !important; letter-spacing: -0.5px; }
+
+        /* 히어로 섹션 */
+        .hero-section {
+            background: linear-gradient(to right, rgba(0, 50, 110, 0.85), rgba(0, 30, 80, 0.5)), url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1600');
+            background-size: cover; background-position: center; background-attachment: fixed;
+            height: 80vh; display: flex; align-items: center; text-align: left; color: white;
+        }
+        .hero-tag { background: var(--primary-color); padding: 8px 20px; border-radius: 30px; font-size: 0.9rem; font-weight: 700; margin-bottom: 25px; display: inline-block; letter-spacing: 1px; }
+        .hero-title { font-size: 4rem; font-weight: 800; line-height: 1.2; margin-bottom: 30px; letter-spacing: -1.5px; }
+        
+        /* 버튼 스타일 */
+        .btn-primary-custom { 
+            background-color: var(--primary-color); border: none; padding: 18px 45px; font-weight: 800; 
+            border-radius: 50px; transition: 0.3s; color: white; font-size: 1.1rem;
+        }
+        .btn-primary-custom:hover { background-color: #004494; transform: translateY(-3px); box-shadow: 0 15px 30px rgba(0,86,179,0.3) !important; color: white; }
+
+        /* 이미지 섹션 */
+        .image-section { background-size: cover; background-position: center; min-height: 450px; border-radius: 25px; }
+        
+        /* 서비스 카드 */
+        .service-box {
+            background: white; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.06);
+            transition: all 0.4s ease; height: 100%; border: 1px solid #f0f0f0; overflow: hidden;
+        }
+        .service-box:hover { transform: translateY(-10px); box-shadow: 0 20px 60px rgba(0,86,179,0.15); border-color: var(--primary-color); }
+        .service-img { height: 250px; width: 100%; background-size: cover; background-position: center; transition: 0.4s; }
+        .service-box:hover .service-img { transform: scale(1.05); }
+        .service-content { padding: 35px 30px; text-align: center; }
+
+        /* 하단 CTA */
+        .cta-section { 
+            background: #00204a; color: white; padding: 100px 0; position: relative; overflow: hidden; 
+            background-image: url('https://www.transparenttextures.com/patterns/cubes.png'); opacity: 0.98;
+        }
+        .btn-cta { background: white; color: #00204a; font-weight: 900; padding: 18px 50px; border-radius: 50px; font-size: 1.2rem; transition: 0.3s; border: none; }
+        .btn-cta:hover { background: #f0f5ff; transform: scale(1.05); box-shadow: 0 10px 20px rgba(255,255,255,0.2); }
+
+        /* 푸터 */
+        footer { background: #111; color: #aaa; padding: 80px 0 40px; font-size: 0.95rem; }
+        footer h5 { color: white; font-weight: 800; margin-bottom: 30px; font-family: 'Montserrat', sans-serif; letter-spacing: 0.5px; }
+        footer a { color: #aaa; text-decoration: none; transition: 0.3s; }
+        footer a:hover { color: white; text-decoration: underline; }
+        .footer-line { border-top: 1px solid #333; margin-top: 60px; padding-top: 30px; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">Humetix</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <ul class="navbar-nav align-items-center">
+                    <li class="nav-item"><a class="nav-link" href="#">홈</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#services">사업영역</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#contact">견적문의</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/apply">입사지원</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-9">
+                    <div class="hero-tag en-font">HR TOTAL SOLUTION PARTNER</div>
+                    <h1 class="hero-title">사람을 잇다,<br>가치를 더하다.</h1>
+                    <p class="lead opacity-90 mb-5" style="font-weight: 400; font-size: 1.3rem; max-width: 700px;">
+                        기업엔 최적의 인재를, 인재엔 최고의 기회를 제공하는<br>대한민국 대표 아웃소싱 전략 파트너 휴메틱스입니다.
+                    </p>
+                    <div class="d-flex gap-3">
+                        <a href="#contact" class="btn btn-primary-custom shadow-lg">견적 문의하기</a>
+                        <a href="/apply" class="btn btn-primary-custom shadow-lg">바로 지원하기</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="py-5 bg-white">
+        <div class="container py-5">
+            <div class="row align-items-center my-5">
+                <div class="col-lg-6 mb-5 mb-lg-0 ps-lg-5 order-lg-2">
+                    <div class="image-section shadow-lg" style="background-image: url('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=800');"></div>
+                </div>
+                <div class="col-lg-6 pe-lg-5 order-lg-1">
+                    <h2 class="fw-bold display-5 mb-4" style="letter-spacing: -1px;">신뢰할 수 있는 파트너,<br><span class="text-primary">검증된 결과</span>로 증명합니다.</h2>
+                    <p class="text-muted mb-5 fs-5">휴메틱스는 단순한 인력 공급을 넘어, 고객사의 지속 가능한 성장을 함께 고민하고 해결하는 전략적 HR 파트너입니다.</p>
+                    <div class="row text-center g-4">
+                        <div class="col-4">
+                            <h2 class="fw-bold text-primary mb-0 en-font display-5">TOP</h2>
+                            <p class="text-dark mt-2 fw-bold fs-5">우수 인재풀</p>
+                        </div>
+                        <div class="col-4">
+                            <h2 class="fw-bold text-primary mb-0 en-font display-5">FAST</h2>
+                            <p class="text-dark mt-2 fw-bold fs-5">신속 대응</p>
+                        </div>
+                        <div class="col-4">
+                            <h2 class="fw-bold text-primary mb-0 en-font display-5">SAFE</h2>
+                            <p class="text-dark mt-2 fw-bold fs-5">리스크 관리</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="services" class="py-5" style="background-color: #f9fbff;">
+        <div class="container py-5">
+            <div class="text-center mb-5">
+                <p class="text-primary fw-bold mb-2 en-font fs-5">OUR SOLUTIONS</p>
+                <h2 class="fw-bold display-5">휴메틱스 전문 솔루션</h2>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="service-box">
+                        <div class="service-img" style="background-image: url('https://images.unsplash.com/photo-1516937941344-00b4ec0c400c?auto=format&fit=crop&q=80&w=800');"></div>
+                        <div class="service-content">
+                            <h4 class="fw-bold mb-3 fs-4">제조 도급/파견</h4>
+                            <p class="text-muted mb-0 fs-6">반도체, 자동차, 전자, 사출 등 첨단 제조 현장에 검증된 숙련 인력을 배치합니다.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="service-box">
+                        <div class="service-img" style="background-image: url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=800');"></div>
+                        <div class="service-content">
+                            <h4 class="fw-bold mb-3 fs-4">물류 센터 운영</h4>
+                            <p class="text-muted mb-0 fs-6">입출고, 재고관리, 포장까지 물류 전 과정의 효율적인 운영을 책임집니다.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="service-box">
+                        <div class="service-img" style="background-image: url('https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&q=80&w=800');"></div>
+                        <div class="service-content">
+                            <h4 class="fw-bold mb-3 fs-4">채용 대행 (RPO)</h4>
+                            <p class="text-muted mb-0 fs-6">기업 문화에 맞는 최적의 인재를 발굴하고 선발하는 원스톱 솔루션입니다.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-section text-center" id="contact">
+        <div class="container">
+            <h2 class="fw-bold display-5 mb-4">성공을 위한 파트너십,<br>지금 시작하세요.</h2>
+            <p class="fs-5 opacity-75 mb-5">휴메틱스의 전문적인 솔루션이 귀사의 경쟁력이 됩니다.</p>
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
+                <a href="tel:070-8064-3484" class="btn btn-cta shadow"><i class="bi bi-telephone-fill me-2"></i> 070-8064-3484</a>
+                <a href="mailto:ad@humetix.com" class="btn btn-outline-light btn-lg px-5 py-3 rounded-pill fw-bold" style="border-width:2px;"><i class="bi bi-envelope-fill me-2"></i> 이메일 문의</a>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 mb-5 mb-lg-0">
+                    <h5 class="fs-3">Humetix Inc.</h5>
+                    <p class="mt-4 opacity-75" style="line-height: 1.8; font-size: 1rem;">
+                        대한민국 No.1 HR 토탈 솔루션 파트너.<br>
+                        고객사의 성공과 인재의 성장을 함께 만들어갑니다.
+                    </p>
+                </div>
+                <div class="col-lg-2 offset-lg-1 col-md-4 mb-4">
+                    <h5>Company</h5>
+                    <ul class="list-unstyled mt-4" style="line-height: 2.2;">
+                        <li><a href="#">홈으로</a></li>
+                        <li><a href="#services">서비스 소개</a></li>
+                        <li><a href="#contact">견적 문의</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 col-md-4 mb-4">
+                    <h5>Support</h5>
+                    <ul class="list-unstyled mt-4" style="line-height: 2.2;">
+                        <li><a href="/apply">입사지원</a></li>
+                        <li><a href="#">개인정보처리방침</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-3 col-md-4">
+                    <h5>Contact Info</h5>
+                    <ul class="list-unstyled mt-4 fs-6" style="line-height: 2;">
+                        <li><i class="bi bi-geo-alt-fill me-2 text-primary"></i> 6F-603, 1068, Hyohaeng-ro, Hwaseong-si, Gyeonggi-do</li>
+                        <li><i class="bi bi-envelope-fill me-2 text-primary"></i> ad@humetix.com</li>
+                        <li><i class="bi bi-telephone-fill me-2 text-primary"></i> 070-8064-3484</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-line text-center">
+                <p class="mb-0 opacity-50 fw-bold">&copy; 2026 Humetix Inc. All Rights Reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

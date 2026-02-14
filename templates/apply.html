@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>채용 시스템</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f4f7f9; padding: 20px; }
+        .form-card { max-width: 850px; margin: auto; background: white; padding: 35px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        .section-title { border-left: 5px solid #0056b3; padding-left: 10px; margin: 30px 0 20px 0; font-weight: bold; color: #333; font-size: 1.2rem; }
+        .career-box { background: #f9f9f9; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #eee; }
+        .form-label { font-weight: 600; font-size: 0.95rem; margin-top: 10px; }
+        .help-text { font-size: 0.85rem; color: #d9534f; margin-bottom: 10px; font-weight: 500; }
+        .btn-submit { background: #0056b3; color: white; border: none; padding: 18px; border-radius: 10px; font-weight: bold; width: 100%; margin-top: 30px; font-size: 1.2rem; }
+        .asap-box { background: #e7f1ff; padding: 10px; border-radius: 8px; border: 1px solid #cce5ff; display: flex; align-items: center; }
+        .form-check-input:checked { background-color: #0056b3; border-color: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="form-card">
+        <h2 class="text-center fw-bold text-primary mb-4">입사지원서</h2>
+        <form action="/submit" method="POST" enctype="multipart/form-data">
+            
+            <div class="section-title">1. 신분증 확인</div>
+            <div class="mb-4">
+                <label class="form-label">신분증 사진 첨부</label>
+                <p class="help-text">※ 주민등록번호 뒷자리는 가려주세요! 얼굴 사진과 생년월일이 보여야 합니다.</p>
+                <input type="file" name="id_card" class="form-control" accept="image/*" required>
+            </div>
+
+            <div class="section-title">2. 인적 사항</div>
+            <div class="mb-4">
+                <div class="row g-3">
+                    <div class="col-6"><label class="form-label">성함</label><input type="text" name="name" class="form-control" placeholder="성함 입력" required></div>
+                    <div class="col-6"><label class="form-label">생년월일</label><input type="date" name="birth" class="form-control" required></div>
+                </div>
+                <div class="row g-3 mt-1">
+                    <div class="col-6"><label class="form-label">핸드폰 번호</label><input type="tel" name="phone" class="form-control" placeholder="010-0000-0000" required></div>
+                    <div class="col-6"><label class="form-label">이메일</label><input type="email" name="email" class="form-control" placeholder="example@email.com"></div>
+                </div>
+                <label class="form-label mt-3">실거주지 주소</label>
+                <input type="text" name="address" class="form-control" placeholder="상세주소까지 입력" required>
+            </div>
+
+            <div class="section-title">3. 경력사항 (최대 3개)</div>
+            <div class="career-box">
+                <h6 class="fw-bold text-secondary">● 경력 1 (최근 경력)</h6>
+                <div class="row g-3 mb-2"><div class="col-12"><label class="form-label">회사명</label><input type="text" name="company1" class="form-control" required></div></div>
+                <div class="row g-3 mb-2">
+                    <div class="col-6"><label class="form-label">입사일</label><input type="date" name="exp_start1" class="form-control" required></div>
+                    <div class="col-6"><label class="form-label">퇴사일</label><input type="date" name="exp_end1" class="form-control" required></div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-6"><label class="form-label">담당업무</label><input type="text" name="job_role1" class="form-control" required></div>
+                    <div class="col-6"><label class="form-label">퇴사사유</label><input type="text" name="reason1" class="form-control" required></div>
+                </div>
+            </div>
+            <div class="career-box">
+                <h6 class="fw-bold text-secondary">● 경력 2</h6>
+                <div class="row g-3 mb-2"><div class="col-12"><label class="form-label">회사명</label><input type="text" name="company2" class="form-control"></div></div>
+                <div class="row g-3 mb-2">
+                    <div class="col-6"><label class="form-label">입사일</label><input type="date" name="exp_start2" class="form-control"></div>
+                    <div class="col-6"><label class="form-label">퇴사일</label><input type="date" name="exp_end2" class="form-control"></div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-6"><label class="form-label">담당업무</label><input type="text" name="job_role2" class="form-control"></div>
+                    <div class="col-6"><label class="form-label">퇴사사유</label><input type="text" name="reason2" class="form-control"></div>
+                </div>
+            </div>
+            <div class="career-box">
+                <h6 class="fw-bold text-secondary">● 경력 3</h6>
+                <div class="row g-3 mb-2"><div class="col-12"><label class="form-label">회사명</label><input type="text" name="company3" class="form-control"></div></div>
+                <div class="row g-3 mb-2">
+                    <div class="col-6"><label class="form-label">입사일</label><input type="date" name="exp_start3" class="form-control"></div>
+                    <div class="col-6"><label class="form-label">퇴사일</label><input type="date" name="exp_end3" class="form-control"></div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-6"><label class="form-label">담당업무</label><input type="text" name="job_role3" class="form-control"></div>
+                    <div class="col-6"><label class="form-label">퇴사사유</label><input type="text" name="reason3" class="form-control"></div>
+                </div>
+            </div>
+
+            <div class="section-title">4. 신체 정보 및 사이즈</div>
+            <div class="mb-4">
+                <label class="form-label">시력 (더 좋은 시력 기준)</label>
+                <div class="row g-3 mb-3">
+                    <div class="col-6"><select name="vision_type" class="form-select"><option value="나안">나안 시력</option><option value="교정">교정 시력</option></select></div>
+                    <div class="col-6"><input type="text" name="vision_value" class="form-control" placeholder="수치 입력" required></div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-6"><label class="form-label">신발 사이즈</label><input type="text" name="shoes" class="form-control" required></div>
+                    <div class="col-6"><label class="form-label">티셔츠 사이즈</label><input type="text" name="tshirt" class="form-control" required></div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-6"><label class="form-label">키(cm)</label><input type="number" name="height" class="form-control" required></div>
+                    <div class="col-6"><label class="form-label">몸무게(kg)</label><input type="number" name="weight" class="form-control" required></div>
+                </div>
+            </div>
+
+            <div class="section-title">5. 희망 근무 조건</div>
+            <div class="row g-3 mb-3">
+                <div class="col-6"><label class="form-label">근무형태</label><select name="shift" class="form-select"><option>주간</option><option>2교대</option></select></div>
+                <div class="col-6"><label class="form-label">근무방식</label><select name="posture" class="form-select"><option>무관</option><option>좌식</option><option>입식</option></select></div>
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-6"><label class="form-label">잔업가능여부</label><select name="overtime" class="form-select"><option>가능</option><option>불가능</option></select></div>
+                <div class="col-6"><label class="form-label">특근가능여부</label><select name="holiday" class="form-select"><option>가능</option><option>불가능</option></select></div>
+            </div>
+            
+            <div class="row g-3">
+                <div class="col-12 mb-2">
+                    <label class="form-label">면접 가능일자</label>
+                    <input type="date" name="interview_date" class="form-control">
+                </div>
+                <div class="col-12">
+                    <label class="form-label">입사 희망일자</label>
+                    <div class="asap-box mb-2">
+                        <input class="form-check-input mt-0" type="checkbox" id="asap_check" onchange="toggleDate()">
+                        <span class="ms-2 fw-bold" style="font-size:0.95rem; color:#0056b3;">즉시 출근 가능 (오늘 날짜 자동 입력)</span>
+                    </div>
+                    <input type="date" name="start_date" id="start_date" class="form-control" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-submit shadow">지원서 제출하기</button>
+        </form>
+    </div>
+
+    <script>
+        function toggleDate() {
+            const checkbox = document.getElementById('asap_check');
+            const dateInput = document.getElementById('start_date');
+            if(checkbox.checked) {
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                dateInput.value = `${year}-${month}-${day}`;
+            } else {
+                dateInput.value = '';
+            }
+        }
+    </script>
+</body>
+</html>
