@@ -189,9 +189,10 @@
                     <div class="info-group"><span class="label">근무조건</span> {{ entry.work_condition.shift }} / {{
                         entry.work_condition.posture }} / 잔업:{{ entry.work_condition.overtime }} / 특근:{{
                         entry.work_condition.holiday }}</div>
-                    <div class="info-group"><span class="label">희망일정</span> 입사희망: <span
-                            style="color:#0056b3; font-weight:bold;">{{ entry.work_condition.start_date }}</span> (면접가능:
-                        {{ entry.work_condition.interview_date }})</div>
+                    <div class="info-group"><span class="label">희망일정</span> 면접가능: <span
+                            style="color:#0056b3; font-weight:bold;">{{ entry.work_condition.interview_date }}</span> /
+                        입사희망: <span style="color:#0056b3; font-weight:bold;">{{ entry.work_condition.start_date
+                            }}</span></div>
                     <div class="info-group"><span class="label">기타</span> 가불: <span style="font-weight:bold;">{{
                             entry.extra.advance_pay if entry.extra and entry.extra.advance_pay else '미희망' }}</span> /
                         급여형태: <span style="font-weight:bold;">{{ entry.extra.insurance_type if entry.extra and
