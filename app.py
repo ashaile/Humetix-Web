@@ -1,155 +1,50 @@
-from flask import Flask, render_template, request, send_from_directory, session, redirect, url_for
-import os, shutil
+import os
+import json
+import uuid
+from flask import Flask, render_template, request, redirect, url_for, session, send_file, send_from_directory
+from werkzeug.utils import secure_filename
 from datetime import datetime
+import openpyxl
+from openpyxl import Workbook
+from openpyxl.drawing.image import Image as ExcelImage
+from openpyxl.styles import Font, Alignment, Border, Side
 
 app = Flask(__name__)
-app.secret_key = 'humetix_secret_key_1234' # 세션 보안을 위한 키 (실제 운영시 변경 권장)
+app.secret_key = 'humetix_secure_key'  # 보안을 위해 실제 배포시 변경 권장
 
-# 경로 설정
+# 설정
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# 업로드 폴더 절대경로
 UPLOAD_DIR = os.path.join(BASE_DIR, 'uploads')
-DATA_FILE = os.path.join(BASE_DIR, 'data_html.txt')
-EXCEL_FILE = os.path.join(BASE_DIR, 'data.xlsx')
-
-# 관리자 비밀번호 설정
-ADMIN_PASSWORD = "3326" 
+# JSON 데이터 파일 절대경로
+DATA_FILE = os.path.join(BASE_DIR, 'applications.json') 
+ADMIN_PASSWORD = "3326"
 
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
-# 1. 메인 홈페이지
+# JSON 데이터 로드/저장 헬퍼 함수
+def load_data():
+    if not os.path.exists(DATA_FILE):
+        return []
+    try:
+        with open(DATA_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except:
+        return []
+
+def save_data(data):
+    with open(DATA_FILE, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
+
 @app.route('/')
-def home():
+def index():
     return render_template('index.html')
 
-# 2. 입사지원서 페이지
 @app.route('/apply')
-def apply_page():
+def apply():
     return render_template('apply.html')
 
-# 3. 사진 보여주기 기능
-@app.route('/view_photo/<filename>')
-def view_photo(filename):
-    return send_from_directory(UPLOAD_DIR, filename)
-
-# 4. 지원서 제출 처리
-@app.route('/submit', methods=['POST'])
-def submit():
-    try:
-        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        file_now = datetime.now().strftime('%Y%m%d_%H%M%S')
-        
-        # 1. 신분증 사진 처리
-        id_card = request.files.get('id_card')
-        photo_html = "<span style='color:gray;'>[사진 없음]</span>"
-        photo_filename = ""
-        
-        if id_card and id_card.filename != '':
-            photo_name = f"{file_now}_id.jpg"
-            id_card.save(os.path.join(UPLOAD_DIR, photo_name))
-            photo_filename = photo_name
-            photo_html = f'''
-            <br>
-            <a href="/view_photo/{photo_name}" target="_blank">
-                <img src="/view_photo/{photo_name}" style="max-width:300px; border-radius:10px; margin-top:10px;">
-            </a>
-            '''
-
-        # 2. 엑셀 저장 (openpyxl 사용)
-        import openpyxl
-        from openpyxl import Workbook
-        
-        if not os.path.exists(EXCEL_FILE):
-            wb = Workbook()
-            ws = wb.active
-            # 헤더 추가 (모든 필드 포함)
-            ws.append([
-                '접수일시', '이름', '생년월일', '연락처', '이메일', '주소', '파일명', 
-                '경력1_회사', '경력1_입사', '경력1_퇴사', '경력1_업무', '경력1_사유',
-                '경력2_회사', '경력2_입사', '경력2_퇴사', '경력2_업무', '경력2_사유',
-                '경력3_회사', '경력3_입사', '경력3_퇴사', '경력3_업무', '경력3_사유',
-                '시력', '신발', '티셔츠', '키', '몸무게',
-                '근무형태', '근무방식', '잔업', '특근', '면접가능일', '입사희망일'
-            ])
-        else:
-            wb = openpyxl.load_workbook(EXCEL_FILE)
-            ws = wb.active
-            
-        ws.append([
-            now,
-            request.form.get('name'),
-            request.form.get('birth'),
-            request.form.get('phone'),
-            request.form.get('email'),
-            request.form.get('address'),
-            photo_filename,
-            # 경력 1
-            request.form.get('company1'), request.form.get('exp_start1'), request.form.get('exp_end1'), request.form.get('job_role1'), request.form.get('reason1'),
-            # 경력 2
-            request.form.get('company2'), request.form.get('exp_start2'), request.form.get('exp_end2'), request.form.get('job_role2'), request.form.get('reason2'),
-            # 경력 3
-            request.form.get('company3'), request.form.get('exp_start3'), request.form.get('exp_end3'), request.form.get('job_role3'), request.form.get('reason3'),
-            # 신체
-            f"{request.form.get('vision_type')} {request.form.get('vision_value')}",
-            request.form.get('shoes'), request.form.get('tshirt'), request.form.get('height'), request.form.get('weight'),
-            # 근무 조건
-            request.form.get('shift'), request.form.get('posture'), request.form.get('overtime'), request.form.get('holiday'),
-            request.form.get('interview_date'), request.form.get('start_date')
-        ])
-        wb.save(EXCEL_FILE)
-
-        # 3. HTML 파일 저장 (관리자 페이지용)
-        content = f"<div style='border-bottom:2px solid #003057; padding:20px 0; margin-bottom:20px;'>"
-        content += f"<h3 style='color:#003057; margin-bottom:10px;'>[신규 지원서 - {now}]</h3>"
-        
-        content += f"<div style='background:#f9f9f9; padding:15px; border-radius:10px;'>"
-        content += f"<b>1. 인적사항</b><br>"
-        content += f"성함: {request.form.get('name')} / 생년월일: {request.form.get('birth')}<br>"
-        content += f"연락처: {request.form.get('phone')} / 이메일: {request.form.get('email')}<br>"
-        content += f"주소: {request.form.get('address')}<br>"
-        content += f"신분증 사진: {photo_html}<br>"
-        
-        content += f"<br><b>2. 신체 정보</b><br>"
-        content += f"키: {request.form.get('height')}cm / 몸무게: {request.form.get('weight')}kg<br>"
-        content += f"시력: {request.form.get('vision_type')} {request.form.get('vision_value')} / "
-        content += f"신발: {request.form.get('shoes')} / 티셔츠: {request.form.get('tshirt')}<br>"
-        content += f"</div><br>"
-
-        content += f"<b>3. 경력사항</b><br>"
-        if request.form.get('company1'):
-            content += f"1) {request.form.get('company1')} ({request.form.get('exp_start1')} ~ {request.form.get('exp_end1')})<br>"
-            content += f"&nbsp;&nbsp;&nbsp;- 담당: {request.form.get('job_role1')} / 사유: {request.form.get('reason1')}<br>"
-        
-        if request.form.get('company2'):
-            content += f"2) {request.form.get('company2')} ({request.form.get('exp_start2')} ~ {request.form.get('exp_end2')})<br>"
-            content += f"&nbsp;&nbsp;&nbsp;- 담당: {request.form.get('job_role2')} / 사유: {request.form.get('reason2')}<br>"
-
-        if request.form.get('company3'):
-            content += f"3) {request.form.get('company3')} ({request.form.get('exp_start3')} ~ {request.form.get('exp_end3')})<br>"
-            content += f"&nbsp;&nbsp;&nbsp;- 담당: {request.form.get('job_role3')} / 사유: {request.form.get('reason3')}<br>"
-
-        content += f"<br><b>4. 희망 근무 조건</b><br>"
-        content += f"근무형태: {request.form.get('shift')} / 근무방식: {request.form.get('posture')}<br>"
-        content += f"잔업: {request.form.get('overtime')} / 특근: {request.form.get('holiday')}<br>"
-        content += f"면접가능일: {request.form.get('interview_date')} / <b>입사희망일: {request.form.get('start_date')}</b><br>"
-        
-        agree_check = request.form.get('agree')
-        if agree_check == 'on':
-            content += f"<br><div style='color:blue; font-weight:bold;'>✅ 개인정보 수집 동의 및 허위사실 확인 서약 완료</div>"
-        else:
-            content += f"<br><div style='color:red;'>❌ 동의하지 않음 (오류)</div>"
-            
-        content += f"</div>"
-        
-        with open(DATA_FILE, 'a', encoding='utf-8') as f:
-            f.write(content)
-        
-        return "<h1>지원서 접수 완료!</h1><script>setTimeout(function(){location.href='/';}, 2000);</script>"
-        
-    except Exception as e:
-        return f"<h1>오류 발생: {str(e)}</h1>"
-
-# 5. 관리자 로그인 페이지
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -161,65 +56,345 @@ def login():
             return "<script>alert('비밀번호가 틀렸습니다.'); history.back();</script>"
     return render_template('login.html')
 
-# 6. 관리자 메인 페이지 (보안 적용)
+@app.route('/logout')
+def logout():
+    session.pop('is_admin', None)
+    return redirect(url_for('index'))
+
+@app.route('/submit', methods=['POST'])
+def submit():
+    try:
+        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        file_now = datetime.now().strftime('%Y%m%d_%H%M%S')
+        
+        # 1. 신분증 사진 처리
+        id_card = request.files.get('id_card')
+        photo_filename = ""
+        
+        if id_card and id_card.filename != '':
+            ext = os.path.splitext(id_card.filename)[1]
+            # 안전한 파일명 생성
+            photo_name = f"{file_now}_id{ext}"
+            photo_path = os.path.join(UPLOAD_DIR, photo_name)
+            id_card.save(photo_path)
+            photo_filename = photo_name
+
+        # 2. 데이터 수집 (JSON 구조)
+        application_id = str(uuid.uuid4()) # 고유 ID 생성
+        new_entry = {
+            "id": application_id,
+            "timestamp": now,
+            "photo": photo_filename,
+            "info": {
+                "name": request.form.get('name'),
+                "birth": request.form.get('birth'),
+                "phone": request.form.get('phone'),
+                "email": request.form.get('email'),
+                "address": request.form.get('address'),
+            },
+            "career": [],
+            "body": {
+                "height": request.form.get('height'),
+                "weight": request.form.get('weight'),
+                "vision": f"{request.form.get('vision_type')} {request.form.get('vision_value')}",
+                "shoes": request.form.get('shoes'),
+                "tshirt": request.form.get('tshirt'),
+            },
+            "work_condition": {
+                "shift": request.form.get('shift'),
+                "posture": request.form.get('posture'),
+                "overtime": request.form.get('overtime'),
+                "holiday": request.form.get('holiday'),
+                "interview_date": request.form.get('interview_date'),
+                "start_date": request.form.get('start_date'),
+                "agree": request.form.get('agree')
+            }
+        }
+
+        # 경력사항 루프 처리
+        for i in range(1, 4):
+            company = request.form.get(f'company{i}')
+            if company:
+                new_entry["career"].append({
+                    "company": company,
+                    "start": request.form.get(f'exp_start{i}'),
+                    "end": request.form.get(f'exp_end{i}'),
+                    "role": request.form.get(f'job_role{i}'),
+                    "reason": request.form.get(f'reason{i}')
+                })
+
+        # 3. JSON 저장
+        data = load_data()
+        data.append(new_entry)
+        save_data(data)
+        
+        return "<h1>지원서 접수 완료!</h1><script>setTimeout(function(){location.href='/';}, 2000);</script>"
+        
+    except Exception as e:
+        return f"<h1>오류 발생: {str(e)}</h1>"
+
 @app.route('/humetix_master_99')
 def master_view():
     if not session.get('is_admin'):
         return redirect(url_for('login'))
-        
-    btn_html = '''
-    <div style="background:#fff3cd; padding:20px; margin-bottom:30px; text-align:center;">
-        <h2 style="color:#003057;">관리자 페이지</h2>
-        <div style="margin-bottom:15px;">
-            <button onclick="location.href='/download_excel'" 
-            style="background:#28a745; color:white; border:none; padding:10px 20px; cursor:pointer; margin-right:10px;">
-            📊 엑셀 다운로드</button>
-            <button onclick="if(confirm('전체 삭제하시겠습니까?')){location.href='/clear_data'}" 
-            style="background:#dc3545; color:white; border:none; padding:10px 20px; cursor:pointer;">
-            🗑️ 데이터 초기화</button>
+    
+    data = load_data()
+    # 최신순 정렬
+    data.reverse()
+    
+    # HTML 생성
+    html = '''
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background: #f4f7f9; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #003057; }
+        .btn { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; text-decoration: none; display: inline-block;}
+        .btn-excel { background: #28a745; color: white; }
+        .btn-delete { background: #dc3545; color: white; }
+        .btn-logout { background: #6c757d; color: white; }
+        .card { border: 1px solid #ddd; padding: 20px; margin-bottom: 20px; border-radius: 10px; background: #fff; position: relative; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 10px; margin: -20px -20px 15px -20px; border-bottom: 1px solid #ddd; border-radius: 10px 10px 0 0; }
+        .info-group { margin-bottom: 10px; }
+        .label { font-weight: bold; color: #555; display: inline-block; width: 80px; }
+        .photo-box { position: absolute; top: 60px; right: 20px; width: 100px; height: 130px; border: 1px solid #ddd; }
+        .photo-box img { width: 100%; height: 100%; object-fit: cover; }
+        .career-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
+        .career-table th, .career-table td { border: 1px solid #ddd; padding: 5px; text-align: center; }
+        .career-table th { background: #f1f3f5; }
+        .checkbox-wrapper { margin-right: 10px; transform: scale(1.5); }
+    </style>
+    <script>
+        function toggleAll(source) {
+            checkboxes = document.getElementsByName('selected_ids');
+            for(var i=0, n=checkboxes.length;i<n;i++) {
+                checkboxes[i].checked = source.checked;
+            }
+        }
+    </script>
+    <div class="container">
+        <div class="header">
+            <h2 style="color:#003057; margin:0;">관리자 페이지</h2>
+            <div>
+                <a href="/download_excel" class="btn btn-excel">📊 엑셀 다운로드</a>
+                <button onclick="document.getElementById('delete-form').submit();" class="btn btn-delete">🗑️ 선택 삭제</button>
+                <a href="/logout" class="btn btn-logout">로그아웃</a>
+            </div>
         </div>
-        <a href="/logout" style="color:gray; text-decoration:underline;">로그아웃</a>
+        
+        <form id="delete-form" action="/delete_selected" method="POST" onsubmit="return confirm('정말 삭제하시겠습니까?');">
+            <div style="margin-bottom: 10px;">
+                <input type="checkbox" onclick="toggleAll(this)"> 전체 선택
+            </div>
+    '''
+    
+    if not data:
+        html += "<p style='text-align:center; padding:50px;'>접수된 지원서가 없습니다.</p>"
+    
+    for entry in data:
+        photo_html = '<div class="photo-box" style="display:flex; align-items:center; justify-content:center; background:#eee; color:#aaa; font-size:0.8rem;">사진없음</div>'
+        if entry['photo']:
+            photo_html = f'<div class="photo-box"><a href="/view_photo/{entry["photo"]}" target="_blank"><img src="/view_photo/{entry["photo"]}"></a></div>'
+            
+        career_rows = ""
+        for car in entry['career']:
+            career_rows += f"<tr><td>{car['company']}</td><td>{car['start']}~{car['end']}</td><td>{car['role']}</td><td>{car['reason']}</td></tr>"
+        if not career_rows:
+            career_rows = "<tr><td colspan='4'>경력 사항 없음</td></tr>"
+
+        html += f'''
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <input type="checkbox" name="selected_ids" value="{entry['id']}" class="checkbox-wrapper">
+                    <span style="font-weight:bold; font-size:1.1rem;">{entry['info']['name']} ({entry['info']['birth']})</span>
+                    <span style="color:#888; font-size:0.9rem; margin-left:10px;">접수: {entry['timestamp']}</span>
+                </div>
+            </div>
+            {photo_html}
+            <div style="width: 75%;">
+                <div class="info-group"><span class="label">연락처</span> {entry['info']['phone']}</div>
+                <div class="info-group"><span class="label">주소</span> {entry['info']['address']}</div>
+                <div class="info-group"><span class="label">신체</span> {entry['body']['height']}cm / {entry['body']['weight']}kg / {entry['body']['vision']} / {entry['body']['shoes']} / {entry['body']['tshirt']}</div>
+                <div class="info-group"><span class="label">근무조건</span> {entry['work_condition']['shift']} / {entry['work_condition']['posture']} / 잔업:{entry['work_condition']['overtime']} / 특근:{entry['work_condition']['holiday']}</div>
+                <div class="info-group"><span class="label">희망일정</span> 입사희망: <span style="color:#0056b3; font-weight:bold;">{entry['work_condition']['start_date']}</span> (면접가능: {entry['work_condition']['interview_date']})</div>
+                
+                <table class="career-table">
+                    <tr><th width="25%">회사명</th><th width="30%">기간</th><th width="20%">담당업무</th><th width="25%">퇴사사유</th></tr>
+                    {career_rows}
+                </table>
+            </div>
+        </div>
+        '''
+        
+    html += '''
+        </form>
     </div>
     '''
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, 'r', encoding='utf-8') as f:
-            lines = f.read()
-        return f"<div style='padding:20px; max-width:800px; margin:0 auto;'>{btn_html}{lines}</div>"
-    return f"<div style='padding:20px; max-width:800px; margin:0 auto;'>{btn_html}<h3 style='text-align:center;'>데이터 없음</h3></div>"
+    return html
 
-@app.route('/logout')
-def logout():
-    session.pop('is_admin', None)
-    return redirect(url_for('home'))
+@app.route('/delete_selected', methods=['POST'])
+def delete_selected():
+    if not session.get('is_admin'):
+        return redirect(url_for('login'))
+        
+    selected_ids = request.form.getlist('selected_ids')
+    if not selected_ids:
+        return "<script>alert('삭제할 항목을 선택해주세요.'); history.back();</script>"
+        
+    data = load_data()
+    # 유지할 데이터만 필터링 (선택되지 않은 것들)
+    new_data = [entry for entry in data if entry['id'] not in selected_ids]
+    
+    # 파일 삭제 (선택된 것들의 사진 파일)
+    for entry in data:
+        if entry['id'] in selected_ids and entry['photo']:
+            try:
+                os.remove(os.path.join(UPLOAD_DIR, entry['photo']))
+            except:
+                pass
+                
+    save_data(new_data)
+    return redirect(url_for('master_view'))
 
 @app.route('/download_excel')
 def download_excel():
     if not session.get('is_admin'):
         return redirect(url_for('login'))
-    if os.path.exists(EXCEL_FILE):
-        return send_from_directory(BASE_DIR, 'data.xlsx', as_attachment=True)
-    return "<script>alert('엑셀 파일이 없습니다.'); history.back();</script>"
+        
+    data = load_data()
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "지원자 목록"
+    
+    # 스타일 정의
+    bold_font = Font(bold=True)
+    center_align = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    border_style = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+    
+    row_idx = 1
+    
+    for entry in data:
+        # 1. 지원자별 헤더 (이름)
+        ws.merge_cells(start_row=row_idx, start_column=1, end_row=row_idx, end_column=4)
+        cell = ws.cell(row=row_idx, column=1, value=f"[{entry['timestamp']}] {entry['info']['name']}")
+        cell.font = Font(bold=True, size=12, color="FFFFFF")
+        cell.fill = openpyxl.styles.PatternFill(start_color="003057", end_color="003057", fill_type="solid")
+        cell.alignment = Alignment(vertical='center')
+        row_idx += 1
+        
+        # 2. 사진 넣기 (A열 ~ B열 병합된 공간 확보)
+        # 사진이 들어갈 공간 확보 (약 5줄 정도)
+        photo_start_row = row_idx
+        
+        # 3. 데이터 입력 (Key - Value 형태)
+        fields = [
+            ("이름", entry['info']['name']),
+            ("생년월일", entry['info']['birth']),
+            ("연락처", entry['info']['phone']),
+            ("이메일", entry['info']['email']),
+            ("주소", entry['info']['address']),
+            ("신체정보", f"{entry['body']['height']}cm / {entry['body']['weight']}kg"),
+            ("상세사이즈", f"시력:{entry['body']['vision']} / 신발:{entry['body']['shoes']} / 티셔츠:{entry['body']['tshirt']}"),
+            ("근무조건", f"{entry['work_condition']['shift']} / {entry['work_condition']['posture']}"),
+            ("가능여부", f"잔업:{entry['work_condition']['overtime']} / 특근:{entry['work_condition']['holiday']}"),
+            ("희망일정", f"면접:{entry['work_condition']['interview_date']} / 입사:{entry['work_condition']['start_date']}")
+        ]
+        
+        # C열(항목명), D열(내용) 에 데이터 쓰기
+        current_data_row = row_idx
+        for key, value in fields:
+            ws.cell(row=current_data_row, column=3, value=key).font = bold_font
+            ws.cell(row=current_data_row, column=3, value=key).border = border_style
+            ws.cell(row=current_data_row, column=3).alignment = center_align
+            
+            ws.cell(row=current_data_row, column=4, value=value).border = border_style
+            ws.cell(row=current_data_row, column=4).alignment = Alignment(wrap_text=True, vertical='center')
+            current_data_row += 1
+            
+        # 4. 경력사항 처리
+        ws.cell(row=current_data_row, column=3, value="경력사항").font = bold_font
+        ws.cell(row=current_data_row, column=3).border = border_style
+        ws.cell(row=current_data_row, column=3).alignment = center_align
+        
+        career_text = ""
+        if not entry['career']:
+            career_text = "경력 없음"
+        else:
+            for c in entry['career']:
+                career_text += f"[{c['company']}] {c['start']}~{c['end']} / {c['role']} / {c['reason']}\n"
+        
+        ws.cell(row=current_data_row, column=4, value=career_text.strip()).border = border_style
+        ws.cell(row=current_data_row, column=4).alignment = Alignment(wrap_text=True, vertical='center')
+        current_data_row += 1
+        
+        # 5. 사진 삽입 (A1:B10 영역 병합 후 삽입)
+        # 병합
+        ws.merge_cells(start_row=photo_start_row, start_column=1, end_row=current_data_row-1, end_column=2)
+        img_cell = ws.cell(row=photo_start_row, column=1)
+        img_cell.border = border_style
+        
+        if entry['photo']:
+            try:
+                img_path = os.path.join(UPLOAD_DIR, entry['photo'])
+                if os.path.exists(img_path):
+                    img = ExcelImage(img_path)
+                    # 이미지 크기 조정 (약간 작게)
+                    img.width = 150
+                    img.height = 200
+                    # 이미지 위치 (앵커)
+                    ws.add_image(img, f"A{photo_start_row}")
+                else:
+                    img_cell.value = "이미지 파일 없음"
+                    img_cell.alignment = center_align
+            except Exception as e:
+                img_cell.value = "이미지 처리 오류"
+        else:
+            img_cell.value = "사진 없음"
+            img_cell.alignment = center_align
+            
+        row_idx = current_data_row + 2 # 다음 지원자와 간격 띄우기
+
+    # 컬럼 너비 조정
+    ws.column_dimensions['A'].width = 10
+    ws.column_dimensions['B'].width = 10
+    ws.column_dimensions['C'].width = 15
+    ws.column_dimensions['D'].width = 50
+
+    excel_file = "applicants_export.xlsx"
+    wb.save(excel_file)
+    return send_file(excel_file, as_attachment=True)
+
+@app.route('/view_photo/<filename>')
+def view_photo(filename):
+    return send_from_directory(UPLOAD_DIR, filename)
 
 @app.route('/clear_data')
 def clear_data():
+    # 전체 삭제 (백업용) - 실제로는 잘 안쓰게 될 것임 (선택 삭제가 있어서)
     if not session.get('is_admin'):
         return redirect(url_for('login'))
+    
+    if os.path.exists(DATA_FILE):
+        os.remove(DATA_FILE)
+    if os.path.exists('data.xlsx'): # 구버전 파일 삭제
+        os.remove('data.xlsx')
+    if os.path.exists('data_html.txt'): # 구버전 파일 삭제
+        os.remove('data_html.txt')
         
-    if os.path.exists(DATA_FILE): os.remove(DATA_FILE)
-    if os.path.exists(EXCEL_FILE): os.remove(EXCEL_FILE) # 엑셀도 삭제
-    if os.path.exists(UPLOAD_DIR):
-        shutil.rmtree(UPLOAD_DIR)
-        os.makedirs(UPLOAD_DIR)
-    return "<script>location.href='/humetix_master_99';</script>"
+    # 업로드된 사진들도 삭제
+    for f in os.listdir(UPLOAD_DIR):
+        try:
+            os.remove(os.path.join(UPLOAD_DIR, f))
+        except: pass
+        
+    return redirect(url_for('master_view'))
 
 if __name__ == '__main__':
-    # SSL 인증서 경로 (서버에 파일이 확인됨)
+    # SSL 인증서 경로 (서버 환경)
     cert_path = '/etc/letsencrypt/live/humetix.com/fullchain.pem'
     key_path = '/etc/letsencrypt/live/humetix.com/privkey.pem'
 
     if os.path.exists(cert_path) and os.path.exists(key_path):
-        # 인증서가 있으면 HTTPS (443 포트) 실행
         app.run(host='0.0.0.0', port=443, ssl_context=(cert_path, key_path))
     else:
-        # 인증서가 없으면 HTTP (80 포트) 실행 (안전장치)
         app.run(host='0.0.0.0', port=80, debug=True)
