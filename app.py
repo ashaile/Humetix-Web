@@ -1,24 +1,28 @@
-from flask import Flask, render_template, request, send_from_directory
+from flask import Flask, render_template, request, send_from_directory, session, redirect, url_for
 import os, shutil
 from datetime import datetime
 
 app = Flask(__name__)
+app.secret_key = 'humetix_secret_key_1234' # 세션 보안을 위한 키 (실제 운영시 변경 권장)
 
-# [중요] 현재 파일이 있는 폴더 위치를 자동으로 찾습니다.
+# 경로 설정
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_DIR = os.path.join(BASE_DIR, 'uploads')
 DATA_FILE = os.path.join(BASE_DIR, 'data_html.txt')
+EXCEL_FILE = os.path.join(BASE_DIR, 'data.xlsx')
 
-# 업로드 폴더가 없으면 알아서 만듭니다.
+# 관리자 비밀번호 설정
+ADMIN_PASSWORD = "3326" 
+
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
-# 1. 메인 홈페이지 (index.html) 보여주기
+# 1. 메인 홈페이지
 @app.route('/')
 def home():
     return render_template('index.html')
 
-# 2. 입사지원서 페이지 (apply.html) 보여주기
+# 2. 입사지원서 페이지
 @app.route('/apply')
 def apply_page():
     return render_template('apply.html')
@@ -31,91 +35,151 @@ def view_photo(filename):
 # 4. 지원서 제출 처리
 @app.route('/submit', methods=['POST'])
 def submit():
-    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    file_now = datetime.now().strftime('%Y%m%d_%H%M%S')
-    
-    id_card = request.files.get('id_card')
-    photo_html = "<span style='color:gray;'>[사진 없음]</span>"
-    
-    if id_card and id_card.filename != '':
-        photo_name = f"{file_now}_id.jpg"
-        id_card.save(os.path.join(UPLOAD_DIR, photo_name))
+    try:
+        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        file_now = datetime.now().strftime('%Y%m%d_%H%M%S')
         
-        photo_html = f'''
-        <br>
-        <a href="/view_photo/{photo_name}" target="_blank" style="text-decoration:none;">
-            <img src="/view_photo/{photo_name}" 
-                 style="max-width:300px; border-radius:10px; border:1px solid #ccc; margin-top:10px; cursor:pointer;"
-                 title="클릭하면 원본 크기로 보입니다">
-            <br><span style="font-size:0.8rem; color:#0056b3;">🔍 사진을 클릭하면 확대됩니다</span>
-        </a><br>
-        '''
+        # 1. 신분증 사진 처리
+        id_card = request.files.get('id_card')
+        photo_html = "<span style='color:gray;'>[사진 없음]</span>"
+        photo_filename = ""
+        
+        if id_card and id_card.filename != '':
+            photo_name = f"{file_now}_id.jpg"
+            id_card.save(os.path.join(UPLOAD_DIR, photo_name))
+            photo_filename = photo_name
+            photo_html = f'''
+            <br>
+            <a href="/view_photo/{photo_name}" target="_blank">
+                <img src="/view_photo/{photo_name}" style="max-width:300px; border-radius:10px; margin-top:10px;">
+            </a>
+            '''
 
-    content = f"<div style='border-bottom:2px solid #003057; padding:20px 0; margin-bottom:20px;'>"
-    content += f"<h3 style='color:#003057; margin-bottom:10px;'>[신규 지원서 - {now}]</h3>"
-    
-    content += f"<div style='background:#f9f9f9; padding:15px; border-radius:10px;'>"
-    content += f"<b>1. 인적사항</b><br>"
-    content += f"성함: {request.form.get('name')} / 생년월일: {request.form.get('birth')}<br>"
-    content += f"연락처: <a href='tel:{request.form.get('phone')}'>{request.form.get('phone')}</a> / 이메일: <a href='mailto:{request.form.get('email')}'>{request.form.get('email')}</a><br>"
-    content += f"주소: {request.form.get('address')}<br>"
-    content += f"신분증 사진: {photo_html}<br>"
-    content += f"</div><br>"
+        # 2. 엑셀 저장 (openpyxl 사용)
+        import openpyxl
+        from openpyxl import Workbook
+        
+        if not os.path.exists(EXCEL_FILE):
+            wb = Workbook()
+            ws = wb.active
+            ws.append(['접수일시', '이름', '생년월일', '연락처', '이메일', '주소', '파일명', '경력1', '경력2', '희망근무', '출근가능일'])
+        else:
+            wb = openpyxl.load_workbook(EXCEL_FILE)
+            ws = wb.active
+            
+        ws.append([
+            now,
+            request.form.get('name'),
+            request.form.get('birth'),
+            request.form.get('phone'),
+            request.form.get('email'),
+            request.form.get('address'),
+            photo_filename,
+            f"{request.form.get('company1')}/{request.form.get('job_role1')}" if request.form.get('company1') else "",
+            f"{request.form.get('company2')}/{request.form.get('job_role2')}" if request.form.get('company2') else "",
+            f"{request.form.get('shift')}",
+            request.form.get('start_date')
+        ])
+        wb.save(EXCEL_FILE)
 
-    content += f"<b>2. 경력사항</b><br>"
-    content += f"● {request.form.get('company1')} ({request.form.get('exp_start1')}~{request.form.get('exp_end1')}) / {request.form.get('job_role1')} / {request.form.get('reason1')}<br>"
-    
-    if request.form.get('company2'):
-        content += f"● {request.form.get('company2')} ({request.form.get('exp_start2')}~{request.form.get('exp_end2')}) / {request.form.get('job_role2')} / {request.form.get('reason2')}<br>"
-    
-    if request.form.get('company3'):
-        content += f"● {request.form.get('company3')} ({request.form.get('exp_start3')}~{request.form.get('exp_end3')}) / {request.form.get('job_role3')} / {request.form.get('reason3')}<br>"
-    
-    content += f"<br><b>3. 신체 및 기타</b><br>"
-    content += f"시력: {request.form.get('vision_type')}({request.form.get('vision_value')}) / 신발: {request.form.get('shoes')} / 티셔츠: {request.form.get('tshirt')}<br>"
-    content += f"신체: {request.form.get('height')}cm, {request.form.get('weight')}kg<br>"
-    
-    content += f"조건: {request.form.get('shift')} / {request.form.get('posture')}<br>"
-    content += f"추가근무: <b>잔업 {request.form.get('overtime')} / 특근 {request.form.get('holiday')}</b><br>"
-    
-    interview = request.form.get('interview_date') if request.form.get('interview_date') else "미지정"
-    content += f"면접 희망일: <b style='color:#0056b3;'>{interview}</b><br>"
-    content += f"입사 희망일: <b style='color:red;'>{request.form.get('start_date')}</b><br>"
-    content += f"</div>"
-    
-    with open(DATA_FILE, 'a', encoding='utf-8') as f:
-        f.write(content)
-    
-    return "<h1>지원서 접수 완료!</h1><script>setTimeout(function(){location.href='/';}, 2000);</script>"
+        # 3. HTML 파일 저장 (기존 방식 유지)
+        content = f"<div style='border-bottom:2px solid #003057; padding:20px 0; margin-bottom:20px;'>"
+        content += f"<h3 style='color:#003057; margin-bottom:10px;'>[신규 지원서 - {now}]</h3>"
+        
+        content += f"<div style='background:#f9f9f9; padding:15px; border-radius:10px;'>"
+        content += f"<b>1. 인적사항</b><br>"
+        content += f"성함: {request.form.get('name')} / 생년월일: {request.form.get('birth')}<br>"
+        content += f"연락처: {request.form.get('phone')} / 주소: {request.form.get('address')}<br>"
+        content += f"신분증 사진: {photo_html}<br>"
+        content += f"</div><br>"
 
-# 5. 관리자 페이지
+        content += f"<b>2. 경력사항</b><br>"
+        content += f"● {request.form.get('company1')} / {request.form.get('job_role1')} / {request.form.get('reason1')}<br>"
+        
+        if request.form.get('company2'):
+            content += f"● {request.form.get('company2')} / {request.form.get('job_role2')} / {request.form.get('reason2')}<br>"
+
+        content += f"<br><b>3. 근무조건</b><br>"
+        content += f"근무형태: {request.form.get('shift')} / 희망일: {request.form.get('start_date')}<br>"
+        
+        agree_check = request.form.get('agree')
+        if agree_check == 'on':
+            content += f"<br><div style='color:blue; font-weight:bold;'>✅ 개인정보 수집 동의 및 허위사실 확인 서약 완료</div>"
+        else:
+            content += f"<br><div style='color:red;'>❌ 동의하지 않음 (오류)</div>"
+            
+        content += f"</div>"
+        
+        with open(DATA_FILE, 'a', encoding='utf-8') as f:
+            f.write(content)
+        
+        return "<h1>지원서 접수 완료!</h1><script>setTimeout(function(){location.href='/';}, 2000);</script>"
+        
+    except Exception as e:
+        return f"<h1>오류 발생: {str(e)}</h1>"
+
+# 5. 관리자 로그인 페이지
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        password = request.form.get('password')
+        if password == ADMIN_PASSWORD:
+            session['is_admin'] = True
+            return redirect(url_for('master_view'))
+        else:
+            return "<script>alert('비밀번호가 틀렸습니다.'); history.back();</script>"
+    return render_template('login.html')
+
+# 6. 관리자 메인 페이지 (보안 적용)
 @app.route('/humetix_master_99')
 def master_view():
+    if not session.get('is_admin'):
+        return redirect(url_for('login'))
+        
     btn_html = '''
-    <div style="background:#fff3cd; padding:20px; margin-bottom:30px; border-radius:10px; border:1px solid #ffeeba; text-align:center;">
+    <div style="background:#fff3cd; padding:20px; margin-bottom:30px; text-align:center;">
         <h2 style="color:#003057;">관리자 페이지</h2>
-        <p>지원서 내역을 확인하고 관리할 수 있습니다.</p>
-        <button onclick="if(confirm('정말 모든 지원서와 사진 데이터를 영구 삭제하시겠습니까?\\n복구할 수 없습니다!')){location.href='/clear_data'}" 
-        style="background:#dc3545; color:white; border:none; padding:15px 30px; border-radius:5px; cursor:pointer; font-weight:bold; font-size:1.1rem;">
-        🗑️ 데이터 전체 초기화 (삭제)</button>
+        <div style="margin-bottom:15px;">
+            <button onclick="location.href='/download_excel'" 
+            style="background:#28a745; color:white; border:none; padding:10px 20px; cursor:pointer; margin-right:10px;">
+            📊 엑셀 다운로드</button>
+            <button onclick="if(confirm('전체 삭제하시겠습니까?')){location.href='/clear_data'}" 
+            style="background:#dc3545; color:white; border:none; padding:10px 20px; cursor:pointer;">
+            🗑️ 데이터 초기화</button>
+        </div>
+        <a href="/logout" style="color:gray; text-decoration:underline;">로그아웃</a>
     </div>
     '''
-    
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, 'r', encoding='utf-8') as f:
             lines = f.read()
-        return f"<div style='font-family:sans-serif; padding:20px; max-width:800px; margin:0 auto;'>{btn_html}{lines}</div>"
-    
-    return f"<div style='font-family:sans-serif; padding:20px; text-align:center;'>{btn_html}<h3>현재 접수된 지원서가 없습니다.</h3></div>"
+        return f"<div style='padding:20px; max-width:800px; margin:0 auto;'>{btn_html}{lines}</div>"
+    return f"<div style='padding:20px; max-width:800px; margin:0 auto;'>{btn_html}<h3 style='text-align:center;'>데이터 없음</h3></div>"
+
+@app.route('/logout')
+def logout():
+    session.pop('is_admin', None)
+    return redirect(url_for('home'))
+
+@app.route('/download_excel')
+def download_excel():
+    if not session.get('is_admin'):
+        return redirect(url_for('login'))
+    if os.path.exists(EXCEL_FILE):
+        return send_from_directory(BASE_DIR, 'data.xlsx', as_attachment=True)
+    return "<script>alert('엑셀 파일이 없습니다.'); history.back();</script>"
 
 @app.route('/clear_data')
 def clear_data():
-    if os.path.exists(DATA_FILE):
-        os.remove(DATA_FILE)
+    if not session.get('is_admin'):
+        return redirect(url_for('login'))
+        
+    if os.path.exists(DATA_FILE): os.remove(DATA_FILE)
+    if os.path.exists(EXCEL_FILE): os.remove(EXCEL_FILE) # 엑셀도 삭제
     if os.path.exists(UPLOAD_DIR):
         shutil.rmtree(UPLOAD_DIR)
         os.makedirs(UPLOAD_DIR)
-    return """<script>alert('모든 데이터가 삭제되었습니다.'); location.href='/humetix_master_99';</script>"""
+    return "<script>location.href='/humetix_master_99';</script>"
 
 if __name__ == '__main__':
     # 내 컴퓨터에서 실행할 때 쓰는 설정
