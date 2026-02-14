@@ -69,6 +69,8 @@ def submit():
             interview_date=request.form.get('interview_date'),
             start_date=request.form.get('start_date'),
             agree=request.form.get('agree'),
+            advance_pay=request.form.get('advance_pay', ''),
+            insurance_type=request.form.get('insurance_type', '4대보험'),
         )
         
         # 경력사항

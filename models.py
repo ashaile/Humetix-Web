@@ -35,6 +35,10 @@ class Application(db.Model):
     start_date = db.Column(db.String(20))
     agree = db.Column(db.String(10))
     
+    # 기타 희망사항
+    advance_pay = db.Column(db.String(10), default="")
+    insurance_type = db.Column(db.String(20), default="4대보험")
+    
     # 경력 관계
     careers = db.relationship('Career', backref='application', cascade='all, delete-orphan', lazy=True)
     
@@ -67,6 +71,10 @@ class Application(db.Model):
                 "interview_date": self.interview_date,
                 "start_date": self.start_date,
                 "agree": self.agree,
+            },
+            "extra": {
+                "advance_pay": self.advance_pay,
+                "insurance_type": self.insurance_type,
             }
         }
 
