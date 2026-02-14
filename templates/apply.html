@@ -244,9 +244,13 @@
                 <div class="col-12">
                     <label class="form-label">가불 희망여부</label>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="advance_pay" name="advance_pay" value="희망">
-                        <label class="form-check-label fw-bold" for="advance_pay" style="color:#0056b3;">가불을
-                            희망합니다</label>
+                        <input class="form-check-input" type="radio" name="advance_pay" id="advance_no" value="비희망"
+                            checked>
+                        <label class="form-check-label" for="advance_no">비희망</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="advance_pay" id="advance_yes" value="희망">
+                        <label class="form-check-label" for="advance_yes">희망</label>
                     </div>
                 </div>
                 <div class="col-12 mt-3">
@@ -259,7 +263,7 @@
                     <div class="form-check">
                         <input class="form-check-input" type="radio" name="insurance_type" id="insurance_33"
                             value="3.3%">
-                        <label class="form-check-label" for="insurance_33">3.3% (프리랜서)</label>
+                        <label class="form-check-label" for="insurance_33">3.3%</label>
                     </div>
                 </div>
             </div>
