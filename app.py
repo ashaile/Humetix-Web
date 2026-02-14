@@ -62,7 +62,15 @@ def submit():
         if not os.path.exists(EXCEL_FILE):
             wb = Workbook()
             ws = wb.active
-            ws.append(['접수일시', '이름', '생년월일', '연락처', '이메일', '주소', '파일명', '경력1', '경력2', '희망근무', '출근가능일'])
+            # 헤더 추가 (모든 필드 포함)
+            ws.append([
+                '접수일시', '이름', '생년월일', '연락처', '이메일', '주소', '파일명', 
+                '경력1_회사', '경력1_입사', '경력1_퇴사', '경력1_업무', '경력1_사유',
+                '경력2_회사', '경력2_입사', '경력2_퇴사', '경력2_업무', '경력2_사유',
+                '경력3_회사', '경력3_입사', '경력3_퇴사', '경력3_업무', '경력3_사유',
+                '시력', '신발', '티셔츠', '키', '몸무게',
+                '근무형태', '근무방식', '잔업', '특근', '면접가능일', '입사희망일'
+            ])
         else:
             wb = openpyxl.load_workbook(EXCEL_FILE)
             ws = wb.active
@@ -75,32 +83,55 @@ def submit():
             request.form.get('email'),
             request.form.get('address'),
             photo_filename,
-            f"{request.form.get('company1')}/{request.form.get('job_role1')}" if request.form.get('company1') else "",
-            f"{request.form.get('company2')}/{request.form.get('job_role2')}" if request.form.get('company2') else "",
-            f"{request.form.get('shift')}",
-            request.form.get('start_date')
+            # 경력 1
+            request.form.get('company1'), request.form.get('exp_start1'), request.form.get('exp_end1'), request.form.get('job_role1'), request.form.get('reason1'),
+            # 경력 2
+            request.form.get('company2'), request.form.get('exp_start2'), request.form.get('exp_end2'), request.form.get('job_role2'), request.form.get('reason2'),
+            # 경력 3
+            request.form.get('company3'), request.form.get('exp_start3'), request.form.get('exp_end3'), request.form.get('job_role3'), request.form.get('reason3'),
+            # 신체
+            f"{request.form.get('vision_type')} {request.form.get('vision_value')}",
+            request.form.get('shoes'), request.form.get('tshirt'), request.form.get('height'), request.form.get('weight'),
+            # 근무 조건
+            request.form.get('shift'), request.form.get('posture'), request.form.get('overtime'), request.form.get('holiday'),
+            request.form.get('interview_date'), request.form.get('start_date')
         ])
         wb.save(EXCEL_FILE)
 
-        # 3. HTML 파일 저장 (기존 방식 유지)
+        # 3. HTML 파일 저장 (관리자 페이지용)
         content = f"<div style='border-bottom:2px solid #003057; padding:20px 0; margin-bottom:20px;'>"
         content += f"<h3 style='color:#003057; margin-bottom:10px;'>[신규 지원서 - {now}]</h3>"
         
         content += f"<div style='background:#f9f9f9; padding:15px; border-radius:10px;'>"
         content += f"<b>1. 인적사항</b><br>"
         content += f"성함: {request.form.get('name')} / 생년월일: {request.form.get('birth')}<br>"
-        content += f"연락처: {request.form.get('phone')} / 주소: {request.form.get('address')}<br>"
+        content += f"연락처: {request.form.get('phone')} / 이메일: {request.form.get('email')}<br>"
+        content += f"주소: {request.form.get('address')}<br>"
         content += f"신분증 사진: {photo_html}<br>"
+        
+        content += f"<br><b>2. 신체 정보</b><br>"
+        content += f"키: {request.form.get('height')}cm / 몸무게: {request.form.get('weight')}kg<br>"
+        content += f"시력: {request.form.get('vision_type')} {request.form.get('vision_value')} / "
+        content += f"신발: {request.form.get('shoes')} / 티셔츠: {request.form.get('tshirt')}<br>"
         content += f"</div><br>"
 
-        content += f"<b>2. 경력사항</b><br>"
-        content += f"● {request.form.get('company1')} / {request.form.get('job_role1')} / {request.form.get('reason1')}<br>"
+        content += f"<b>3. 경력사항</b><br>"
+        if request.form.get('company1'):
+            content += f"1) {request.form.get('company1')} ({request.form.get('exp_start1')} ~ {request.form.get('exp_end1')})<br>"
+            content += f"&nbsp;&nbsp;&nbsp;- 담당: {request.form.get('job_role1')} / 사유: {request.form.get('reason1')}<br>"
         
         if request.form.get('company2'):
-            content += f"● {request.form.get('company2')} / {request.form.get('job_role2')} / {request.form.get('reason2')}<br>"
+            content += f"2) {request.form.get('company2')} ({request.form.get('exp_start2')} ~ {request.form.get('exp_end2')})<br>"
+            content += f"&nbsp;&nbsp;&nbsp;- 담당: {request.form.get('job_role2')} / 사유: {request.form.get('reason2')}<br>"
 
-        content += f"<br><b>3. 근무조건</b><br>"
-        content += f"근무형태: {request.form.get('shift')} / 희망일: {request.form.get('start_date')}<br>"
+        if request.form.get('company3'):
+            content += f"3) {request.form.get('company3')} ({request.form.get('exp_start3')} ~ {request.form.get('exp_end3')})<br>"
+            content += f"&nbsp;&nbsp;&nbsp;- 담당: {request.form.get('job_role3')} / 사유: {request.form.get('reason3')}<br>"
+
+        content += f"<br><b>4. 희망 근무 조건</b><br>"
+        content += f"근무형태: {request.form.get('shift')} / 근무방식: {request.form.get('posture')}<br>"
+        content += f"잔업: {request.form.get('overtime')} / 특근: {request.form.get('holiday')}<br>"
+        content += f"면접가능일: {request.form.get('interview_date')} / <b>입사희망일: {request.form.get('start_date')}</b><br>"
         
         agree_check = request.form.get('agree')
         if agree_check == 'on':
