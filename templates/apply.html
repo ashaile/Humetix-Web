@@ -106,7 +106,7 @@
                             class="form-control" placeholder="010-0000-0000" required oninput="autoHyphen(this)"
                             maxlength="13"></div>
                     <div class="col-6"><label class="form-label">이메일</label><input type="email" name="email"
-                            class="form-control" placeholder="example@email.com"></div>
+                            class="form-control" placeholder="example@email.com" required></div>
                 </div>
                 <label class="form-label mt-3">실거주지 주소 <span class="required-star">*</span></label>
                 <div class="input-group">
@@ -226,7 +226,7 @@
             <div class="row g-3">
                 <div class="col-12 mb-2">
                     <label class="form-label">면접 가능일자</label>
-                    <input type="date" name="interview_date" class="form-control">
+                    <input type="date" name="interview_date" class="form-control" required>
                 </div>
                 <div class="col-12">
                     <label class="form-label">입사 희망일자</label>
@@ -282,11 +282,19 @@
                 </div>
             </div>
 
-            <button type="submit" class="btn btn-submit shadow">지원서 제출하기</button>
+            <button type="submit" class="btn btn-submit shadow" onclick="return validateForm()">지원서 제출하기</button>
         </form>
     </div>
 
     <script>
+        function validateForm() {
+            var address = document.getElementById('address').value.trim();
+            if (!address) {
+                alert('주소를 입력해주세요.');
+                return false;
+            }
+            return true;
+        }
         function toggleDate() {
             const checkbox = document.getElementById('asap_check');
             const dateInput = document.getElementById('start_date');
