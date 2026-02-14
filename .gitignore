@@ -1,0 +1,18 @@
+# 환경 변수 (민감 정보)
+.env
+
+# 데이터 파일
+applications.json
+*.xlsx
+
+# 업로드 파일
+uploads/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# 시스템
+.DS_Store
+Thumbs.db

@@ -8,17 +8,23 @@ import openpyxl
 from openpyxl import Workbook
 from openpyxl.drawing.image import Image as ExcelImage
 from openpyxl.styles import Font, Alignment, Border, Side
+from dotenv import load_dotenv
+
+# .env 파일에서 환경변수 로드
+load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = 'humetix_secure_key'  # 보안을 위해 실제 배포시 변경 권장
+app.secret_key = os.environ.get('SECRET_KEY', 'fallback_dev_key_change_me')
 
 # 설정
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# 업로드 폴더 절대경로
 UPLOAD_DIR = os.path.join(BASE_DIR, 'uploads')
-# JSON 데이터 파일 절대경로
-DATA_FILE = os.path.join(BASE_DIR, 'applications.json') 
-ADMIN_PASSWORD = "3326"
+DATA_FILE = os.path.join(BASE_DIR, 'applications.json')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', '3326')
+
+# 파일 업로드 검증 설정
+ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'heic', 'heif', 'webp'}
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
@@ -61,19 +67,34 @@ def logout():
     session.pop('is_admin', None)
     return redirect(url_for('index'))
 
+def allowed_file(filename):
+    """허용된 파일 확장자인지 확인"""
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 @app.route('/submit', methods=['POST'])
 def submit():
     try:
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         file_now = datetime.now().strftime('%Y%m%d_%H%M%S')
         
-        # 1. 신분증 사진 처리
+        # 1. 신분증 사진 처리 (확장자 및 크기 검증 포함)
         id_card = request.files.get('id_card')
         photo_filename = ""
         
         if id_card and id_card.filename != '':
-            ext = os.path.splitext(id_card.filename)[1]
-            # 안전한 파일명 생성
+            # 확장자 검증
+            if not allowed_file(id_card.filename):
+                return "<script>alert('허용되지 않는 파일 형식입니다. (jpg, png, gif, heic, webp만 가능)'); history.back();</script>"
+            
+            # 파일 크기 검증 (5MB 제한)
+            id_card.seek(0, 2)  # 파일 끝으로 이동
+            file_size = id_card.tell()
+            id_card.seek(0)  # 다시 처음으로
+            if file_size > MAX_FILE_SIZE:
+                return "<script>alert('파일 크기가 5MB를 초과합니다. 더 작은 파일을 선택해주세요.'); history.back();</script>"
+            
+            ext = os.path.splitext(id_card.filename)[1].lower()
             photo_name = f"{file_now}_id{ext}"
             photo_path = os.path.join(UPLOAD_DIR, photo_name)
             id_card.save(photo_path)
@@ -390,11 +411,5 @@ def clear_data():
     return redirect(url_for('master_view'))
 
 if __name__ == '__main__':
-    # SSL 인증서 경로 (서버 환경)
-    cert_path = '/etc/letsencrypt/live/humetix.com/fullchain.pem'
-    key_path = '/etc/letsencrypt/live/humetix.com/privkey.pem'
-
-    if os.path.exists(cert_path) and os.path.exists(key_path):
-        app.run(host='0.0.0.0', port=443, ssl_context=(cert_path, key_path))
-    else:
-        app.run(host='0.0.0.0', port=5000, debug=True)
+    # Nginx가 SSL을 처리하므로, Flask는 항상 5000번 포트에서 실행합니다.
+    app.run(host='0.0.0.0', port=5000, debug=False)

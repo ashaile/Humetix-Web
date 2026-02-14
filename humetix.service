@@ -1,0 +1,15 @@
+[Unit]
+Description=Humetix 입사지원 웹 애플리케이션
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/var/www/recruit
+ExecStart=/usr/bin/python3 /var/www/recruit/app.py
+Restart=always
+RestartSec=5
+EnvironmentFile=/var/www/recruit/.env
+
+[Install]
+WantedBy=multi-user.target
