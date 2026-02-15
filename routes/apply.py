@@ -115,7 +115,11 @@ def submit():
             return "<h1>지원서 접수 완료!</h1><script>setTimeout(function(){location.href='/';}, 2000);</script>"
             
         except ValueError as ve:
-             return f"<script>alert('입력 양식이 올바르지 않습니다: {str(ve)}'); history.back();</script>"
+             # XSS 방지를 위해 에러 메시지 직접 노출 자제
+             import logging
+             logger = logging.getLogger(__name__)
+             logger.error(f"Form validation error: {str(ve)}")
+             return "<script>alert('입력 양식이 올바르지 않습니다. 다시 확인해 주세요.'); history.back();</script>"
         
     except Exception as e:
         db.session.rollback()

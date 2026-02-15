@@ -7,6 +7,7 @@ echo "🚀 배포 시작..."
 cd /var/www/recruit
 
 echo "📥 최신 코드 받기..."
+git config --global --add safe.directory /var/www/recruit
 git pull origin main
 
 echo "📦 라이브러리 설치..."
