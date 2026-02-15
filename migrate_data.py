@@ -37,35 +37,52 @@ def migrate():
         
         # 데이터 이전
         count = 0
+        from datetime import datetime
+
         for entry in data:
+            # 날짜 파싱 유틸리티
+            def parse_date(date_str):
+                if not date_str: return None
+                try:
+                    return datetime.strptime(date_str, '%Y-%m-%d').date()
+                except ValueError:
+                    return None
+
+            def parse_datetime(dt_str):
+                if not dt_str: return None
+                try:
+                    return datetime.strptime(dt_str, '%Y-%m-%d %H:%M:%S')
+                except ValueError:
+                    return None
+
             new_app = Application(
                 id=entry['id'],
-                timestamp=entry['timestamp'],
+                timestamp=parse_datetime(entry.get('timestamp')),
                 photo=entry.get('photo', ''),
                 name=entry['info']['name'],
-                birth=entry['info'].get('birth', ''),
+                birth=parse_date(entry['info'].get('birth')),
                 phone=entry['info'].get('phone', ''),
                 email=entry['info'].get('email', ''),
                 address=entry['info'].get('address', ''),
-                height=entry['body'].get('height', ''),
-                weight=entry['body'].get('weight', ''),
+                height=int(entry['body'].get('height')) if entry['body'].get('height') and entry['body'].get('height') != 'None' else None,
+                weight=int(entry['body'].get('weight')) if entry['body'].get('weight') and entry['body'].get('weight') != 'None' else None,
                 vision=entry['body'].get('vision', ''),
-                shoes=entry['body'].get('shoes', ''),
+                shoes=int(entry['body'].get('shoes')) if entry['body'].get('shoes') and entry['body'].get('shoes') != 'None' else None,
                 tshirt=entry['body'].get('tshirt', ''),
                 shift=entry['work_condition'].get('shift', ''),
                 posture=entry['work_condition'].get('posture', ''),
                 overtime=entry['work_condition'].get('overtime', ''),
                 holiday=entry['work_condition'].get('holiday', ''),
-                interview_date=entry['work_condition'].get('interview_date', ''),
-                start_date=entry['work_condition'].get('start_date', ''),
-                agree=entry['work_condition'].get('agree', ''),
+                interview_date=parse_date(entry['work_condition'].get('interview_date')),
+                start_date=parse_date(entry['work_condition'].get('start_date')),
+                agree=(entry['work_condition'].get('agree') == 'on'),
             )
             
             for c in entry.get('career', []):
                 career = Career(
                     company=c.get('company', ''),
-                    start=c.get('start', ''),
-                    end=c.get('end', ''),
+                    start=parse_date(c.get('start')),
+                    end=parse_date(c.get('end')),
                     role=c.get('role', ''),
                     reason=c.get('reason', ''),
                 )
