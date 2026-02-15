@@ -45,202 +45,197 @@
             /* 버튼 너비 고정 */
             box-sizing: border-box;
             /* 패딩 포함 너비 계산 */
+            height: 40px;
+            /* 높이도 고정하여 통일감 부여 */
+            vertical-align: middle;
         }
 
-        /* ... (skip middle part) ... */
-        <script>function toggleAll(source) {
-            var checkboxes=document.getElementsByName('selected_ids');
+        .btn-excel {
+            background: #28a745;
+            color: white;
+        }
 
-            for (var i=0; i < checkboxes.length; i++) {
-                checkboxes[i].checked=source.checked;
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-logout {
+            background: #6c757d;
+            color: white;
+        }
+
+        .card {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            background: #fff;
+            position: relative;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+            padding: 10px;
+            margin: -20px -20px 15px -20px;
+            border-bottom: 1px solid #ddd;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .info-group {
+            margin-bottom: 10px;
+        }
+
+        .label {
+            font-weight: bold;
+            color: #555;
+            display: inline-block;
+            width: 80px;
+        }
+
+        .photo-box {
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            width: 100px;
+            height: 130px;
+            border: 1px solid #ddd;
+        }
+
+        .photo-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .career-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+
+        .career-table th,
+        .career-table td {
+            border: 1px solid #ddd;
+            padding: 5px;
+            text-align: center;
+        }
+
+        .career-table th {
+            background: #f1f3f5;
+        }
+
+        .checkbox-wrapper {
+            margin-right: 10px;
+            transform: scale(1.5);
+        }
+    </style>
+    <script>
+        function toggleAll(source) {
+            var checkboxes = document.getElementsByName('selected_ids');
+            for (var i = 0; i < checkboxes.length; i++) {
+                checkboxes[i].checked = source.checked;
             }
         }
+    </script>
+</head>
 
-        </script></head><body><div class="container"><div class="header"><h2 style="color:#003057; margin:0;">관리자 페이지</h2><div><a href="/download_excel" class="btn btn-excel">📊 엑셀 다운로드</a><button onclick="document.getElementById('delete-form').submit();" class="btn btn-delete">🗑️ 선택 삭제</button><a href="/logout" class="btn btn-logout">로그아웃</a></div></div><form id="delete-form" action="/delete_selected" method="POST" onsubmit="return confirm('정말 삭제하시겠습니까?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><div style="margin-bottom: 10px;"><input type="checkbox" onclick="toggleAll(this)">전체 선택 </div> {
-            % if not data %
-        }
+<body>
+    <div class="container">
+        <div class="header">
+            <h2 style="color:#003057; margin:0;">관리자 페이지</h2>
+            <div>
+                <a href="/download_excel" class="btn btn-excel">📊 엑셀 다운로드</a>
+                <button onclick="document.getElementById('delete-form').submit();" class="btn btn-delete">🗑️ 선택
+                    삭제</button>
+                <a href="/logout" class="btn btn-logout">로그아웃</a>
+            </div>
+        </div>
 
-        <p style="text-align:center; padding:50px;">접수된 지원서가 없습니다.</p> {
-            % endif %
-        }
+        <form id="delete-form" action="/delete_selected" method="POST" onsubmit="return confirm('정말 삭제하시겠습니까?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div style="margin-bottom: 10px;">
+                <input type="checkbox" onclick="toggleAll(this)"> 전체 선택
+            </div>
 
-            {
-            % for entry in data %
-        }
+            {% if not data %}
+            <p style="text-align:center; padding:50px;">접수된 지원서가 없습니다.</p>
+            {% endif %}
 
-        <div class="card"><div class="card-header"><div><input type="checkbox" name="selected_ids" value="{{ entry.id }}" class="checkbox-wrapper"><span style="font-weight:bold; font-size:1.1rem;"> {
-                {
-                entry.info.name
-            }
-        }
+            {% for entry in data %}
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <input type="checkbox" name="selected_ids" value="{{ entry.id }}" class="checkbox-wrapper">
+                        <span style="font-weight:bold; font-size:1.1rem;">{{ entry.info.name }} ({{ entry.info.birth
+                            }})</span>
+                        <span style="color:#888; font-size:0.9rem; margin-left:10px;">접수: {{ entry.timestamp }}</span>
+                    </div>
+                </div>
 
-        ({
-                {
-                entry.info.birth
-            }
+                {% if entry.photo %}
+                <div class="photo-box">
+                    <a href="/view_photo/{{ entry.photo }}" target="_blank">
+                        <img src="/view_photo/{{ entry.photo }}">
+                    </a>
+                </div>
+                {% else %}
+                <div class="photo-box"
+                    style="display:flex; align-items:center; justify-content:center; background:#eee; color:#aaa; font-size:0.8rem;">
+                    사진없음
+                </div>
+                {% endif %}
 
-        })</span><span style="color:#888; font-size:0.9rem; margin-left:10px;">접수: {
-                {
-                entry.timestamp
-            }
-        }
+                <div style="width: 75%;">
+                    <div class="info-group"><span class="label">연락처</span> {{ entry.info.phone }}</div>
+                    <div class="info-group"><span class="label">주소</span> {{ entry.info.address }}</div>
+                    <div class="info-group"><span class="label">신체</span> {{ entry.body.height }}cm / {{
+                        entry.body.weight }}kg / {{ entry.body.vision }} / {{ entry.body.shoes }} / {{ entry.body.tshirt
+                        }}</div>
+                    <div class="info-group"><span class="label">근무조건</span> {{ entry.work_condition.shift }} / {{
+                        entry.work_condition.posture }} / 잔업:{{ entry.work_condition.overtime }} / 특근:{{
+                        entry.work_condition.holiday }}</div>
+                    <div class="info-group"><span class="label">희망일정</span> 면접가능: <span
+                            style="color:#0056b3; font-weight:bold;">{{ entry.work_condition.interview_date }}</span> /
+                        입사희망: <span style="color:#0056b3; font-weight:bold;">{{ entry.work_condition.start_date
+                            }}</span></div>
+                    <div class="info-group"><span class="label">기타</span> 가불: <span style="font-weight:bold;">{{
+                            entry.extra.advance_pay if entry.extra and entry.extra.advance_pay else '비희망' }}</span> /
+                        급여형태: <span style="font-weight:bold;">{{ entry.extra.insurance_type if entry.extra and
+                            entry.extra.insurance_type else '4대보험' }}</span></div>
 
-        </span></div></div> {
-            % if entry.photo %
-        }
+                    <table class="career-table">
+                        <tr>
+                            <th width="25%">회사명</th>
+                            <th width="30%">기간</th>
+                            <th width="20%">담당업무</th>
+                            <th width="25%">퇴사사유</th>
+                        </tr>
+                        {% if entry.career %}
+                        {% for car in entry.career %}
+                        <tr>
+                            <td>{{ car.company }}</td>
+                            <td>{{ car.start }}~{{ car.end }}</td>
+                            <td>{{ car.role }}</td>
+                            <td>{{ car.reason }}</td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="4">경력 사항 없음</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+            {% endfor %}
 
-        <div class="photo-box"><a href="/view_photo/{{ entry.photo }}" target="_blank"><img src="/view_photo/{{ entry.photo }}"></a></div> {
-            % else %
-        }
+        </form>
+    </div>
+</body>
 
-        <div class="photo-box"
-
-        style="display:flex; align-items:center; justify-content:center; background:#eee; color:#aaa; font-size:0.8rem;">사진없음</div> {
-            % endif %
-        }
-
-        <div style="width: 75%;"><div class="info-group"><span class="label">연락처</span> {
-                {
-                entry.info.phone
-            }
-        }
-
-        </div><div class="info-group"><span class="label">주소</span> {
-                {
-                entry.info.address
-            }
-        }
-
-        </div><div class="info-group"><span class="label">신체</span> {
-                {
-                entry.body.height
-            }
-        }
-
-        cm / {
-                {
-                entry.body.weight
-            }
-        }
-
-        kg / {
-                {
-                entry.body.vision
-            }
-        }
-
-        / {
-                {
-                entry.body.shoes
-            }
-        }
-
-        / {
-                {
-                entry.body.tshirt
-            }
-        }
-
-        </div><div class="info-group"><span class="label">근무조건</span> {
-                {
-                entry.work_condition.shift
-            }
-        }
-
-        / {
-                {
-                entry.work_condition.posture
-            }
-        }
-
-        / 잔업: {
-                {
-                entry.work_condition.overtime
-            }
-        }
-
-        / 특근: {
-                {
-                entry.work_condition.holiday
-            }
-        }
-
-        </div><div class="info-group"><span class="label">희망일정</span>면접가능: <span style="color:#0056b3; font-weight:bold;"> {
-                {
-                entry.work_condition.interview_date
-            }
-        }
-
-        </span>/ 입사희망: <span style="color:#0056b3; font-weight:bold;"> {
-                {
-                entry.work_condition.start_date
-            }
-        }
-
-        </span></div><div class="info-group"><span class="label">기타</span>가불: <span style="font-weight:bold;"> {
-                {
-                entry.extra.advance_pay if entry.extra and entry.extra.advance_pay else '비희망'
-            }
-        }
-
-        </span>/ 급여형태: <span style="font-weight:bold;"> {
-                {
-                entry.extra.insurance_type if entry.extra and entry.extra.insurance_type else '4대보험'
-            }
-        }
-
-        </span></div><table class="career-table"><tr><th width="25%">회사명</th><th width="30%">기간</th><th width="20%">담당업무</th><th width="25%">퇴사사유</th></tr> {
-            % if entry.career %
-        }
-
-            {
-            % for car in entry.career %
-        }
-
-        <tr><td> {
-                {
-                car.company
-            }
-        }
-
-        </td><td> {
-                {
-                car.start
-            }
-        }
-
-        ~ {
-                {
-                car.end
-            }
-        }
-
-        </td><td> {
-                {
-                car.role
-            }
-        }
-
-        </td><td> {
-                {
-                car.reason
-            }
-        }
-
-        </td></tr> {
-            % endfor %
-        }
-
-            {
-            % else %
-        }
-
-        <tr><td colspan="4">경력 사항 없음</td></tr> {
-            % endif %
-        }
-
-        </table></div></div> {
-            % endfor %
-        }
-
-        </form></div></body></html>
+</html>
