@@ -15,6 +15,9 @@ pip3 install -r requirements.txt -q
 echo "🗄️ DB 마이그레이션..."
 python3 -m flask db upgrade
 
+echo "🔒 권한 설정..."
+chown -R www-data:www-data /var/www/recruit
+
 echo "🔄 앱 재시작..."
 systemctl restart humetix
 

@@ -5,10 +5,11 @@ from flask_wtf.csrf import CSRFProtect
 from flask_migrate import Migrate
 from models import db
 
-from config import config_by_name
-
 # .env 파일에서 환경변수 로드
-load_dotenv()
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(BASE_DIR, '.env'))
+
+from config import config_by_name
 
 app = Flask(__name__)
 
@@ -18,7 +19,6 @@ app_config = config_by_name[env_name]()
 app.config.from_object(app_config)
 
 # 로깅 설정 적용
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_DIR = os.path.join(BASE_DIR, 'logs')
 if not os.path.exists(LOG_DIR):
     os.makedirs(LOG_DIR)
