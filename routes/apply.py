@@ -40,6 +40,15 @@ def submit():
             if file_size > MAX_FILE_SIZE:
                 return "<script>alert('파일 크기가 5MB를 초과합니다. 더 작은 파일을 선택해주세요.'); history.back();</script>"
             
+            # 매직 바이트 검사 (Pillow)
+            try:
+                from PIL import Image
+                img = Image.open(id_card)
+                img.verify()  # 실제 이미지 파일인지 검증
+                id_card.seek(0)  # 검증 후 파일 포인터 초기화
+            except Exception:
+                return "<script>alert('유효하지 않은 이미지 파일입니다. (손상되었거나 가짜 이미지)'); history.back();</script>"
+            
             ext = os.path.splitext(id_card.filename)[1].lower()
             photo_name = f"{file_now}_id{ext}"
             photo_path = os.path.join(UPLOAD_DIR, photo_name)
