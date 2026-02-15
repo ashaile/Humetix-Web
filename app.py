@@ -5,18 +5,21 @@ from flask_wtf.csrf import CSRFProtect
 from flask_migrate import Migrate
 from models import db
 
+from config import config_by_name
+
 # .env 파일에서 환경변수 로드
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY')
-if not app.secret_key:
-    raise RuntimeError("SECRET_KEY environment variable is not set")
 
-# DB 설정
+# 환경 설정 적용 (기본값: production)
+env_name = os.environ.get('FLASK_ENV', 'production')
+app.config.from_object(config_by_name[env_name]())
+
+# DB 설정 (config.py로 이동하지 않은 동적 경로 설정 등은 유지 가능하나, 여기서는 URI도 config로 뺄 수 있음. 
+# 현재 구조 유지를 위해 DB URI는 유지하되, 나머지는 Config에서 처리됨)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(BASE_DIR, 'humetix.db')}"
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # 초기화
 db.init_app(app)
