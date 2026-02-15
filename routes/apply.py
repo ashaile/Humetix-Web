@@ -119,4 +119,13 @@ def submit():
         
     except Exception as e:
         db.session.rollback()
-        return f"<h1>오류 발생: {str(e)}</h1>"
+        # 상세 에러는 서버 로그에만 기록
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Application submission error: {str(e)}", exc_info=True)
+        
+        # 사용자에게는 일반적인 메시지 표시
+        return render_template('error.html', 
+                             error_code="500", 
+                             error_message="지원서 접수 중 오류가 발생했습니다", 
+                             error_description="잠시 후 다시 시도해주세요. 문제가 지속되면 담당자에게 문의 바랍니다."), 500
