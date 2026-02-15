@@ -14,11 +14,20 @@ app = Flask(__name__)
 
 # 환경 설정 적용 (기본값: production)
 env_name = os.environ.get('FLASK_ENV', 'production')
-app.config.from_object(config_by_name[env_name]())
+app_config = config_by_name[env_name]()
+app.config.from_object(app_config)
+
+# 로깅 설정 적용
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+LOG_DIR = os.path.join(BASE_DIR, 'logs')
+if not os.path.exists(LOG_DIR):
+    os.makedirs(LOG_DIR)
+
+from logging.config import dictConfig
+dictConfig(app_config.get_logging_config(LOG_DIR))
 
 # DB 설정 (config.py로 이동하지 않은 동적 경로 설정 등은 유지 가능하나, 여기서는 URI도 config로 뺄 수 있음. 
 # 현재 구조 유지를 위해 DB URI는 유지하되, 나머지는 Config에서 처리됨)
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(BASE_DIR, 'humetix.db')}"
 
 # 초기화

@@ -9,6 +9,37 @@ class Config:
     # 세션 보안 기본 설정 (오버라이딩 가능)
     SESSION_COOKIE_HTTPONLY = True  # 자바스크립트에서 쿠키 접근 차단 (XSS 방지)
     SESSION_COOKIE_SAMESITE = 'Lax' # CSRF 방지
+    PERMANENT_SESSION_LIFETIME = 1800 # 30분 (초 단위)
+
+    # 로깅 설정
+    @staticmethod
+    def get_logging_config(log_dir):
+        return {
+            'version': 1,
+            'formatters': {
+                'default': {
+                    'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
+                }
+            },
+            'handlers': {
+                'file': {
+                    'class': 'logging.handlers.RotatingFileHandler',
+                    'filename': os.path.join(log_dir, 'humetix.log'),
+                    'maxBytes': 1024 * 1024 * 10, # 10MB
+                    'backupCount': 5,
+                    'formatter': 'default',
+                    'encoding': 'utf-8'
+                },
+                'console': {
+                    'class': 'logging.StreamHandler',
+                    'formatter': 'default'
+                }
+            },
+            'root': {
+                'level': 'INFO',
+                'handlers': ['file', 'console']
+            }
+        }
 
 class DevelopmentConfig(Config):
     """개발 환경 설정"""
