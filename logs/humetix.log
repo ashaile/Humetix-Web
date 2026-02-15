@@ -73,3 +73,26 @@
 [2026-02-15 11:04:59,563] INFO in _internal: 127.0.0.1 - - [15/Feb/2026 11:04:59] "GET /apply HTTP/1.1" 200 -
 [2026-02-15 11:05:30,057] INFO in _internal: 127.0.0.1 - - [15/Feb/2026 11:05:30] "GET /apply HTTP/1.1" 200 -
 [2026-02-15 11:06:59,020] INFO in _internal: 127.0.0.1 - - [15/Feb/2026 11:06:59] "POST /submit HTTP/1.1" 200 -
+[2026-02-16 00:36:20,820] INFO in _internal: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.50.3:5000
+[2026-02-16 00:36:20,820] INFO in _internal: [33mPress CTRL+C to quit[0m
+[2026-02-16 00:37:11,573] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 00:37:11] "GET / HTTP/1.1" 200 -
+[2026-02-16 00:37:11,599] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 00:37:11] "GET / HTTP/1.1" 200 -
+[2026-02-16 00:37:11,835] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 00:37:11] "GET / HTTP/1.1" 200 -
+[2026-02-16 00:37:12,524] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 00:37:12] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+[2026-02-16 00:37:12,777] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 00:37:12] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+[2026-02-16 00:37:12,838] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 00:37:12] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+[2026-02-16 00:38:24,765] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 00:38:24] "[32mGET /humetix_master_99 HTTP/1.1[0m" 302 -
+[2026-02-16 00:38:24,766] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 00:38:24] "[32mGET /humetix_master_99 HTTP/1.1[0m" 302 -
+[2026-02-16 00:38:25,013] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 00:38:25] "GET /login HTTP/1.1" 200 -
+[2026-02-16 00:38:25,328] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 00:38:25] "GET /login HTTP/1.1" 200 -
+[2026-02-16 00:38:28,624] INFO in auth: Admin login success from 127.0.0.1
+[2026-02-16 00:38:28,625] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 00:38:28] "[32mPOST /login HTTP/1.1[0m" 302 -
+[2026-02-16 00:38:28,657] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 00:38:28] "GET /humetix_master_99 HTTP/1.1" 200 -
+[2026-02-16 00:38:28,867] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 00:38:28] "GET /view_photo/20260215_110659_id.png HTTP/1.1" 200 -
+[2026-02-16 00:38:29,003] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 00:38:29] "GET /view_photo/20260215_102151_id.png HTTP/1.1" 200 -
+[2026-02-16 00:39:19,174] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 00:39:19] "GET /humetix_master_99 HTTP/1.1" 200 -
+[2026-02-16 00:39:19,191] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 00:39:19] "[36mGET /view_photo/20260215_110659_id.png HTTP/1.1[0m" 304 -
+[2026-02-16 00:39:19,430] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 00:39:19] "[36mGET /view_photo/20260215_102151_id.png HTTP/1.1[0m" 304 -
