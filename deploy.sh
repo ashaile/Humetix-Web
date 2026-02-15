@@ -12,6 +12,9 @@ git pull origin main
 echo "📦 라이브러리 설치..."
 pip3 install -r requirements.txt -q
 
+echo "🗄️ DB 마이그레이션..."
+python3 -m flask db upgrade
+
 echo "🔄 앱 재시작..."
 systemctl restart humetix
 

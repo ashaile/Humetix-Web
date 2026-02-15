@@ -7,6 +7,11 @@ from openpyxl.drawing.image import Image as ExcelImage
 from openpyxl.styles import Font, Alignment, Border, Side
 from models import db, Application
 
+import logging
+
+# Logger 설정
+logger = logging.getLogger(__name__)
+
 admin_bp = Blueprint('admin', __name__)
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -39,8 +44,8 @@ def delete_selected():
             if app.photo:
                 try:
                     os.remove(os.path.join(UPLOAD_DIR, app.photo))
-                except:
-                    pass
+                except Exception as e:
+                    logger.error(f"Error deleting photo {app.photo}: {e}")
             db.session.delete(app)
     
     db.session.commit()
@@ -146,15 +151,19 @@ def download_excel():
     ws.column_dimensions['C'].width = 15
     ws.column_dimensions['D'].width = 50
 
-    excel_file = os.path.join(BASE_DIR, "applicants_export.xlsx")
-    wb.save(excel_file)
-    return send_file(excel_file, as_attachment=True)
+    # 메모리에 엑셀 파일 저장
+    from io import BytesIO
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    return send_file(output, as_attachment=True, download_name="applicants_export.xlsx")
 
 @admin_bp.route('/view_photo/<filename>')
 def view_photo(filename):
     return send_from_directory(UPLOAD_DIR, filename)
 
-@admin_bp.route('/clear_data')
+@admin_bp.route('/clear_data', methods=['POST'])
 def clear_data():
     if not session.get('is_admin'):
         return redirect(url_for('auth.login'))
@@ -167,7 +176,7 @@ def clear_data():
     for f in os.listdir(UPLOAD_DIR):
         try:
             os.remove(os.path.join(UPLOAD_DIR, f))
-        except:
-            pass
+        except Exception as e:
+            logger.error(f"Error deleting file {f}: {e}")
         
     return redirect(url_for('admin.master_view'))

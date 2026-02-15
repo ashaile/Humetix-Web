@@ -4,9 +4,10 @@ After=network.target
 
 [Service]
 Type=simple
-User=root
+User=www-data
 WorkingDirectory=/var/www/recruit
-ExecStart=/usr/bin/python3 /var/www/recruit/app.py
+# Update the path to gunicorn as needed for your environment
+ExecStart=/usr/local/bin/gunicorn --workers 3 --bind 0.0.0.0:5000 app:app
 Restart=always
 RestartSec=5
 EnvironmentFile=/var/www/recruit/.env

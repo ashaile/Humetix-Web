@@ -24,7 +24,6 @@ def apply_form():
 @apply_bp.route('/submit', methods=['POST'])
 def submit():
     try:
-        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         file_now = datetime.now().strftime('%Y%m%d_%H%M%S')
         
         # 1. 신분증 사진 처리
@@ -48,48 +47,66 @@ def submit():
             photo_filename = photo_name
 
         # 2. DB에 저장
-        new_app = Application(
-            id=str(uuid.uuid4()),
-            timestamp=now,
-            photo=photo_filename,
-            name=request.form.get('name'),
-            birth=request.form.get('birth'),
-            phone=request.form.get('phone'),
-            email=request.form.get('email'),
-            address=request.form.get('address'),
-            height=request.form.get('height'),
-            weight=request.form.get('weight'),
-            vision=f"{request.form.get('vision_type')} {request.form.get('vision_value')}",
-            shoes=request.form.get('shoes'),
-            tshirt=request.form.get('tshirt'),
-            shift=request.form.get('shift'),
-            posture=request.form.get('posture'),
-            overtime=request.form.get('overtime'),
-            holiday=request.form.get('holiday'),
-            interview_date=request.form.get('interview_date'),
-            start_date=request.form.get('start_date'),
-            agree=request.form.get('agree'),
-            advance_pay=request.form.get('advance_pay', ''),
-            insurance_type=request.form.get('insurance_type', '4대보험'),
-        )
-        
-        # 경력사항
-        for i in range(1, 4):
-            company = request.form.get(f'company{i}')
-            if company:
-                career = Career(
-                    company=company,
-                    start=request.form.get(f'exp_start{i}'),
-                    end=request.form.get(f'exp_end{i}'),
-                    role=request.form.get(f'job_role{i}'),
-                    reason=request.form.get(f'reason{i}'),
-                )
-                new_app.careers.append(career)
-        
-        db.session.add(new_app)
-        db.session.commit()
-        
-        return "<h1>지원서 접수 완료!</h1><script>setTimeout(function(){location.href='/';}, 2000);</script>"
+        try:
+            birth_date = datetime.strptime(request.form.get('birth'), '%Y-%m-%d').date() if request.form.get('birth') else None
+            interview_date = datetime.strptime(request.form.get('interview_date'), '%Y-%m-%d').date() if request.form.get('interview_date') else None
+            start_date_val = request.form.get('start_date')
+            start_date = datetime.strptime(start_date_val, '%Y-%m-%d').date() if start_date_val else None
+
+            height = int(request.form.get('height')) if request.form.get('height') else None
+            weight = int(request.form.get('weight')) if request.form.get('weight') else None
+            shoes = int(request.form.get('shoes')) if request.form.get('shoes') else None
+            
+            agree = True if request.form.get('agree') == 'on' else False
+
+            new_app = Application(
+                id=str(uuid.uuid4()),
+                # timestamp는 default로 자동 설정됨
+                photo=photo_filename,
+                name=request.form.get('name'),
+                birth=birth_date,
+                phone=request.form.get('phone'),
+                email=request.form.get('email'),
+                address=request.form.get('address'),
+                height=height,
+                weight=weight,
+                vision=f"{request.form.get('vision_type')} {request.form.get('vision_value')}",
+                shoes=shoes,
+                tshirt=request.form.get('tshirt'),
+                shift=request.form.get('shift'),
+                posture=request.form.get('posture'),
+                overtime=request.form.get('overtime'),
+                holiday=request.form.get('holiday'),
+                interview_date=interview_date,
+                start_date=start_date,
+                agree=agree,
+                advance_pay=request.form.get('advance_pay', ''),
+                insurance_type=request.form.get('insurance_type', '4대보험'),
+            )
+            
+            # 경력사항
+            for i in range(1, 4):
+                company = request.form.get(f'company{i}')
+                if company:
+                    c_start = datetime.strptime(request.form.get(f'exp_start{i}'), '%Y-%m-%d').date() if request.form.get(f'exp_start{i}') else None
+                    c_end = datetime.strptime(request.form.get(f'exp_end{i}'), '%Y-%m-%d').date() if request.form.get(f'exp_end{i}') else None
+                    
+                    career = Career(
+                        company=company,
+                        start=c_start,
+                        end=c_end,
+                        role=request.form.get(f'job_role{i}'),
+                        reason=request.form.get(f'reason{i}'),
+                    )
+                    new_app.careers.append(career)
+            
+            db.session.add(new_app)
+            db.session.commit()
+            
+            return "<h1>지원서 접수 완료!</h1><script>setTimeout(function(){location.href='/';}, 2000);</script>"
+            
+        except ValueError as ve:
+             return f"<script>alert('입력 양식이 올바르지 않습니다: {str(ve)}'); history.back();</script>"
         
     except Exception as e:
         db.session.rollback()
