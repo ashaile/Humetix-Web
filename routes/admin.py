@@ -172,14 +172,18 @@ def download_excel():
                         
                         # PIL을 사용하여 이미지를 열고 PNG로 변환 (메모리 내)
                         with PILImage.open(img_path) as pil_img:
-                            # MPO 파일 등 특이 포맷 대응을 위해 RGB로 변환
+                            # 1. 이미지 리사이징 (속도 최적화: 최대 너비/높이 300px)
+                            # 원본이 너무 크면 변환 시간이 오래 걸려 타임아웃 발생함
+                            pil_img.thumbnail((300, 400))
+                            
+                            # 2. MPO 파일 등 특이 포맷 대응을 위해 RGB로 변환
                             if pil_img.mode in ("RGBA", "P"):
                                 pil_img = pil_img.convert("RGBA")
                             else:
                                 pil_img = pil_img.convert("RGB")
                             
                             img_io = BytesIO()
-                            pil_img.save(img_io, format="PNG")
+                            pil_img.save(img_io, format="PNG", optimize=True)
                             img_io.seek(0)
                             
                             img = ExcelImage(img_io)
