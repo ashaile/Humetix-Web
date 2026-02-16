@@ -246,238 +246,240 @@
             <h2 style="color:#003057; margin:0;">관리자 페이지</h2>
             <div>
                 <a href="/download_excel" class="btn btn-excel">📊 엑셀 다운로드</a>
-                <button onclick="document.getElementById('delete-form').submit();" <div
-                    class="row align-items-center mb-4">
-                    <div class="col-md-6">
-                        <h2 class="fw-bold text-primary"><i class="bi bi-people-fill me-2"></i>지원자 관리 (총 {{ data|length
-                            }}명)</h2>
-                    </div>
-                    <div class="col-md-6 text-end">
-                        <!-- 검색 폼 -->
-                        <form action="{{ url_for('admin.master_view') }}" method="get"
-                            class="d-flex justify-content-end gap-2">
-                            <select name="type" class="form-select w-auto">
-                                <option value="name" {% if search_type=='name' %}selected{% endif %}>이름</option>
-                                <option value="phone" {% if search_type=='phone' %}selected{% endif %}>연락처</option>
-                            </select>
-                            <input type="text" name="q" class="form-control w-auto" placeholder="검색어 입력"
-                                value="{{ search_query }}">
-                            <button type="submit" class="btn btn-primary">검색</button>
-                            <button type="button" class="btn btn-secondary" data-bs-toggle="collapse"
-                                data-bs-target="#detailedFilters">상세검색</button>
-                            <a href="{{ url_for('admin.master_view') }}" class="btn btn-outline-secondary">초기화</a>
-                        </form>
-                    </div>
+                <a href="/logout" class="btn btn-logout">로그아웃</a>
             </div>
-
-            <!-- 상세 검색 필터 (접이식) -->
-            <div class="collapse mb-4" id="detailedFilters">
-                <div class="card card-body bg-light">
-                    <form action="{{ url_for('admin.master_view') }}" method="get">
-                        <div class="row g-3">
-                            <div class="col-md-2">
-                                <label class="form-label fw-bold">성별</label>
-                                <select name="gender" class="form-select">
-                                    <option value="">전체</option>
-                                    <option value="남" {% if filters and filters.gender=='남' %}selected{% endif %}>남자
-                                    </option>
-                                    <option value="여" {% if filters and filters.gender=='여' %}selected{% endif %}>여자
-                                    </option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label fw-bold">교대근무</label>
-                                <select name="shift" class="form-select">
-                                    <option value="">전체</option>
-                                    <option value="가능" {% if filters and filters.shift=='가능' %}selected{% endif %}>가능
-                                    </option>
-                                    <option value="불가능" {% if filters and filters.shift=='불가능' %}selected{% endif %}>불가능
-                                    </option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label fw-bold">좌식근무</label>
-                                <select name="posture" class="form-select">
-                                    <option value="">전체</option>
-                                    <option value="가능" {% if filters and filters.posture=='가능' %}selected{% endif %}>가능
-                                    </option>
-                                    <option value="불가능" {% if filters and filters.posture=='불가능' %}selected{% endif %}>
-                                        불가능</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label fw-bold">잔업</label>
-                                <select name="overtime" class="form-select">
-                                    <option value="">전체</option>
-                                    <option value="가능" {% if filters and filters.overtime=='가능' %}selected{% endif %}>가능
-                                    </option>
-                                    <option value="불가능" {% if filters and filters.overtime=='불가능' %}selected{% endif %}>
-                                        불가능</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label fw-bold">특근</label>
-                                <select name="holiday" class="form-select">
-                                    <option value="">전체</option>
-                                    <option value="가능" {% if filters and filters.holiday=='가능' %}selected{% endif %}>가능
-                                    </option>
-                                    <option value="불가능" {% if filters and filters.holiday=='불가능' %}selected{% endif %}>
-                                        불가능</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label fw-bold">검색 실행</label>
-                                <button type="submit" class="btn btn-primary w-100">필터 적용</button>
-                            </div>
-                        </div>
-                        <div class="row g-3 mt-2">
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold">접수일 기간 설정</label>
-                                <div class="input-group">
-                                    <input type="date" name="start_date" class="form-control"
-                                        value="{{ start_date if start_date else '' }}">
-                                    <span class="input-group-text">~</span>
-                                    <input type="date" name="end_date" class="form-control"
-                                        value="{{ end_date if end_date else '' }}">
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label fw-bold">가불 희망</label>
-                                <select name="advance_pay" class="form-select">
-                                    <option value="">전체</option>
-                                    <option value="희망함" {% if filters and filters.advance_pay=='희망함' %}selected{% endif
-                                        %}>희망함</option>
-                                    <option value="희망안함" {% if filters and filters.advance_pay=='희망안함' %}selected{%
-                                        endif %}>희망안함</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label fw-bold">급여 형태</label>
-                                <select name="insurance_type" class="form-select">
-                                    <option value="">전체</option>
-                                    <option value="4대보험" {% if filters and filters.insurance_type=='4대보험' %}selected{%
-                                        endif %}>4대보험</option>
-                                    <option value="3.3%" {% if filters and filters.insurance_type=='3.3%' %}selected{%
-                                        endif %}>3.3%</option>
-                                </select>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-
-            <div style="margin-bottom: 15px;">
-                <button onclick="if(confirm('선택한 항목을 삭제하시겠습니까?')) document.getElementById('deleteForm').submit();"
-                    class="btn btn-delete">🗑️ 선택 삭제</button>
-                <label style="margin-left: 15px; cursor: pointer;">
-                    <input type="checkbox" onclick="toggleAll(this)"> 전체 선택
-                </label>
-            </div>
-
-            <form method="post" action="{{ url_for('admin.delete_selected') }}" id="deleteForm">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-                {% if not data %}
-                <p style="text-align:center; padding:50px;">접수된 지원서가 없습니다.</p>
-                {% endif %}
-
-                {% for entry in data %}
-                <div class="card">
-                    <div class="card-header">
-                        <div>
-                            <input type="checkbox" name="selected_ids" value="{{ entry.id }}" class="checkbox-wrapper">
-                            <span style="font-weight:bold; font-size:1.1rem;">{{ entry.info.name }} ({{ entry.info.birth
-                                }})</span>
-                            {% if entry.info.gender %}
-                            <span
-                                class="badge {% if entry.info.gender == '남' %}bg-primary{% else %}bg-danger{% endif %} ms-2"
-                                style="font-size: 0.8rem; opacity: 0.8; color: white;">{{ entry.info.gender }}</span>
-                            {% endif %}
-                            <span style="color:#888; font-size:0.9rem; margin-left:10px;">접수: {{ entry.timestamp
-                                }}</span>
-                        </div>
-                    </div>
-
-                    <!-- Card Body Wrapper (implicit in previous design but making it explicit helps structure) -->
-                    <div style="padding: 10px;">
-                        {% if entry.photo %}
-                        <div class="photo-box">
-                            <a href="/view_photo/{{ entry.photo }}" target="_blank">
-                                <img src="/view_photo/{{ entry.photo }}">
-                            </a>
-                        </div>
-                        {% else %}
-                        <div class="photo-box"
-                            style="display:flex; align-items:center; justify-content:center; background:#eee; color:#aaa; font-size:0.8rem;">
-                            사진없음
-                        </div>
-                        {% endif %}
-
-                        <div style="width: 75%;">
-                            <div class="info-group"><span class="label">연락처</span> {{ entry.info.phone }}</div>
-                            <div class="info-group"><span class="label">주소</span> {{ entry.info.address }}</div>
-                            <div class="info-group"><span class="label">신체</span> {{ entry.body.height }}cm / {{
-                                entry.body.weight }}kg / {{ entry.body.vision }} / {{ entry.body.shoes }} / {{
-                                entry.body.tshirt }}</div>
-                            <div class="info-group">
-                                <span class="label">근무조건</span>
-                                교대: {{ entry.work_condition.shift or '없음' }} /
-                                자세: {{ entry.work_condition.posture or '없음' }} /
-                                잔업: {{ entry.work_condition.overtime or '없음' }} /
-                                특근: {{ entry.work_condition.holiday or '없음' }}
-                            </div>
-                            <div class="info-group">
-                                <span class="label">희망일정</span>
-                                면접가능: <span style="color:#0056b3; font-weight:bold;">{{
-                                    entry.work_condition.interview_date or '기록없음' }}</span> /
-                                입사희망: <span style="color:#0056b3; font-weight:bold;">{{ entry.work_condition.start_date
-                                    or '기록없음' }}</span>
-                            </div>
-                            <div class="info-group">
-                                <span class="label">기타</span>
-                                가불: <span style="font-weight:bold;">{{ entry.extra.advance_pay if entry.extra and
-                                    entry.extra.advance_pay else '비희망' }}</span> /
-                                급여형태: <span style="font-weight:bold;">{{ entry.extra.insurance_type if entry.extra and
-                                    entry.extra.insurance_type else '4대보험' }}</span>
-                            </div>
-
-                            <table class="career-table">
-                                <tr>
-                                    <th width="25%">회사명</th>
-                                    <th width="30%">기간</th>
-                                    <th width="20%">담당업무</th>
-                                    <th width="25%">퇴사사유</th>
-                                </tr>
-                                {% if entry.career %}
-                                {% for car in entry.career %}
-                                <tr>
-                                    <td>{{ car.company }}</td>
-                                    <td>{{ car.start }}~{{ car.end }}</td>
-                                    <td>{{ car.role }}</td>
-                                    <td>{{ car.reason }}</td>
-                                </tr>
-                                {% endfor %}
-                                {% else %}
-                                <tr>
-                                    <td colspan="4">경력 사항 없음</td>
-                                </tr>
-                                {% endif %}
-                            </table>
-                        </div>
-
-                        <div class="memo-section">
-                            <div style="font-weight:bold; margin-bottom:5px; font-size:0.9rem;">관리자 메모</div>
-                            <textarea id="memo-{{ entry.id }}" class="memo-textarea"
-                                placeholder="메모를 입력하세요...">{{ entry.memo }}</textarea>
-                            <button type="button" class="btn btn-save-memo" onclick="saveMemo('{{ entry.id }}')">메모
-                                저장</button>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </form>
         </div>
+
+        <!-- 검색 및 상단 정보 -->
+        <div class="row align-items-center mb-4">
+            <div class="col-md-6">
+                <h3 class="fw-bold text-primary">지원자 관리 (총 {{ data|length }}명)</h3>
+            </div>
+            <div class="col-md-6 text-end">
+                <!-- 검색 폼 -->
+                <form action="{{ url_for('admin.master_view') }}" method="get" class="d-flex justify-content-end gap-2">
+                    <select name="type" class="form-select w-auto">
+                        <option value="name" {% if search_type=='name' %}selected{% endif %}>이름</option>
+                        <option value="phone" {% if search_type=='phone' %}selected{% endif %}>연락처</option>
+                    </select>
+                    <input type="text" name="q" class="form-control w-auto" placeholder="검색어 입력"
+                        value="{{ search_query }}">
+                    <button type="submit" class="btn btn-primary">검색</button>
+                    <button type="button" class="btn btn-secondary" data-bs-toggle="collapse"
+                        data-bs-target="#detailedFilters">상세검색</button>
+                    <a href="{{ url_for('admin.master_view') }}" class="btn btn-outline-secondary">초기화</a>
+                </form>
+            </div>
+        </div>
+
+        <!-- 상세 검색 필터 (접이식) -->
+        <div class="collapse mb-4" id="detailedFilters">
+            <div class="card card-body bg-light">
+                <form action="{{ url_for('admin.master_view') }}" method="get">
+                    <div class="row g-3">
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold">성별</label>
+                            <select name="gender" class="form-select">
+                                <option value="">전체</option>
+                                <option value="남" {% if filters and filters.gender=='남' %}selected{% endif %}>남자
+                                </option>
+                                <option value="여" {% if filters and filters.gender=='여' %}selected{% endif %}>여자
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold">교대근무</label>
+                            <select name="shift" class="form-select">
+                                <option value="">전체</option>
+                                <option value="가능" {% if filters and filters.shift=='가능' %}selected{% endif %}>가능
+                                </option>
+                                <option value="불가능" {% if filters and filters.shift=='불가능' %}selected{% endif %}>불가능
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold">좌식근무</label>
+                            <select name="posture" class="form-select">
+                                <option value="">전체</option>
+                                <option value="가능" {% if filters and filters.posture=='가능' %}selected{% endif %}>가능
+                                </option>
+                                <option value="불가능" {% if filters and filters.posture=='불가능' %}selected{% endif %}>
+                                    불가능</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold">잔업</label>
+                            <select name="overtime" class="form-select">
+                                <option value="">전체</option>
+                                <option value="가능" {% if filters and filters.overtime=='가능' %}selected{% endif %}>가능
+                                </option>
+                                <option value="불가능" {% if filters and filters.overtime=='불가능' %}selected{% endif %}>
+                                    불가능</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold">특근</label>
+                            <select name="holiday" class="form-select">
+                                <option value="">전체</option>
+                                <option value="가능" {% if filters and filters.holiday=='가능' %}selected{% endif %}>가능
+                                </option>
+                                <option value="불가능" {% if filters and filters.holiday=='불가능' %}selected{% endif %}>
+                                    불가능</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold">검색 실행</label>
+                            <button type="submit" class="btn btn-primary w-100">필터 적용</button>
+                        </div>
+                    </div>
+                    <div class="row g-3 mt-2">
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">접수일 기간 설정</label>
+                            <div class="input-group">
+                                <input type="date" name="start_date" class="form-control"
+                                    value="{{ start_date if start_date else '' }}">
+                                <span class="input-group-text">~</span>
+                                <input type="date" name="end_date" class="form-control"
+                                    value="{{ end_date if end_date else '' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold">가불 희망</label>
+                            <select name="advance_pay" class="form-select">
+                                <option value="">전체</option>
+                                <option value="희망함" {% if filters and filters.advance_pay=='희망함' %}selected{% endif %}>
+                                    희망함</option>
+                                <option value="희망안함" {% if filters and filters.advance_pay=='희망안함' %}selected{% endif
+                                    %}>희망안함</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold">급여 형태</label>
+                            <select name="insurance_type" class="form-select">
+                                <option value="">전체</option>
+                                <option value="4대보험" {% if filters and filters.insurance_type=='4대보험' %}selected{% endif
+                                    %}>4대보험</option>
+                                <option value="3.3%" {% if filters and filters.insurance_type=='3.3%' %}selected{% endif
+                                    %}>3.3%</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+
+        <div style="margin-bottom: 15px;">
+            <button onclick="if(confirm('선택한 항목을 삭제하시겠습니까?')) document.getElementById('deleteForm').submit();"
+                class="btn btn-delete">🗑️ 선택 삭제</button>
+            <label style="margin-left: 15px; cursor: pointer;">
+                <input type="checkbox" onclick="toggleAll(this)"> 전체 선택
+            </label>
+        </div>
+
+        <form method="post" action="{{ url_for('admin.delete_selected') }}" id="deleteForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            {% if not data %}
+            <p style="text-align:center; padding:50px;">접수된 지원서가 없습니다.</p>
+            {% endif %}
+
+            {% for entry in data %}
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <input type="checkbox" name="selected_ids" value="{{ entry.id }}" class="checkbox-wrapper">
+                        <span style="font-weight:bold; font-size:1.1rem;">{{ entry.info.name }} ({{ entry.info.birth
+                            }})</span>
+                        {% if entry.info.gender %}
+                        <span
+                            class="badge {% if entry.info.gender == '남' %}bg-primary{% else %}bg-danger{% endif %} ms-2"
+                            style="font-size: 0.8rem; opacity: 0.8; color: white;">{{ entry.info.gender }}</span>
+                        {% endif %}
+                        <span style="color:#888; font-size:0.9rem; margin-left:10px;">접수: {{ entry.timestamp
+                            }}</span>
+                    </div>
+                </div>
+
+                <!-- Card Body Wrapper (implicit in previous design but making it explicit helps structure) -->
+                <div style="padding: 10px;">
+                    {% if entry.photo %}
+                    <div class="photo-box">
+                        <a href="/view_photo/{{ entry.photo }}" target="_blank">
+                            <img src="/view_photo/{{ entry.photo }}">
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="photo-box"
+                        style="display:flex; align-items:center; justify-content:center; background:#eee; color:#aaa; font-size:0.8rem;">
+                        사진없음
+                    </div>
+                    {% endif %}
+
+                    <div style="width: 75%;">
+                        <div class="info-group"><span class="label">연락처</span> {{ entry.info.phone }}</div>
+                        <div class="info-group"><span class="label">주소</span> {{ entry.info.address }}</div>
+                        <div class="info-group"><span class="label">신체</span> {{ entry.body.height }}cm / {{
+                            entry.body.weight }}kg / {{ entry.body.vision }} / {{ entry.body.shoes }} / {{
+                            entry.body.tshirt }}</div>
+                        <div class="info-group">
+                            <span class="label">근무조건</span>
+                            교대: {{ entry.work_condition.shift or '없음' }} /
+                            자세: {{ entry.work_condition.posture or '없음' }} /
+                            잔업: {{ entry.work_condition.overtime or '없음' }} /
+                            특근: {{ entry.work_condition.holiday or '없음' }}
+                        </div>
+                        <div class="info-group">
+                            <span class="label">희망일정</span>
+                            면접가능: <span style="color:#0056b3; font-weight:bold;">{{
+                                entry.work_condition.interview_date or '기록없음' }}</span> /
+                            입사희망: <span style="color:#0056b3; font-weight:bold;">{{ entry.work_condition.start_date
+                                or '기록없음' }}</span>
+                        </div>
+                        <div class="info-group">
+                            <span class="label">기타</span>
+                            가불: <span style="font-weight:bold;">{{ entry.extra.advance_pay if entry.extra and
+                                entry.extra.advance_pay else '비희망' }}</span> /
+                            급여형태: <span style="font-weight:bold;">{{ entry.extra.insurance_type if entry.extra and
+                                entry.extra.insurance_type else '4대보험' }}</span>
+                        </div>
+
+                        <table class="career-table">
+                            <tr>
+                                <th width="25%">회사명</th>
+                                <th width="30%">기간</th>
+                                <th width="20%">담당업무</th>
+                                <th width="25%">퇴사사유</th>
+                            </tr>
+                            {% if entry.career %}
+                            {% for car in entry.career %}
+                            <tr>
+                                <td>{{ car.company }}</td>
+                                <td>{{ car.start }}~{{ car.end }}</td>
+                                <td>{{ car.role }}</td>
+                                <td>{{ car.reason }}</td>
+                            </tr>
+                            {% endfor %}
+                            {% else %}
+                            <tr>
+                                <td colspan="4">경력 사항 없음</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+
+                    <div class="memo-section">
+                        <div style="font-weight:bold; margin-bottom:5px; font-size:0.9rem;">관리자 메모</div>
+                        <textarea id="memo-{{ entry.id }}" class="memo-textarea"
+                            placeholder="메모를 입력하세요...">{{ entry.memo }}</textarea>
+                        <button type="button" class="btn btn-save-memo" onclick="saveMemo('{{ entry.id }}')">메모
+                            저장</button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </form>
+    </div>
 </body>
 
 </html>
