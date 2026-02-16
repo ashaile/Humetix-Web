@@ -298,3 +298,11 @@ jinja2.exceptions.UndefinedError: 'entry' is undefined
 [2026-02-16 14:50:53,064] INFO in notification_service:   => SMTP 설정이 누락되어 실제 메일은 발송되지 않았습니다.
 [2026-02-16 14:50:53,064] INFO in notification_service: [MOCK SMS] To: None | Msg:  [신규 지원서 접수] 이름: 홍길동_테스트 / 연락처: 010-1234-5678
 [2026-02-16 14:50:53,064] INFO in notification_service:   => SMS API 설정이 누락되어 실제 문자는 발송되지 않았습니다.
+[2026-02-16 14:51:06,292] INFO in notification_service: [MOCK EMAIL] To: None | Subject: [Humetix] 신규 지원서가 접수되었습니다. | Body:  [신규 지원서 접수] 이름: 홍길동_테스트 / 연락처: 010-1234-5678
+[2026-02-16 14:51:06,292] INFO in notification_service:   => SMTP 설정이 누락되어 실제 메일은 발송되지 않았습니다.
+[2026-02-16 14:51:06,293] INFO in notification_service: [MOCK SMS] To: None | Msg:  [신규 지원서 접수] 이름: 홍길동_테스트 / 연락처: 010-1234-5678
+[2026-02-16 14:51:06,293] INFO in notification_service:   => SMS API 설정이 누락되어 실제 문자는 발송되지 않았습니다.
+[2026-02-16 14:51:19,058] INFO in notification_service: [MOCK EMAIL] To: None | Subject: [Humetix] 신규 지원서가 접수되었습니다. | Body:  [신규 지원서 접수] 이름: 홍길동_테스트 / 연락처: 010-1234-5678
+[2026-02-16 14:51:19,058] INFO in notification_service:   => SMTP 설정이 누락되어 실제 메일은 발송되지 않았습니다.
+[2026-02-16 14:51:19,058] INFO in notification_service: [MOCK SMS] To: None | Msg:  [신규 지원서 접수] 이름: 홍길동_테스트 / 연락처: 010-1234-5678
+[2026-02-16 14:51:19,058] INFO in notification_service:   => SMS API 설정이 누락되어 실제 문자는 발송되지 않았습니다.
