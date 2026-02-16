@@ -5,6 +5,7 @@ import openpyxl
 from openpyxl import Workbook
 from openpyxl.drawing.image import Image as ExcelImage
 from openpyxl.styles import Font, Alignment, Border, Side
+from PIL import Image as PILImage
 from models import db, Application
 
 import logging
