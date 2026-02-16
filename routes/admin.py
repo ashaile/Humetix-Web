@@ -86,10 +86,15 @@ def master_view():
         e_date = datetime.strptime(end_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
         query = query.filter(Application.timestamp <= e_date)
             
-    apps = query.order_by(Application.timestamp.desc()).all()
-    data = [app.to_dict() for app in apps]
+    # 4. 페이지네이션 적용 (10개씩)
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+    pagination = query.order_by(Application.timestamp.desc()).paginate(page=page, per_page=per_page, error_out=False)
     
-    return render_template('admin.html', data=data, 
+    # 현재 페이지의 데이터만 딕셔너리로 변환
+    data = [app.to_dict() for app in pagination.items]
+    
+    return render_template('admin.html', data=data, pagination=pagination,
                          search_query=search_query, search_type=search_type,
                          filters=filters, start_date=start_date, end_date=end_date) # 필터 상태 유지 위해 전달
 

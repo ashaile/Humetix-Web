@@ -7,204 +7,305 @@
     <title>관리자 페이지</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        <style> :root {
+            --primary-color: #003057;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --bg-color: #f4f7f9;
+            --card-bg: #ffffff;
+            --border-color: #e9ecef;
+            --font-base: 'Noto Sans KR', sans-serif;
+        }
+
         body {
-            font-family: 'Noto Sans KR', sans-serif;
-            background: #f4f7f9;
+            font-family: var(--font-base);
+            background: var(--bg-color);
             padding: 20px;
+            color: #333;
+            font-size: 15px;
+            /* 기본 폰트 크기 통일 */
         }
 
         .container {
-            max-width: 1000px;
+            max-width: 1100px;
             margin: 0 auto;
-            background: white;
+            background: var(--card-bg);
             padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
 
+        /* Header & Buttons */
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #003057;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .header h2 {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            margin: 0;
+            font-weight: 700;
         }
 
         .btn {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            text-decoration: none;
             display: inline-flex;
             justify-content: center;
             align-items: center;
-            width: 160px;
-            /* 버튼 너비 고정 */
+            padding: 0.5rem 1rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: opacity 0.2s;
+            height: 38px;
             box-sizing: border-box;
-            /* 패딩 포함 너비 계산 */
-            height: 40px;
-            /* 높이도 고정하여 통일감 부여 */
-            vertical-align: middle;
         }
 
-        .btn-excel {
-            background: #28a745;
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
             color: white;
         }
 
-        .btn-delete {
-            background: #dc3545;
+        .btn-secondary {
+            background: var(--secondary-color);
             color: white;
         }
 
-        .btn-logout {
-            background: #6c757d;
+        .btn-success {
+            background: var(--success-color);
             color: white;
         }
 
-        .card {
-            border: 1px solid #ddd;
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-outline {
+            background: white;
+            border: 1px solid #ccc;
+            color: #555;
+        }
+
+        /* Search & Filter Section */
+        .filter-section {
+            background: #f8f9fa;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
             padding: 20px;
-            margin-bottom: 20px;
-            border-radius: 10px;
-            background: #fff;
+            margin-bottom: 25px;
+        }
+
+        .filter-group-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #555;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .form-control,
+        .form-select {
+            height: 38px;
+            padding: 6px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 0.95rem;
+        }
+
+        /* Applicant Card */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
             position: relative;
         }
 
         .card-header {
+            background: #f1f3f5;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border-color);
+            border-radius: 8px 8px 0 0;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            background: #f8f9fa;
-            padding: 10px;
-            margin: -20px -20px 15px -20px;
-            border-bottom: 1px solid #ddd;
-            border-radius: 10px 10px 0 0;
+            justify-content: space-between;
         }
 
-        .info-group {
-            margin-bottom: 10px;
+        .card-body {
+            padding: 20px;
+            display: flex;
+            gap: 20px;
         }
 
-        .label {
-            font-weight: bold;
-            color: #555;
-            display: inline-block;
-            width: 80px;
+        .applicant-info {
+            flex: 1;
         }
 
-        .photo-box {
-            position: absolute;
-            top: 60px;
-            right: 20px;
-            width: 100px;
-            height: 130px;
+        .applicant-photo {
+            width: 120px;
+            height: 160px;
+            background: #eee;
             border: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #aaa;
+            font-size: 0.8rem;
+            flex-shrink: 0;
         }
 
-        .photo-box img {
+        .applicant-photo img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
 
+        /* Info Labels */
+        .info-row {
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .label-badge {
+            display: inline-block;
+            width: 70px;
+            font-weight: 600;
+            color: #666;
+        }
+
+        .data-val {
+            color: #333;
+        }
+
+        .highlight {
+            color: #0056b3;
+            font-weight: 600;
+        }
+
+        .badge {
+            padding: 0.25em 0.6em;
+            font-size: 0.75em;
+            font-weight: 700;
+            color: #fff;
+            border-radius: 0.25rem;
+            vertical-align: text-top;
+        }
+
+        /* Table */
         .career-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
+            margin-top: 15px;
             font-size: 0.9rem;
         }
 
-        .career-table th,
+        .career-table th {
+            background: #f8f9fa;
+            color: #555;
+            padding: 8px;
+            border: 1px solid #dee2e6;
+        }
+
         .career-table td {
-            border: 1px solid #ddd;
-            padding: 5px;
+            padding: 8px;
+            border: 1px solid #dee2e6;
             text-align: center;
         }
 
-        .career-table th {
-            background: #f1f3f5;
-        }
-
-        .checkbox-wrapper {
-            margin-right: 10px;
-            transform: scale(1.5);
-        }
-
-        .search-container {
-            background: #fff;
-            padding: 15px 20px;
-            margin-bottom: 20px;
-            border-radius: 10px;
-            border: 1px solid #ddd;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .search-input {
-            padding: 8px 12px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            flex-grow: 1;
-        }
-
-        .search-select {
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-
-        .btn-search {
-            background: #003057;
-            color: white;
-            width: 80px;
-            height: 35px;
-        }
-
-        .memo-section {
+        /* Memo */
+        .memo-box {
             margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px dashed #ddd;
+            padding: 15px;
+            background: #fffcf0;
+            border: 1px dashed #e0dcbf;
+            border-radius: 6px;
         }
 
         .memo-textarea {
             width: 100%;
-            height: 60px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            height: 50px;
+            border: 1px solid #e0dcbf;
+            background: transparent;
             resize: none;
-            box-sizing: border-box;
-            background: #fffef0;
+            padding: 5px;
+            font-size: 0.9rem;
         }
 
-        .btn-save-memo {
-            margin-top: 5px;
-            background: #6c757d;
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 30px;
+        }
+
+        .page-link {
+            display: inline-flex;
+            width: 36px;
+            height: 36px;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #dee2e6;
+            color: var(--primary-color);
+            background: white;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .page-link.active {
+            background: var(--primary-color);
             color: white;
-            font-size: 0.8rem;
-            width: 100px;
-            height: 30px;
+            border-color: var(--primary-color);
+        }
+
+        .page-link:hover:not(.active) {
+            background: #e9ecef;
         }
     </style>
     <script>
         function toggleAll(source) {
-            var checkboxes = document.getElementsByName('selected_ids');
-            for (var i = 0; i < checkboxes.length; i++) {
-                checkboxes[i].checked = source.checked;
+            document.getElementsByName('selected_ids').forEach(checkbox => {
+                checkbox.checked = source.checked;
+            });
+        }
+
+        function goPage(page) {
+            const form = document.querySelector('form[action="{{ url_for("admin.master_view") }}"]');
+
+            // 페이지 입력 필드가 없으면 생성
+            let pageInput = form.querySelector('input[name="page"]');
+            if (!pageInput) {
+                pageInput = document.createElement('input');
+                pageInput.type = 'hidden';
+                pageInput.name = 'page';
+                form.appendChild(pageInput);
             }
+            pageInput.value = page;
+            form.submit();
         }
 
         async function saveMemo(appId) {
             const memoText = document.getElementById(`memo-${appId}`).value;
-            const btn = event.target;
+            const btn = document.getElementById(`btn-memo-${appId}`);
             const originalText = btn.innerText;
 
-            btn.innerText = "저장 중...";
+            btn.innerText = "저장...";
             btn.disabled = true;
 
             const formData = new FormData();
@@ -213,31 +314,471 @@
 
             try {
                 const response = await fetch(`/update_memo/${appId}`, {
-                    method: 'POST',
-                    body: formData
+                    method: 'POST', body: formData
                 });
                 const result = await response.json();
                 if (result.success) {
-                    btn.innerText = "저장됨!";
-                    btn.style.background = "#28a745";
+                    btn.innerText = "완료";
+                    btn.style.background = "var(--success-color)";
                     setTimeout(() => {
                         btn.innerText = originalText;
-                        btn.style.background = "#6c757d";
+                        btn.style.background = ""; // reset
                         btn.disabled = false;
-                    }, 2000);
+                    }, 1500);
                 } else {
-                    alert("저장 실패: " + result.message);
+                    alert("실패: " + result.message);
                     btn.disabled = false;
                     btn.innerText = originalText;
                 }
             } catch (error) {
-                console.error("Error saving memo:", error);
-                alert("오류가 발생했습니다.");
+                console.error(error);
+                alert("오류 발생");
                 btn.disabled = false;
                 btn.innerText = originalText;
             }
         }
     </script>
+</head>
+
+<body>
+    <div class="container">
+        <!-- 상단 헤더 -->
+        <div class="header">
+            <h2>관리자 페이지</h2>
+            <div>
+                <a href="/download_excel" class="btn btn-success">📊 엑셀 다운로드</a>
+                <a href="/logout" class="btn btn-secondary">로그아웃</a>
+            </div>
+        </div>
+
+        <!-- 검색 필터 섹션 -->
+        <div class="filter-section">
+            <form action="{{ url_for('admin.master_view') }}" method="get">
+                <!-- 검색어 -->
+                <div class="row mb-3" style="display: flex; gap: 10px; align-items: flex-end;">
+                    <div style="flex: 1;">
+                        <input type="text" name="q" class="form-control" placeholder="이름 또는 연락처 검색"
+                            value="{{ search_query }}">
+                        <input type="hidden" name="type" value="name"> <!-- 기본 검색 타입 유지 -->
+                    </div>
+                </div>
+
+                <!-- 상세 필터 그룹 -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px;">
+                    <div>
+                        <label class="filter-group-title">성별</label>
+                        <select name="gender" class="form-select">
+                            <option value="">전체</option>
+                            <option value="남" {% if filters.gender=='남' %}selected{% endif %}>남자</option>
+                            <option value="여" {% if filters.gender=='여' %}selected{% endif %}>여자</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="filter-group-title">근무형태</label>
+                        <select name="shift" class="form-select">
+                            <option value="">전체</option>
+                            <option value="가능" {% if filters.shift=='가능' %}selected{% endif %}>교대 가능</option>
+                            <option value="불가능" {% if filters.shift=='불가능' %}selected{% endif %}>교대 불가</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="filter-group-title">좌식근무</label>
+                        <select name="posture" class="form-select">
+                            <option value="">전체</option>
+                            <option value="가능" {% if filters.posture=='가능' %}selected{% endif %}>가능</option>
+                            <option value="불가능" {% if filters.posture=='불가능' %}selected{% endif %}>불가능</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="filter-group-title">잔업/특근</label>
+                        <select name="overtime" class="form-select">
+                            <option value="">전체</option>
+                            <option value="가능" {% if filters.overtime=='가능' %}selected{% endif %}>가능</option>
+                            <option value="불가능" {% if filters.overtime=='불가능' %}selected{% endif %}>불가능</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="filter-group-title">접수기간(시작)</label>
+                        <input type="date" name="start_date" class="form-control" value="{{ start_date or '' }}">
+                    </div>
+                    <div>
+                        <label class="filter-group-title">접수기간(종료)</label>
+                        <input type="date" name="end_date" class="form-control" value="{{ end_date or '' }}">
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px; text-align: center;">
+                    <button type="submit" class="btn btn-primary" style="width: 200px;">🔍 조건 검색</button>
+                    <a href="{{ url_for('admin.master_view') }}" class="btn btn-outline"
+                        style="margin-left: 10px;">초기화</a>
+                </div>
+            </form>
+        </div>
+
+        <!-- 리스트 컨트롤 -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 style="font-size: 1.2rem; margin: 0; font-weight: 700;">
+                총 <span style="color: var(--primary-color);">{{ pagination.total }}</span>명 지원
+            </h3>
+            <div>
+                <button onclick="if(confirm('선택한 항목을 삭제하시겠습니까?')) document.getElementById('deleteForm').submit();"
+                    class="btn btn-danger btn-sm">🗑️ 선택 삭제</button>
+            </div>
+        </div>
+
+        <!-- 데이터 리스트 -->
+        <form method="post" action="{{ url_for('admin.delete_selected') }}" id="deleteForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            {% if not data %}
+            <div style="text-align: center; padding: 60px; color: #999; border: 1px dashed #ddd; border-radius: 8px;">
+                접수된 지원서가 없거나 검색 결과가 없습니다.
+            </div>
+            {% endif %}
+
+            {% for entry in data %}
+            <div class="card">
+                <div class="card-header">
+                    <div style="display: flex; align-items: center;">
+                        <input type="checkbox" name="selected_ids" value="{{ entry.id }}"
+                            style="transform: scale(1.2); margin-right: 12px;">
+                        <span style="font-weight: 700; font-size: 1.1rem; margin-right: 8px;">{{ entry.info.name
+                            }}</span>
+
+                        {% if entry.info.gender == '남' %}
+                        <span class="badge" style="background-color: #007bff;">남</span>
+                        {% elif entry.info.gender == '여' %}
+                        <span class="badge" style="background-color: #dc3545;">여</span>
+                        {% endif %}
+
+                        <span style="color: #999; font-size: 0.85rem; margin-left: auto;">
+                            접수일: {{ entry.timestamp }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <!-- 사진 영역 -->
+                    {% if entry.photo %}
+                    <div class="applicant-photo">
+                        <a href="/view_photo/{{ entry.photo }}" target="_blank">
+                            <img src="/view_photo/{{ entry.photo }}">
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="applicant-photo">사진없음</div>
+                    {% endif %}
+
+                    <!-- 정보 영역 -->
+                    <div class="applicant-info">
+                        <div class="row" style="display: flex; gap: 30px;">
+                            <div style="flex: 1;">
+                                <div class="info-row"><span class="label-badge">생년월일</span> <span class="data-val">{{
+                                        entry.info.birth }}</span></div>
+                                <div class="info-row"><span class="label-badge">연락처</span> <span class="data-val">{{
+                                        entry.info.phone }}</span></div>
+                                <div class="info-row"><span class="label-badge">주소</span> <span class="data-val">{{
+                                        entry.info.address }}</span></div>
+                            </div>
+                            <div style="flex: 1;">
+                                <div class="info-row"><span class="label-badge">신체</span> <span class="data-val">{{
+                                        entry.body.height }}cm / {{ entry.body.weight }}kg</span></div>
+                                <div class="info-row"><span class="label-badge">근무</span>
+                                    <span class="data-val">
+                                        교대:{{ entry.work_condition.shift or '-' }} /
+                                        좌식:{{ entry.work_condition.posture or '-' }} /
+                                        잔업:{{ entry.work_condition.overtime or '-' }}
+                                    </span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label-badge">일정</span>
+                                    <span class="highlight">면접: {{ entry.work_condition.interview_date or '미정' }}</span>
+                                    /
+                                    <span class="highlight">입사: {{ entry.work_condition.start_date or '미정' }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 경력 테이블 (간소화) -->
+                        <table class="career-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 20%;">회사명</th>
+                                    <th style="width: 25%;">기간</th>
+                                    <th style="width: 20%;">업무</th>
+                                    <th style="width: 35%;">퇴사사유</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if entry.career %}
+                                {% for car in entry.career %}
+                                <tr>
+                                    <td>{{ car.company }}</td>
+                                    <td>{{ car.start }}~{{ car.end }}</td>
+                                    <td>{{ car.role }}</td>
+                                    <td>{{ car.reason }}</td>
+                                </tr>
+                                {% endfor %}
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" style="color: #999;">경력 사항 없음</td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+
+                        <!-- 메모 -->
+                        <div class="memo-box">
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <div style="font-weight: 700; font-size: 0.85rem; color: #888;">관리자 메모</div>
+                                <button type="button" id="btn-memo-{{ entry.id }}" onclick="saveMemo('{{ entry.id }}')"
+                                    class="btn btn-secondary"
+                                    style="height: 28px; font-size: 0.8rem; padding: 0 10px;">저장</button>
+                            </div>
+                            <textarea id="memo-{{ entry.id }}" class="memo-textarea"
+                                placeholder="특이사항 입력">{{ entry.memo }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </form>
+
+        <!-- 페이지네이션 -->
+        {% if pagination.total > 0 %}
+        <div class="pagination">
+            {% if pagination.has_prev %}
+            <a href="javascript:goPage({{ pagination.prev_num }})" class="page-link">‹</a>
+            {% endif %}
+
+            {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if page_num %}
+            {% if page_num == pagination.page %}
+            <span class="page-link active">{{ page_num }}</span>
+            {% else %}
+            <a href="javascript:goPage({{ page_num }})" class="page-link">{{ page_num }}</a>
+            {% endif %}
+            {% else %}
+            <span class="page-link" style="border:none;">...</span>
+            {% endif %}
+            {% endfor %}
+
+            {% if pagination.has_next %}
+            <a href="javascript:goPage({{ pagination.next_num }})" class="page-link">›</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</body>
+
+</html>
+.btn {
+padding: 8px 15px;
+border: none;
+border-radius: 5px;
+cursor: pointer;
+font-weight: bold;
+text-decoration: none;
+display: inline-flex;
+justify-content: center;
+align-items: center;
+width: 160px;
+/* 버튼 너비 고정 */
+box-sizing: border-box;
+/* 패딩 포함 너비 계산 */
+height: 40px;
+/* 높이도 고정하여 통일감 부여 */
+vertical-align: middle;
+}
+
+.btn-excel {
+background: #28a745;
+color: white;
+}
+
+.btn-delete {
+background: #dc3545;
+color: white;
+}
+
+.btn-logout {
+background: #6c757d;
+color: white;
+}
+
+.card {
+border: 1px solid #ddd;
+padding: 20px;
+margin-bottom: 20px;
+border-radius: 10px;
+background: #fff;
+position: relative;
+}
+
+.card-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+background: #f8f9fa;
+padding: 10px;
+margin: -20px -20px 15px -20px;
+border-bottom: 1px solid #ddd;
+border-radius: 10px 10px 0 0;
+}
+
+.info-group {
+margin-bottom: 10px;
+}
+
+.label {
+font-weight: bold;
+color: #555;
+display: inline-block;
+width: 80px;
+}
+
+.photo-box {
+position: absolute;
+top: 60px;
+right: 20px;
+width: 100px;
+height: 130px;
+border: 1px solid #ddd;
+}
+
+.photo-box img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+}
+
+.career-table {
+width: 100%;
+border-collapse: collapse;
+margin-top: 10px;
+font-size: 0.9rem;
+}
+
+.career-table th,
+.career-table td {
+border: 1px solid #ddd;
+padding: 5px;
+text-align: center;
+}
+
+.career-table th {
+background: #f1f3f5;
+}
+
+.checkbox-wrapper {
+margin-right: 10px;
+transform: scale(1.5);
+}
+
+.search-container {
+background: #fff;
+padding: 15px 20px;
+margin-bottom: 20px;
+border-radius: 10px;
+border: 1px solid #ddd;
+display: flex;
+align-items: center;
+gap: 10px;
+}
+
+.search-input {
+padding: 8px 12px;
+border: 1px solid #ccc;
+border-radius: 5px;
+flex-grow: 1;
+}
+
+.search-select {
+padding: 8px;
+border: 1px solid #ccc;
+border-radius: 5px;
+}
+
+.btn-search {
+background: #003057;
+color: white;
+width: 80px;
+height: 35px;
+}
+
+.memo-section {
+margin-top: 15px;
+padding-top: 15px;
+border-top: 1px dashed #ddd;
+}
+
+.memo-textarea {
+width: 100%;
+height: 60px;
+padding: 10px;
+border: 1px solid #ddd;
+border-radius: 5px;
+resize: none;
+box-sizing: border-box;
+background: #fffef0;
+}
+
+.btn-save-memo {
+margin-top: 5px;
+background: #6c757d;
+color: white;
+font-size: 0.8rem;
+width: 100px;
+height: 30px;
+}
+</style>
+<script>
+    function toggleAll(source) {
+        var checkboxes = document.getElementsByName('selected_ids');
+        for (var i = 0; i < checkboxes.length; i++) {
+            checkboxes[i].checked = source.checked;
+        }
+    }
+
+    async function saveMemo(appId) {
+        const memoText = document.getElementById(`memo-${appId}`).value;
+        const btn = event.target;
+        const originalText = btn.innerText;
+
+        btn.innerText = "저장 중...";
+        btn.disabled = true;
+
+        const formData = new FormData();
+        formData.append('memo', memoText);
+        formData.append('csrf_token', '{{ csrf_token() }}');
+
+        try {
+            const response = await fetch(`/update_memo/${appId}`, {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            if (result.success) {
+                btn.innerText = "저장됨!";
+                btn.style.background = "#28a745";
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                    btn.style.background = "#6c757d";
+                    btn.disabled = false;
+                }, 2000);
+            } else {
+                alert("저장 실패: " + result.message);
+                btn.disabled = false;
+                btn.innerText = originalText;
+            }
+        } catch (error) {
+            console.error("Error saving memo:", error);
+            alert("오류가 발생했습니다.");
+            btn.disabled = false;
+            btn.innerText = originalText;
+        }
+    }
+</script>
 </head>
 
 <body>
