@@ -133,12 +133,108 @@
             margin-right: 10px;
             transform: scale(1.5);
         }
+
+        .search-container {
+            background: #fff;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-input {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            flex-grow: 1;
+        }
+
+        .search-select {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .btn-search {
+            background: #003057;
+            color: white;
+            width: 80px;
+            height: 35px;
+        }
+
+        .memo-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px dashed #ddd;
+        }
+
+        .memo-textarea {
+            width: 100%;
+            height: 60px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: none;
+            box-sizing: border-box;
+            background: #fffef0;
+        }
+
+        .btn-save-memo {
+            margin-top: 5px;
+            background: #6c757d;
+            color: white;
+            font-size: 0.8rem;
+            width: 100px;
+            height: 30px;
+        }
     </style>
     <script>
         function toggleAll(source) {
             var checkboxes = document.getElementsByName('selected_ids');
             for (var i = 0; i < checkboxes.length; i++) {
                 checkboxes[i].checked = source.checked;
+            }
+        }
+
+        async function saveMemo(appId) {
+            const memoText = document.getElementById(`memo-${appId}`).value;
+            const btn = event.target;
+            const originalText = btn.innerText;
+
+            btn.innerText = "저장 중...";
+            btn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('memo', memoText);
+            formData.append('csrf_token', '{{ csrf_token() }}');
+
+            try {
+                const response = await fetch(`/update_memo/${appId}`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (result.success) {
+                    btn.innerText = "저장됨!";
+                    btn.style.background = "#28a745";
+                    setTimeout(() => {
+                        btn.innerText = originalText;
+                        btn.style.background = "#6c757d";
+                        btn.disabled = false;
+                    }, 2000);
+                } else {
+                    alert("저장 실패: " + result.message);
+                    btn.disabled = false;
+                    btn.innerText = originalText;
+                }
+            } catch (error) {
+                console.error("Error saving memo:", error);
+                alert("오류가 발생했습니다.");
+                btn.disabled = false;
+                btn.innerText = originalText;
             }
         }
     </script>
@@ -154,6 +250,22 @@
                     삭제</button>
                 <a href="/logout" class="btn btn-logout">로그아웃</a>
             </div>
+        </div>
+
+        <div class="search-container">
+            <form action="/humetix_master_99" method="GET"
+                style="display:flex; width:100%; gap:10px; align-items:center;">
+                <select name="type" class="search-select">
+                    <option value="name" {% if search_type=='name' %}selected{% endif %}>이름</option>
+                    <option value="phone" {% if search_type=='phone' %}selected{% endif %}>전화번호</option>
+                </select>
+                <input type="text" name="q" class="search-input" placeholder="검색어를 입력하세요..."
+                    value="{{ search_query or '' }}">
+                <button type="submit" class="btn btn-search">검색</button>
+                {% if search_query %}
+                <a href="/humetix_master_99" style="font-size:0.9rem; color:#666;">초기화</a>
+                {% endif %}
+            </form>
         </div>
 
         <form id="delete-form" action="/delete_selected" method="POST" onsubmit="return confirm('정말 삭제하시겠습니까?');">
@@ -230,6 +342,13 @@
                         </tr>
                         {% endif %}
                     </table>
+                </div>
+
+                <div class="memo-section">
+                    <div style="font-weight:bold; margin-bottom:5px; font-size:0.9rem;">관리자 메모</div>
+                    <textarea id="memo-{{ entry.id }}" class="memo-textarea"
+                        placeholder="메모를 입력하세요...">{{ entry.memo }}</textarea>
+                    <button type="button" class="btn btn-save-memo" onclick="saveMemo('{{ entry.id }}')">메모 저장</button>
                 </div>
             </div>
             {% endfor %}

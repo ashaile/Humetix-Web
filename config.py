@@ -57,6 +57,13 @@ class ProductionConfig(Config):
             raise RuntimeError("SECRET_KEY environment variable is not set")
         if not os.environ.get('ADMIN_PASSWORD'):
             raise RuntimeError("ADMIN_PASSWORD environment variable is not set")
+        
+        # 알림 기능 설정 (필수는 아니지만 설정되어 있으면 사용됨)
+        self.SMTP_USER = os.environ.get('SMTP_USER')
+        self.SMTP_PASS = os.environ.get('SMTP_PASS')
+        self.ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL')
+        self.SMS_API_KEY = os.environ.get('SMS_API_KEY')
+        self.ADMIN_PHONE = os.environ.get('ADMIN_PHONE')
 
 # 환경 변수에 따라 설정 클래스 선택
 config_by_name = {

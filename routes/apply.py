@@ -112,6 +112,10 @@ def submit():
             db.session.add(new_app)
             db.session.commit()
             
+            # 3. 관리자 알림 발송 (이메일/SMS)
+            from services.notification_service import NotificationService
+            NotificationService.send_admin_notification(new_app.to_dict())
+            
             return "<h1>지원서 접수 완료!</h1><script>setTimeout(function(){location.href='/';}, 2000);</script>"
             
         except ValueError as ve:

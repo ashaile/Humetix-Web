@@ -22,10 +22,36 @@ def master_view():
     if not session.get('is_admin'):
         return redirect(url_for('auth.login'))
     
-    apps = Application.query.order_by(Application.timestamp.desc()).all()
+    search_type = request.args.get('type', 'name')
+    search_query = request.args.get('q', '')
+    
+    query = Application.query
+    
+    if search_query:
+        if search_type == 'name':
+            query = query.filter(Application.name.contains(search_query))
+        elif search_type == 'phone':
+            query = query.filter(Application.phone.contains(search_query))
+            
+    apps = query.order_by(Application.timestamp.desc()).all()
     data = [app.to_dict() for app in apps]
     
-    return render_template('admin.html', data=data)
+    return render_template('admin.html', data=data, search_query=search_query, search_type=search_type)
+
+@admin_bp.route('/update_memo/<app_id>', methods=['POST'])
+def update_memo(app_id):
+    if not session.get('is_admin'):
+        return {"success": False, "message": "Unauthorized"}, 401
+        
+    app = Application.query.get(app_id)
+    if not app:
+        return {"success": False, "message": "Application not found"}, 404
+        
+    memo = request.form.get('memo', '')
+    app.memo = memo
+    db.session.commit()
+    
+    return {"success": True, "message": "Memo updated"}
 
 @admin_bp.route('/delete_selected', methods=['POST'])
 def delete_selected():

@@ -38,6 +38,7 @@ class Application(db.Model):
     # 기타 희망사항
     advance_pay = db.Column(db.String(10), default="")
     insurance_type = db.Column(db.String(20), default="4대보험")
+    memo = db.Column(db.Text, default="")  # 관리자용 메모 추가
     
     # 경력 관계
     careers = db.relationship('Career', backref='application', cascade='all, delete-orphan', lazy=True)
@@ -48,6 +49,7 @@ class Application(db.Model):
             "id": self.id,
             "timestamp": self.timestamp.strftime('%Y-%m-%d %H:%M:%S') if self.timestamp else "",
             "photo": self.photo,
+            "memo": self.memo or "", # 메모 데이터 추가
             "info": {
                 "name": self.name,
                 "birth": self.birth.strftime('%Y-%m-%d') if self.birth else "",
