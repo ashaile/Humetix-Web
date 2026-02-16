@@ -367,7 +367,20 @@
             </div>
 
 
+            <div style="margin-bottom: 15px;">
+                <button onclick="if(confirm('선택한 항목을 삭제하시겠습니까?')) document.getElementById('deleteForm').submit();"
+                    class="btn btn-delete">🗑️ 선택 삭제</button>
+                <label style="margin-left: 15px; cursor: pointer;">
+                    <input type="checkbox" onclick="toggleAll(this)"> 전체 선택
+                </label>
+            </div>
+
             <form method="post" action="{{ url_for('admin.delete_selected') }}" id="deleteForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                {% if not data %}
+                <p style="text-align:center; padding:50px;">접수된 지원서가 없습니다.</p>
+                {% endif %}
 
                 {% for entry in data %}
                 <div class="card">
@@ -377,31 +390,17 @@
                             <span style="font-weight:bold; font-size:1.1rem;">{{ entry.info.name }} ({{ entry.info.birth
                                 }})</span>
                             {% if entry.info.gender %}
-                            <span class="badge bg-secondary ms-2">{{ entry.info.gender }}</span>
+                            <span
+                                class="badge {% if entry.info.gender == '남' %}bg-primary{% else %}bg-danger{% endif %} ms-2"
+                                style="font-size: 0.8rem; opacity: 0.8; color: white;">{{ entry.info.gender }}</span>
                             {% endif %}
                             <span style="color:#888; font-size:0.9rem; margin-left:10px;">접수: {{ entry.timestamp
                                 }}</span>
-                        </div>nput type="checkbox" onclick="toggleAll(this)"> 전체 선택
+                        </div>
                     </div>
 
-                    {% if not data %}
-                    <p style="text-align:center; padding:50px;">접수된 지원서가 없습니다.</p>
-                    {% endif %}
-
-                    {% for entry in data %}
-                    <div class="card">
-                        <div class="card-header">
-                            <div>
-                                <input type="checkbox" name="selected_ids" value="{{ entry.id }}"
-                                    class="checkbox-wrapper">
-                                <span style="font-weight:bold; font-size:1.1rem;">{{ entry.info.name }} ({{
-                                    entry.info.birth
-                                    }})</span>
-                                <span style="color:#888; font-size:0.9rem; margin-left:10px;">접수: {{ entry.timestamp
-                                    }}</span>
-                            </div>
-                        </div>
-
+                    <!-- Card Body Wrapper (implicit in previous design but making it explicit helps structure) -->
+                    <div style="padding: 10px;">
                         {% if entry.photo %}
                         <div class="photo-box">
                             <a href="/view_photo/{{ entry.photo }}" target="_blank">
@@ -420,22 +419,28 @@
                             <div class="info-group"><span class="label">주소</span> {{ entry.info.address }}</div>
                             <div class="info-group"><span class="label">신체</span> {{ entry.body.height }}cm / {{
                                 entry.body.weight }}kg / {{ entry.body.vision }} / {{ entry.body.shoes }} / {{
-                                entry.body.tshirt
-                                }}</div>
-                            <div class="info-group"><span class="label">근무조건</span> {{ entry.work_condition.shift }} /
-                                {{
-                                entry.work_condition.posture }} / 잔업:{{ entry.work_condition.overtime }} / 특근:{{
-                                entry.work_condition.holiday }}</div>
-                            <div class="info-group"><span class="label">희망일정</span> 면접가능: <span
-                                    style="color:#0056b3; font-weight:bold;">{{ entry.work_condition.interview_date
-                                    }}</span> /
+                                entry.body.tshirt }}</div>
+                            <div class="info-group">
+                                <span class="label">근무조건</span>
+                                교대: {{ entry.work_condition.shift or '없음' }} /
+                                자세: {{ entry.work_condition.posture or '없음' }} /
+                                잔업: {{ entry.work_condition.overtime or '없음' }} /
+                                특근: {{ entry.work_condition.holiday or '없음' }}
+                            </div>
+                            <div class="info-group">
+                                <span class="label">희망일정</span>
+                                면접가능: <span style="color:#0056b3; font-weight:bold;">{{
+                                    entry.work_condition.interview_date or '기록없음' }}</span> /
                                 입사희망: <span style="color:#0056b3; font-weight:bold;">{{ entry.work_condition.start_date
-                                    }}</span></div>
-                            <div class="info-group"><span class="label">기타</span> 가불: <span style="font-weight:bold;">{{
-                                    entry.extra.advance_pay if entry.extra and entry.extra.advance_pay else '비희망'
-                                    }}</span> /
+                                    or '기록없음' }}</span>
+                            </div>
+                            <div class="info-group">
+                                <span class="label">기타</span>
+                                가불: <span style="font-weight:bold;">{{ entry.extra.advance_pay if entry.extra and
+                                    entry.extra.advance_pay else '비희망' }}</span> /
                                 급여형태: <span style="font-weight:bold;">{{ entry.extra.insurance_type if entry.extra and
-                                    entry.extra.insurance_type else '4대보험' }}</span></div>
+                                    entry.extra.insurance_type else '4대보험' }}</span>
+                            </div>
 
                             <table class="career-table">
                                 <tr>
@@ -469,8 +474,8 @@
                                 저장</button>
                         </div>
                     </div>
-                    {% endfor %}
-
+                </div>
+                {% endfor %}
             </form>
         </div>
 </body>
