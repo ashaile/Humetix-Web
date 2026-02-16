@@ -74,6 +74,7 @@ def submit():
                 photo=photo_filename,
                 name=request.form.get('name'),
                 birth=birth_date,
+                gender=request.form.get('gender'), # 성별 저장
                 phone=request.form.get('phone'),
                 email=request.form.get('email'),
                 address=request.form.get('address'),

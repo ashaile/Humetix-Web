@@ -17,6 +17,7 @@ class Application(db.Model):
     birth = db.Column(db.Date)
     phone = db.Column(db.String(20))
     email = db.Column(db.String(100))
+    gender = db.Column(db.String(10)) # 성별 추가
     address = db.Column(db.String(200))
     
     # 신체정보
@@ -53,6 +54,7 @@ class Application(db.Model):
             "info": {
                 "name": self.name,
                 "birth": self.birth.strftime('%Y-%m-%d') if self.birth else "",
+                "gender": self.gender,
                 "phone": self.phone,
                 "email": self.email,
                 "address": self.address,

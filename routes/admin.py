@@ -25,18 +25,72 @@ def master_view():
     search_type = request.args.get('type', 'name')
     search_query = request.args.get('q', '')
     
+    # 상세 필터 파라미터 받기
+    filters = {
+        'gender': request.args.get('gender'),
+        'shift': request.args.get('shift'),
+        'posture': request.args.get('posture'),
+        'overtime': request.args.get('overtime'),
+        'holiday': request.args.get('holiday'),
+        'agree': request.args.get('agree'),
+        'advance_pay': request.args.get('advance_pay'),
+        'insurance_type': request.args.get('insurance_type'),
+    }
+    
+    # 날짜 필터
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
     query = Application.query
     
+    # 1. 기본 검색 (이름/연락처)
     if search_query:
         if search_type == 'name':
             query = query.filter(Application.name.contains(search_query))
         elif search_type == 'phone':
             query = query.filter(Application.phone.contains(search_query))
             
+    # 2. 상세 필터 적용
+    if filters['gender']:
+        query = query.filter(Application.gender == filters['gender'])
+        
+    if filters['shift']:
+        query = query.filter(Application.shift == filters['shift'])
+        
+    if filters['posture']:
+        query = query.filter(Application.posture == filters['posture'])
+        
+    if filters['overtime']:
+        query = query.filter(Application.overtime == filters['overtime'])
+        
+    if filters['holiday']:
+        query = query.filter(Application.holiday == filters['holiday'])
+
+    if filters['agree']: # 정보제공 동의 여부 (on/off)
+        is_agree = True if filters['agree'] == 'on' else False
+        query = query.filter(Application.agree == is_agree)
+        
+    if filters['advance_pay']:
+        query = query.filter(Application.advance_pay == filters['advance_pay'])
+        
+    if filters['insurance_type']:
+        query = query.filter(Application.insurance_type == filters['insurance_type'])
+    
+    # 3. 날짜 범위 검색 (접수일 기준)
+    if start_date:
+        s_date = datetime.strptime(start_date, '%Y-%m-%d')
+        query = query.filter(Application.timestamp >= s_date)
+        
+    if end_date:
+        e_date = datetime.strptime(end_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+        query = query.filter(Application.timestamp <= e_date)
+            
     apps = query.order_by(Application.timestamp.desc()).all()
     data = [app.to_dict() for app in apps]
     
-    return render_template('admin.html', data=data, search_query=search_query, search_type=search_type)
+    return render_template('admin.html', data=data, 
+                         search_query=search_query, search_type=search_type,
+                         filters=filters, start_date=start_date, end_date=end_date) # 필터 상태 유지 위해 전달
 
 @admin_bp.route('/update_memo/<app_id>', methods=['POST'])
 def update_memo(app_id):
