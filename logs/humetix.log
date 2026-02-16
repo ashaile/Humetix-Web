@@ -306,3 +306,30 @@ jinja2.exceptions.UndefinedError: 'entry' is undefined
 [2026-02-16 14:51:19,058] INFO in notification_service:   => SMTP 설정이 누락되어 실제 메일은 발송되지 않았습니다.
 [2026-02-16 14:51:19,058] INFO in notification_service: [MOCK SMS] To: None | Msg:  [신규 지원서 접수] 이름: 홍길동_테스트 / 연락처: 010-1234-5678
 [2026-02-16 14:51:19,058] INFO in notification_service:   => SMS API 설정이 누락되어 실제 문자는 발송되지 않았습니다.
+[2026-02-16 15:02:43,138] INFO in _internal: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.50.3:5000
+[2026-02-16 15:02:43,139] INFO in _internal: [33mPress CTRL+C to quit[0m
+[2026-02-16 15:02:43,972] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 15:02:43] "HEAD / HTTP/1.1" 200 -
+[2026-02-16 15:02:43,973] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 15:02:43] "GET / HTTP/1.1" 200 -
+[2026-02-16 15:02:52,155] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 15:02:52] "[33mHEAD /admin HTTP/1.1[0m" 404 -
+[2026-02-16 15:02:52,157] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 15:02:52] "[33mGET /admin HTTP/1.1[0m" 404 -
+[2026-02-16 15:03:16,072] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 15:03:16] "HEAD /login HTTP/1.1" 200 -
+[2026-02-16 15:03:16,074] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 15:03:16] "GET /login HTTP/1.1" 200 -
+[2026-02-16 15:03:28,506] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 15:03:28] "[32mGET /humetix_master_99 HTTP/1.1[0m" 302 -
+[2026-02-16 15:03:28,508] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 15:03:28] "[32mGET /humetix_master_99 HTTP/1.1[0m" 302 -
+[2026-02-16 15:03:28,521] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 15:03:28] "GET /login HTTP/1.1" 200 -
+[2026-02-16 15:03:28,523] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 15:03:28] "GET /login HTTP/1.1" 200 -
+[2026-02-16 15:03:28,989] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 15:03:28] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+[2026-02-16 15:03:29,006] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 15:03:29] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+[2026-02-16 15:03:31,403] INFO in auth: Admin login success from 127.0.0.1
+[2026-02-16 15:03:31,404] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 15:03:31] "[32mPOST /login HTTP/1.1[0m" 302 -
+[2026-02-16 15:03:31,433] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 15:03:31] "GET /humetix_master_99 HTTP/1.1" 200 -
+[2026-02-16 15:03:31,473] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 15:03:31] "GET /view_photo/20260215_110659_id.png HTTP/1.1" 200 -
+[2026-02-16 15:03:31,473] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 15:03:31] "GET /view_photo/20260215_102151_id.png HTTP/1.1" 200 -
+[2026-02-16 15:03:43,136] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 15:03:43] "GET /humetix_master_99?type=name&q=홍길 HTTP/1.1" 200 -
+[2026-02-16 15:03:46,245] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 15:03:46] "GET /humetix_master_99?type=name&q=홍길 HTTP/1.1" 200 -
+[2026-02-16 15:03:46,744] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 15:03:46] "GET /humetix_master_99 HTTP/1.1" 200 -
+[2026-02-16 15:03:46,767] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 15:03:46] "[36mGET /view_photo/20260215_110659_id.png HTTP/1.1[0m" 304 -
+[2026-02-16 15:03:46,769] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 15:03:46] "[36mGET /view_photo/20260215_102151_id.png HTTP/1.1[0m" 304 -
