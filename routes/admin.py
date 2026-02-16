@@ -167,10 +167,25 @@ def download_excel():
                 try:
                     img_path = os.path.join(UPLOAD_DIR, entry['photo'])
                     if os.path.exists(img_path):
-                        img = ExcelImage(img_path)
-                        img.width = 150
-                        img.height = 200
-                        ws.add_image(img, f"A{photo_start_row}")
+                        from PIL import Image as PILImage
+                        from io import BytesIO
+                        
+                        # PIL을 사용하여 이미지를 열고 PNG로 변환 (메모리 내)
+                        with PILImage.open(img_path) as pil_img:
+                            # MPO 파일 등 특이 포맷 대응을 위해 RGB로 변환
+                            if pil_img.mode in ("RGBA", "P"):
+                                pil_img = pil_img.convert("RGBA")
+                            else:
+                                pil_img = pil_img.convert("RGB")
+                            
+                            img_io = BytesIO()
+                            pil_img.save(img_io, format="PNG")
+                            img_io.seek(0)
+                            
+                            img = ExcelImage(img_io)
+                            img.width = 150
+                            img.height = 200
+                            ws.add_image(img, f"A{photo_start_row}")
                     else:
                         img_cell.value = "이미지 파일 없음"
                         img_cell.alignment = center_align
