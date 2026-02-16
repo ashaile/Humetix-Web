@@ -101,6 +101,20 @@
                     <div class="col-6"><label class="form-label">생년월일</label><input type="date" name="birth"
                             class="form-control" required></div>
                 </div>
+                <!-- 성별 추가 -->
+                <div class="mt-3">
+                    <label class="form-label">성별 <span class="text-danger">*</span></label>
+                    <div class="d-flex gap-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="gender" id="gender_m" value="남" required>
+                            <label class="form-check-label" for="gender_m">남자</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="gender" id="gender_f" value="여" required>
+                            <label class="form-check-label" for="gender_f">여자</label>
+                        </div>
+                    </div>
+                </div>
                 <div class="row g-3 mt-1">
                     <div class="col-6"><label class="form-label">핸드폰 번호</label><input type="tel" name="phone"
                             class="form-control" placeholder="010-0000-0000" required oninput="autoHyphen(this)"
