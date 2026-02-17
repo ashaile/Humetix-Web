@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "Bash(where:*)",
+      "Bash(msiexec:*)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" --version)",
+      "Bash(\"/c/Program Files \\(x86\\)/GitHub CLI/gh.exe\" --version)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" auth status)",
+      "Bash(start cmd /k \"\"\"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\"\" auth login\")",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" pr create --title \"feat: 보안, UX, 아키텍처 전면 개선\" --body \"$\\(cat <<''EOF''\n## Summary\n- **보안 강화**: 파일 기반 레이트 리미팅, `@admin_required` 데코레이터, 세션 재생성, 해시 기반 비밀번호 비교, `view_photo` 인증, `clear_data` 확인 텍스트 요구, `secure_filename\\(\\)` 적용\n- **UX 개선**: 인라인 `<script>alert\\(\\)</script>` → flash 메시지 + redirect 전환, 지원자 상태 워크플로우\\(접수→서류심사→면접예정→합격/불합격/보류\\), 상세보기/수정 페이지, 대시보드 통계바, 제출 완료 페이지\n- **성능 & 아키텍처**: N+1 쿼리 해결\\(`joinedload`\\), 트랜잭션 정합성\\(DB 커밋 → 파일 삭제\\), `config_by_name` 패턴, 구조화된 로깅\\(`dictConfig`\\), `/health` 엔드포인트, 비동기 SMTP 알림\\(`threading`\\)\n\n## Changes \\(14 files: +1,179 / -1,189\\)\n| File | Description |\n|------|-------------|\n| `routes/auth.py` | 파일 기반 레이트 리미팅, `@admin_required`, 세션 재생성 |\n| `routes/admin.py` | 인증 데코레이터, 상태 관리, 상세/수정, 통계 API, 엑셀 필터 |\n| `routes/apply.py` | flash 메시지, `secure_filename`, 서버 검증, 비동기 알림 |\n| `models.py` | status 필드, DB 인덱스, timezone-aware datetime |\n| `config.py` | DB URI 이동, `config_by_name`, 구조화된 로깅 설정 |\n| `app.py` | `config_by_name` 적용, `/health` 엔드포인트, `dictConfig` |\n| `templates/admin.html` | 통계바, 상태 필터, AJAX 상태 변경, flash 메시지 |\n| `templates/login.html` | flash 메시지 지원 |\n| `templates/detail.html` | 🆕 지원자 상세 보기 |\n| `templates/edit.html` | 🆕 지원자 수정 폼 |\n| `templates/submit_success.html` | 🆕 제출 완료 페이지 |\n| `services/notification_service.py` | 실제 SMTP 구현 + fallback 로깅 |\n| `requirements.txt` | Pillow 버전 핀 고정 |\n| `deploy.sh` | `set -e`, 에러 핸들링, 헬스체크 |\n\n## Test plan\n- [ ] 로그인 레이트 리미팅 동작 확인 \\(5회 실패 후 차단\\)\n- [ ] 관리자 미로그인 시 모든 admin 라우트 리다이렉트 확인\n- [ ] 지원자 상태 변경 \\(AJAX\\) 정상 동작 확인\n- [ ] 상세 보기 / 수정 페이지 렌더링 확인\n- [ ] 엑셀 다운로드 시 필터 조건 반영 확인\n- [ ] `/health` 엔드포인트 응답 확인\n- [ ] DB 마이그레이션 \\(`flask db migrate/upgrade`\\) 실행 필요\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\nEOF\n\\)\")",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(curl:*)"
+    ]
+  }
+}
