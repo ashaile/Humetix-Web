@@ -1,5 +1,8 @@
 import logging
 import os
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 logger = logging.getLogger(__name__)
 
@@ -12,15 +15,15 @@ class NotificationService:
         """
         name = application_data.get('info', {}).get('name', '알 수 없음')
         phone = application_data.get('info', {}).get('phone', '알 수 없음')
-        
-        message = f" [신규 지원서 접수] 이름: {name} / 연락처: {phone}"
-        
+
+        message = f"[신규 지원서 접수] 이름: {name} / 연락처: {phone}"
+
         # 1. 이메일 알림
         NotificationService.send_email(
             subject="[Humetix] 신규 지원서가 접수되었습니다.",
             body=message
         )
-        
+
         # 2. SMS 알림
         NotificationService.send_sms(message)
 
@@ -35,8 +38,20 @@ class NotificationService:
             logger.info("  => SMTP 설정이 누락되어 실제 메일은 발송되지 않았습니다.")
             return
 
-        # TODO: 실제 SMTP 발송 로직 (smtplib 등)
-        logger.info(f"[REAL EMAIL SENT] To: {admin_email}")
+        try:
+            msg = MIMEMultipart()
+            msg['From'] = smtp_user
+            msg['To'] = admin_email
+            msg['Subject'] = subject
+            msg.attach(MIMEText(body, 'plain', 'utf-8'))
+
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+                server.login(smtp_user, smtp_pass)
+                server.send_message(msg)
+
+            logger.info(f"[EMAIL SENT] To: {admin_email} | Subject: {subject}")
+        except Exception as e:
+            logger.error(f"[EMAIL FAILED] {e}")
 
     @staticmethod
     def send_sms(message):
@@ -48,5 +63,10 @@ class NotificationService:
             logger.info("  => SMS API 설정이 누락되어 실제 문자는 발송되지 않았습니다.")
             return
 
-        # TODO: 실제 SMS API 연동 로직 (Aligo, CoolSMS 등)
-        logger.info(f"[REAL SMS SENT] To: {admin_phone}")
+        try:
+            # CoolSMS / Aligo 등 API 연동 시 여기에 구현
+            # 현재는 API 키가 설정되면 로그만 출력
+            logger.info(f"[SMS READY] To: {admin_phone} | Msg: {message}")
+            logger.info("  => SMS API 연동이 필요합니다. (CoolSMS/Aligo)")
+        except Exception as e:
+            logger.error(f"[SMS FAILED] {e}")

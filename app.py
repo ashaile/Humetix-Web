@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify
 from dotenv import load_dotenv
 from flask_wtf.csrf import CSRFProtect
 from flask_migrate import Migrate
@@ -29,10 +29,6 @@ if not os.path.exists(LOG_DIR):
 from logging.config import dictConfig
 dictConfig(app_config.get_logging_config(LOG_DIR))
 
-# DB 설정 (config.py로 이동하지 않은 동적 경로 설정 등은 유지 가능하나, 여기서는 URI도 config로 뺄 수 있음. 
-# 현재 구조 유지를 위해 DB URI는 유지하되, 나머지는 Config에서 처리됨)
-app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(BASE_DIR, 'humetix.db')}"
-
 # 초기화
 db.init_app(app)
 migrate = Migrate(app, db)
@@ -56,7 +52,18 @@ app.register_blueprint(admin_bp)
 def index():
     return render_template('index.html')
 
+@app.route('/privacy')
+def privacy():
+    return render_template('privacy.html')
 
+@app.route('/health')
+def health_check():
+    """서버 상태 모니터링 엔드포인트"""
+    try:
+        db.session.execute(db.text('SELECT 1'))
+        return jsonify({"status": "healthy", "database": "connected"}), 200
+    except Exception as e:
+        return jsonify({"status": "unhealthy", "database": str(e)}), 503
 
 @app.errorhandler(404)
 def page_not_found(e):
@@ -67,6 +74,5 @@ def internal_server_error(e):
     return render_template('error.html', error_code="500", error_message="서버 내부 오류", error_description="잠시 후 다시 시도해주세요. 문제가 지속되면 관리자에게 문의 바랍니다."), 500
 
 if __name__ == '__main__':
-    # Nginx가 SSL을 처리하므로, Flask는 항상 5000번 포트에서 실행합니다.
     use_debug = os.environ.get('FLASK_DEBUG', '0') == '1'
     app.run(host='0.0.0.0', port=5000, debug=use_debug)
