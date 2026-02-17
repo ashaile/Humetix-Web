@@ -76,7 +76,7 @@
         }
 
         function goPage(page) {
-            const form = document.querySelector('form[action*="master_view"]');
+            const form = document.getElementById('searchForm');
             let pageInput = form.querySelector('input[name="page"]');
             if (!pageInput) { pageInput = document.createElement('input'); pageInput.type = 'hidden'; pageInput.name = 'page'; form.appendChild(pageInput); }
             pageInput.value = page;
@@ -146,7 +146,7 @@
 
         <!-- 검색 필터 섹션 -->
         <div class="filter-section">
-            <form action="{{ url_for('admin.master_view') }}" method="get">
+            <form id="searchForm" action="{{ url_for('admin.master_view') }}" method="get">
                 <div style="display: flex; gap: 10px; align-items: flex-end; margin-bottom: 15px;">
                     <div style="flex: 1;">
                         <input type="text" name="q" class="form-control" placeholder="이름 또는 연락처 검색" value="{{ search_query }}">
