@@ -278,8 +278,7 @@
         }
 
         function goPage(page) {
-            const form = document.querySelector('form[action="{{ url_for("admin.master_view") }}"]');
-
+            const form = document.getElementById('searchForm');
             let pageInput = form.querySelector('input[name="page"]');
             if (!pageInput) {
                 pageInput = document.createElement('input');
@@ -342,7 +341,7 @@
         </div>
 
         <div class="filter-section">
-            <form action="{{ url_for('admin.master_view') }}" method="get">
+            <form id="searchForm" action="{{ url_for('admin.master_view') }}" method="get">
                 <div class="row mb-3" style="display: flex; gap: 10px; align-items: flex-end;">
                     <div style="flex: 1;">
                         <input type="text" name="q" class="form-control" placeholder="이름 또는 연락처 검색"
