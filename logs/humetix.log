@@ -352,3 +352,24 @@ jinja2.exceptions.UndefinedError: 'entry' is undefined
 [2026-02-16 16:02:59,748] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 16:02:59] "GET /humetix_master_99 HTTP/1.1" 200 -
 [2026-02-16 16:02:59,987] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 16:02:59] "[36mGET /view_photo/20260215_110659_id.png HTTP/1.1[0m" 304 -
 [2026-02-16 16:03:00,091] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 16:03:00] "[36mGET /view_photo/20260215_102151_id.png HTTP/1.1[0m" 304 -
+[2026-02-16 17:04:25,653] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 17:04:25] "[32mGET /humetix_master_99 HTTP/1.1[0m" 302 -
+[2026-02-16 17:04:25,660] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 17:04:25] "GET /login HTTP/1.1" 200 -
+[2026-02-16 17:04:28,751] INFO in auth: Admin login success from 127.0.0.1
+[2026-02-16 17:04:28,752] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 17:04:28] "[32mPOST /login HTTP/1.1[0m" 302 -
+[2026-02-16 17:04:29,081] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 17:04:29] "GET /humetix_master_99 HTTP/1.1" 200 -
+[2026-02-16 17:04:29,433] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 17:04:29] "[36mGET /view_photo/20260215_102151_id.png HTTP/1.1[0m" 304 -
+[2026-02-16 17:04:29,433] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 17:04:29] "[36mGET /view_photo/20260215_110659_id.png HTTP/1.1[0m" 304 -
+[2026-02-16 17:07:45,468] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 17:07:45] "GET / HTTP/1.1" 200 -
+[2026-02-16 17:08:51,025] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 17:08:51] "GET /humetix_master_99 HTTP/1.1" 200 -
+[2026-02-16 17:08:51,032] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 17:08:51] "GET /humetix_master_99 HTTP/1.1" 200 -
+[2026-02-16 17:08:51,279] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 17:08:51] "[36mGET /view_photo/20260215_110659_id.png HTTP/1.1[0m" 304 -
+[2026-02-16 17:08:51,356] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 17:08:51] "[36mGET /view_photo/20260215_102151_id.png HTTP/1.1[0m" 304 -
+[2026-02-16 17:08:51,596] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 17:08:51] "[36mGET /view_photo/20260215_110659_id.png HTTP/1.1[0m" 304 -
+[2026-02-16 17:08:51,671] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 17:08:51] "[36mGET /view_photo/20260215_102151_id.png HTTP/1.1[0m" 304 -
+[2026-02-16 17:20:01,297] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 17:20:01] "GET /apply HTTP/1.1" 200 -
+[2026-02-16 17:20:03,169] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 17:20:03] "GET /humetix_master_99 HTTP/1.1" 200 -
+[2026-02-16 17:20:03,197] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 17:20:03] "[36mGET /view_photo/20260215_110659_id.png HTTP/1.1[0m" 304 -
+[2026-02-16 17:20:03,503] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 17:20:03] "[36mGET /view_photo/20260215_102151_id.png HTTP/1.1[0m" 304 -
+[2026-02-16 17:20:04,197] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 17:20:04] "GET /humetix_master_99 HTTP/1.1" 200 -
+[2026-02-16 17:20:04,217] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 17:20:04] "[36mGET /view_photo/20260215_110659_id.png HTTP/1.1[0m" 304 -
+[2026-02-16 17:20:04,464] INFO in _internal: 127.0.0.1 - - [16/Feb/2026 17:20:04] "[36mGET /view_photo/20260215_102151_id.png HTTP/1.1[0m" 304 -
