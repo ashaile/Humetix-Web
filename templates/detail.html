@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지원서 상세 - {{ entry.info.name }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #003057; --bg: #f4f7f9; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); padding: 20px; color: #333; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid var(--primary); }
+        .header h2 { font-size: 1.5rem; color: var(--primary); margin: 0; }
+        .btn { display: inline-flex; padding: 8px 16px; font-size: 0.9rem; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; color: white; }
+        .btn-primary { background: var(--primary); }
+        .btn-warning { background: #fd7e14; }
+        .btn-secondary { background: #6c757d; }
+        .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; color: white; font-size: 0.85rem; font-weight: 700; }
+        .section { margin-bottom: 25px; }
+        .section-title { font-weight: 700; color: var(--primary); font-size: 1.1rem; margin-bottom: 12px; padding-left: 10px; border-left: 4px solid var(--primary); }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .info-item { padding: 8px 0; }
+        .info-label { font-weight: 600; color: #666; font-size: 0.85rem; }
+        .info-value { color: #333; font-size: 0.95rem; }
+        .photo-area { text-align: center; margin-bottom: 20px; }
+        .photo-area img { max-width: 200px; max-height: 260px; border-radius: 8px; border: 1px solid #ddd; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background: #f8f9fa; padding: 8px; border: 1px solid #dee2e6; font-size: 0.9rem; }
+        td { padding: 8px; border: 1px solid #dee2e6; text-align: center; font-size: 0.9rem; }
+        .memo-box { background: #fffcf0; border: 1px dashed #e0dcbf; padding: 15px; border-radius: 6px; margin-top: 15px; }
+        .flash-msg { padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; font-size: 0.9rem; }
+        .flash-success { background: #d4edda; color: #155724; }
+        .flash-danger { background: #f8d7da; color: #721c24; }
+        .flash-warning { background: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="flash-msg flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div class="header">
+            <h2>{{ entry.info.name }} 지원서 상세</h2>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <span class="status-badge" style="background: {{ entry.status_color }};">{{ entry.status_display }}</span>
+                <a href="/edit/{{ app_id }}" class="btn btn-warning">수정</a>
+                <a href="/humetix_master_99" class="btn btn-secondary">목록</a>
+            </div>
+        </div>
+
+        {% if entry.photo %}
+        <div class="photo-area">
+            <img src="/view_photo/{{ entry.photo }}" alt="신분증 사진">
+        </div>
+        {% endif %}
+
+        <div class="section">
+            <div class="section-title">인적사항</div>
+            <div class="info-grid">
+                <div class="info-item"><div class="info-label">성명</div><div class="info-value">{{ entry.info.name }}</div></div>
+                <div class="info-item"><div class="info-label">성별</div><div class="info-value">{{ entry.info.gender or '-' }}</div></div>
+                <div class="info-item"><div class="info-label">생년월일</div><div class="info-value">{{ entry.info.birth or '-' }}</div></div>
+                <div class="info-item"><div class="info-label">연락처</div><div class="info-value">{{ entry.info.phone or '-' }}</div></div>
+                <div class="info-item"><div class="info-label">이메일</div><div class="info-value">{{ entry.info.email or '-' }}</div></div>
+                <div class="info-item"><div class="info-label">주소</div><div class="info-value">{{ entry.info.address or '-' }}</div></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">신체정보</div>
+            <div class="info-grid">
+                <div class="info-item"><div class="info-label">키</div><div class="info-value">{{ entry.body.height }}cm</div></div>
+                <div class="info-item"><div class="info-label">몸무게</div><div class="info-value">{{ entry.body.weight }}kg</div></div>
+                <div class="info-item"><div class="info-label">시력</div><div class="info-value">{{ entry.body.vision }}</div></div>
+                <div class="info-item"><div class="info-label">신발</div><div class="info-value">{{ entry.body.shoes }}</div></div>
+                <div class="info-item"><div class="info-label">티셔츠</div><div class="info-value">{{ entry.body.tshirt }}</div></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">근무조건</div>
+            <div class="info-grid">
+                <div class="info-item"><div class="info-label">근무형태</div><div class="info-value">{{ entry.work_condition.shift or '-' }}</div></div>
+                <div class="info-item"><div class="info-label">근무방식</div><div class="info-value">{{ entry.work_condition.posture or '-' }}</div></div>
+                <div class="info-item"><div class="info-label">잔업</div><div class="info-value">{{ entry.work_condition.overtime or '-' }}</div></div>
+                <div class="info-item"><div class="info-label">특근</div><div class="info-value">{{ entry.work_condition.holiday or '-' }}</div></div>
+                <div class="info-item"><div class="info-label">면접가능일</div><div class="info-value">{{ entry.work_condition.interview_date or '미정' }}</div></div>
+                <div class="info-item"><div class="info-label">입사희망일</div><div class="info-value">{{ entry.work_condition.start_date or '미정' }}</div></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">경력사항</div>
+            <table>
+                <thead><tr><th>회사명</th><th>기간</th><th>업무</th><th>퇴사사유</th></tr></thead>
+                <tbody>
+                {% if entry.career %}
+                {% for car in entry.career %}
+                <tr><td>{{ car.company }}</td><td>{{ car.start }}~{{ car.end }}</td><td>{{ car.role }}</td><td>{{ car.reason }}</td></tr>
+                {% endfor %}
+                {% else %}
+                <tr><td colspan="4" style="color:#999;">경력 사항 없음</td></tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-title">기타</div>
+            <div class="info-grid">
+                <div class="info-item"><div class="info-label">가불 희망</div><div class="info-value">{{ entry.extra.advance_pay or '비희망' }}</div></div>
+                <div class="info-item"><div class="info-label">급여 형태</div><div class="info-value">{{ entry.extra.insurance_type or '4대보험' }}</div></div>
+                <div class="info-item"><div class="info-label">정보제공 동의</div><div class="info-value">{{ '동의' if entry.work_condition.agree == 'on' else '미동의' }}</div></div>
+                <div class="info-item"><div class="info-label">접수일시</div><div class="info-value">{{ entry.timestamp }}</div></div>
+            </div>
+        </div>
+
+        <div class="memo-box">
+            <div style="font-weight:700; margin-bottom:8px; color:#888;">관리자 메모</div>
+            <div>{{ entry.memo or '메모 없음' }}</div>
+        </div>
+    </div>
+</body>
+</html>
