@@ -52,6 +52,10 @@ app.register_blueprint(admin_bp)
 def index():
     return render_template('index.html')
 
+@app.route('/privacy')
+def privacy():
+    return render_template('privacy.html')
+
 @app.route('/health')
 def health_check():
     """서버 상태 모니터링 엔드포인트"""

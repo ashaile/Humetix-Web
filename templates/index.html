@@ -5,10 +5,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>주식회사 휴메틱스 (Humetix) - HR Total Solution Partner</title>
+
+    <!-- SEO 메타태그 -->
+    <meta name="description" content="휴메틱스는 제조 도급/파견, 물류 센터 운영, 채용 대행(RPO) 등 HR 토탈 솔루션을 제공하는 대한민국 대표 아웃소싱 전략 파트너입니다.">
+    <meta name="keywords" content="휴메틱스,Humetix,인력파견,아웃소싱,제조도급,물류운영,채용대행,RPO,HR솔루션">
+    <meta name="author" content="주식회사 휴메틱스">
+
+    <!-- Open Graph (카카오톡/SNS 공유) -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="주식회사 휴메틱스 - HR Total Solution Partner">
+    <meta property="og:description" content="기업엔 최적의 인재를, 인재엔 최고의 기회를 제공하는 대한민국 대표 아웃소싱 전략 파트너">
+    <meta property="og:image" content="https://humetix.com/static/images/hero-bg.jpg">
+    <meta property="og:url" content="https://humetix.com">
+    <meta property="og:site_name" content="Humetix">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}">
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 
     <style>
@@ -23,11 +38,7 @@
             color: #333;
         }
 
-        h1,
-        h2,
-        h3,
-        h4,
-        .en-font {
+        h1, h2, h3, h4, .en-font {
             font-family: 'Montserrat', sans-serif;
         }
 
@@ -43,6 +54,12 @@
             background: white;
             box-shadow: 0 2px 15px rgba(0, 0, 0, 0.03);
             padding: 10px 0;
+            transition: all 0.3s ease;
+        }
+
+        .navbar.scrolled {
+            padding: 5px 0;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
         }
 
         .nav-link {
@@ -63,14 +80,18 @@
             font-size: 2.5rem;
             color: var(--primary-color) !important;
             letter-spacing: -0.5px;
+            transition: font-size 0.3s ease;
+        }
+
+        .navbar.scrolled .navbar-brand {
+            font-size: 2rem;
         }
 
         /* 히어로 섹션 */
         .hero-section {
-            background: linear-gradient(to right, rgba(0, 50, 110, 0.85), rgba(0, 30, 80, 0.5)), url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1600');
+            background: linear-gradient(to right, rgba(0, 50, 110, 0.85), rgba(0, 30, 80, 0.5)), url('{{ url_for("static", filename="images/hero-bg.jpg") }}');
             background-size: cover;
             background-position: center;
-            background-attachment: fixed;
             height: 80vh;
             display: flex;
             align-items: center;
@@ -158,6 +179,52 @@
             text-align: center;
         }
 
+        /* 고객사 로고 섹션 */
+        .client-section {
+            background: #f8f9fa;
+            padding: 60px 0;
+        }
+
+        .client-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 80px;
+            padding: 15px 25px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            font-weight: 700;
+            color: #888;
+            font-size: 1.1rem;
+            transition: 0.3s;
+        }
+
+        .client-logo:hover {
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            color: #555;
+        }
+
+        /* 견적 문의 폼 */
+        .contact-form {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+        }
+
+        .contact-form .form-control {
+            border-radius: 10px;
+            padding: 12px 16px;
+            border: 1.5px solid #e0e0e0;
+            transition: 0.3s;
+        }
+
+        .contact-form .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.1);
+        }
+
         /* 하단 CTA */
         .cta-section {
             background: #00204a;
@@ -165,8 +232,20 @@
             padding: 100px 0;
             position: relative;
             overflow: hidden;
-            background-image: url('https://www.transparenttextures.com/patterns/cubes.png');
-            opacity: 0.98;
+        }
+
+        /* CTA 배경 패턴 인라인 */
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image:
+                linear-gradient(30deg, rgba(255,255,255,0.03) 12%, transparent 12.5%, transparent 87%, rgba(255,255,255,0.03) 87.5%),
+                linear-gradient(150deg, rgba(255,255,255,0.03) 12%, transparent 12.5%, transparent 87%, rgba(255,255,255,0.03) 87.5%),
+                linear-gradient(30deg, rgba(255,255,255,0.03) 12%, transparent 12.5%, transparent 87%, rgba(255,255,255,0.03) 87.5%),
+                linear-gradient(150deg, rgba(255,255,255,0.03) 12%, transparent 12.5%, transparent 87%, rgba(255,255,255,0.03) 87.5%);
+            background-size: 80px 140px;
+            pointer-events: none;
         }
 
         .btn-cta {
@@ -218,20 +297,146 @@
             margin-top: 60px;
             padding-top: 30px;
         }
+
+        /* 스크롤 애니메이션 */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 카운터 애니메이션 */
+        .counter-number {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+            font-size: 3.5rem;
+            color: var(--primary-color);
+            line-height: 1;
+        }
+
+        .counter-label {
+            font-weight: 700;
+            font-size: 1.05rem;
+            color: #333;
+            margin-top: 8px;
+        }
+
+        /* 맨 위로 가기 버튼 */
+        .scroll-top-btn {
+            position: fixed;
+            bottom: 90px;
+            right: 25px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            font-size: 1.3rem;
+            box-shadow: 0 4px 15px rgba(0,86,179,0.3);
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 999;
+        }
+
+        .scroll-top-btn.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .scroll-top-btn:hover {
+            background: #004494;
+            transform: translateY(-3px);
+        }
+
+        /* 카카오톡 버튼 */
+        .kakao-btn {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #FEE500;
+            color: #3C1E1E;
+            border: none;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .kakao-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        }
+
+        /* 모바일 반응형 */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.2rem;
+            }
+
+            .hero-section {
+                height: 70vh;
+            }
+
+            .btn-primary-custom {
+                padding: 14px 30px;
+                font-size: 1rem;
+            }
+
+            .counter-number {
+                font-size: 2.5rem;
+            }
+
+            .contact-form {
+                padding: 25px;
+            }
+
+            .navbar-brand {
+                font-size: 2rem;
+            }
+
+            .navbar.scrolled .navbar-brand {
+                font-size: 1.7rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero-title {
+                font-size: 1.8rem;
+            }
+
+            .counter-number {
+                font-size: 2rem;
+            }
+        }
     </style>
 </head>
 
 <body>
 
-    <nav class="navbar navbar-expand-lg fixed-top">
+    <nav class="navbar navbar-expand-lg fixed-top" role="navigation" aria-label="메인 네비게이션">
         <div class="container">
-            <a class="navbar-brand" href="/">Humetix</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <a class="navbar-brand" href="/" aria-label="휴메틱스 홈">Humetix</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="메뉴 열기">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
                 <ul class="navbar-nav align-items-center">
-                    <li class="nav-item"><a class="nav-link" href="#">홈</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/">홈</a></li>
                     <li class="nav-item"><a class="nav-link" href="#services">사업영역</a></li>
                     <li class="nav-item"><a class="nav-link" href="#contact">견적문의</a></li>
                     <li class="nav-item"><a class="nav-link" href="/apply">입사지원</a></li>
@@ -240,7 +445,7 @@
         </div>
     </nav>
 
-    <header class="hero-section">
+    <header class="hero-section" role="banner">
         <div class="container">
             <div class="row">
                 <div class="col-lg-9">
@@ -249,7 +454,7 @@
                     <p class="lead opacity-90 mb-5" style="font-weight: 400; font-size: 1.3rem; max-width: 700px;">
                         기업엔 최적의 인재를, 인재엔 최고의 기회를 제공하는<br>대한민국 대표 아웃소싱 전략 파트너 휴메틱스입니다.
                     </p>
-                    <div class="d-flex gap-3">
+                    <div class="d-flex gap-3 flex-wrap">
                         <a href="#contact" class="btn btn-primary-custom shadow-lg">견적 문의하기</a>
                         <a href="/apply" class="btn btn-primary-custom shadow-lg">바로 지원하기</a>
                     </div>
@@ -258,30 +463,31 @@
         </div>
     </header>
 
+    <!-- 실적 카운터 섹션 -->
     <section class="py-5 bg-white">
         <div class="container py-5">
             <div class="row align-items-center my-5">
-                <div class="col-lg-6 mb-5 mb-lg-0 ps-lg-5 order-lg-2">
-                    <div class="image-section shadow-lg"
-                        style="background-image: url('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=800');">
+                <div class="col-lg-6 mb-5 mb-lg-0 ps-lg-5 order-lg-2 fade-in">
+                    <div class="image-section shadow-lg" role="img" aria-label="현대적인 사무실 내부"
+                        style="background-image: url('{{ url_for("static", filename="images/office.jpg") }}');">
                     </div>
                 </div>
-                <div class="col-lg-6 pe-lg-5 order-lg-1">
+                <div class="col-lg-6 pe-lg-5 order-lg-1 fade-in">
                     <h2 class="fw-bold display-5 mb-4" style="letter-spacing: -1px;">신뢰할 수 있는 파트너,<br><span
                             class="text-primary">검증된 결과</span>로 증명합니다.</h2>
                     <p class="text-muted mb-5 fs-5">휴메틱스는 단순한 인력 공급을 넘어, 고객사의 지속 가능한 성장을 함께 고민하고 해결하는 전략적 HR 파트너입니다.</p>
                     <div class="row text-center g-4">
                         <div class="col-4">
-                            <h2 class="fw-bold text-primary mb-0 keyword-font display-4">TOP</h2>
-                            <p class="text-dark mt-2 fw-bold fs-5">우수 인재풀</p>
+                            <div class="counter-number" data-target="5000">0</div>
+                            <p class="counter-label">누적 파견 인원<span class="text-primary">+</span></p>
                         </div>
                         <div class="col-4">
-                            <h2 class="fw-bold text-primary mb-0 keyword-font display-4">FAST</h2>
-                            <p class="text-dark mt-2 fw-bold fs-5">신속 대응</p>
+                            <div class="counter-number" data-target="150">0</div>
+                            <p class="counter-label">협력 고객사<span class="text-primary">+</span></p>
                         </div>
                         <div class="col-4">
-                            <h2 class="fw-bold text-primary mb-0 keyword-font display-4">SAFE</h2>
-                            <p class="text-dark mt-2 fw-bold fs-5">리스크 관리</p>
+                            <div class="counter-number" data-target="98">0</div>
+                            <p class="counter-label">고객 만족도<span class="text-primary">%</span></p>
                         </div>
                     </div>
                 </div>
@@ -289,17 +495,18 @@
         </div>
     </section>
 
+    <!-- 서비스 섹션 -->
     <section id="services" class="py-5" style="background-color: #f9fbff;">
         <div class="container py-5">
-            <div class="text-center mb-5">
+            <div class="text-center mb-5 fade-in">
                 <p class="text-primary fw-bold mb-2 en-font fs-5">OUR SOLUTIONS</p>
                 <h2 class="fw-bold display-5">휴메틱스 전문 솔루션</h2>
             </div>
             <div class="row g-4">
-                <div class="col-md-4">
+                <div class="col-md-4 fade-in">
                     <div class="service-box">
-                        <div class="service-img"
-                            style="background-image: url('https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=800');">
+                        <div class="service-img" role="img" aria-label="반도체 제조 현장"
+                            style="background-image: url('{{ url_for("static", filename="images/manufacturing.jpg") }}');">
                         </div>
                         <div class="service-content">
                             <h4 class="fw-bold mb-3 fs-4">제조 도급/파견</h4>
@@ -307,10 +514,10 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4 fade-in">
                     <div class="service-box">
-                        <div class="service-img"
-                            style="background-image: url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=800');">
+                        <div class="service-img" role="img" aria-label="물류 센터 내부"
+                            style="background-image: url('{{ url_for("static", filename="images/logistics.jpg") }}');">
                         </div>
                         <div class="service-content">
                             <h4 class="fw-bold mb-3 fs-4">물류 센터 운영</h4>
@@ -318,10 +525,10 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4 fade-in">
                     <div class="service-box">
-                        <div class="service-img"
-                            style="background-image: url('https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&q=80&w=800');">
+                        <div class="service-img" role="img" aria-label="채용 상담 장면"
+                            style="background-image: url('{{ url_for("static", filename="images/recruitment.jpg") }}');">
                         </div>
                         <div class="service-content">
                             <h4 class="fw-bold mb-3 fs-4">채용 대행 (RPO)</h4>
@@ -333,20 +540,64 @@
         </div>
     </section>
 
-    <section class="cta-section text-center" id="contact">
+    <!-- 고객사 로고 섹션 -->
+    <section class="client-section">
         <div class="container">
-            <h2 class="fw-bold display-5 mb-4">성공을 위한 파트너십,<br>지금 시작하세요.</h2>
-            <p class="fs-5 opacity-75 mb-5">휴메틱스의 전문적인 솔루션이 귀사의 경쟁력이 됩니다.</p>
-            <div class="d-flex justify-content-center gap-3 flex-wrap">
-                <a href="tel:070-8064-3484" class="btn btn-cta shadow"><i class="bi bi-telephone-fill me-2"></i>
-                    070-8064-3484</a>
-                <a href="mailto:ad@humetix.com" class="btn btn-outline-light btn-lg px-5 py-3 rounded-pill fw-bold"
-                    style="border-width:2px;"><i class="bi bi-envelope-fill me-2"></i> 이메일 문의</a>
+            <div class="text-center mb-4 fade-in">
+                <p class="text-primary fw-bold mb-2 en-font fs-5">TRUSTED BY</p>
+                <h3 class="fw-bold">신뢰하는 파트너사</h3>
+            </div>
+            <div class="row g-3 justify-content-center fade-in">
+                <div class="col-6 col-md-3 col-lg-2"><div class="client-logo">Partner A</div></div>
+                <div class="col-6 col-md-3 col-lg-2"><div class="client-logo">Partner B</div></div>
+                <div class="col-6 col-md-3 col-lg-2"><div class="client-logo">Partner C</div></div>
+                <div class="col-6 col-md-3 col-lg-2"><div class="client-logo">Partner D</div></div>
+                <div class="col-6 col-md-3 col-lg-2"><div class="client-logo">Partner E</div></div>
+                <div class="col-6 col-md-3 col-lg-2"><div class="client-logo">Partner F</div></div>
             </div>
         </div>
     </section>
 
-    <footer>
+    <!-- 견적문의 섹션 -->
+    <section class="cta-section text-center" id="contact">
+        <div class="container position-relative">
+            <div class="row justify-content-center">
+                <div class="col-lg-6 mb-5 mb-lg-0 text-lg-start align-self-center">
+                    <h2 class="fw-bold display-5 mb-4">성공을 위한 파트너십,<br>지금 시작하세요.</h2>
+                    <p class="fs-5 opacity-75 mb-4">휴메틱스의 전문적인 솔루션이 귀사의 경쟁력이 됩니다.</p>
+                    <div class="d-flex gap-3 flex-wrap justify-content-center justify-content-lg-start">
+                        <a href="tel:070-8064-3484" class="btn btn-cta shadow" aria-label="전화 문의"><i class="bi bi-telephone-fill me-2"></i>070-8064-3484</a>
+                        <a href="mailto:ad@humetix.com" class="btn btn-outline-light btn-lg px-4 py-3 rounded-pill fw-bold" style="border-width:2px;" aria-label="이메일 문의"><i class="bi bi-envelope-fill me-2"></i> 이메일 문의</a>
+                    </div>
+                </div>
+                <div class="col-lg-5 offset-lg-1 fade-in">
+                    <div class="contact-form text-start">
+                        <h4 class="fw-bold mb-4 text-dark">빠른 견적 문의</h4>
+                        <form id="contactForm">
+                            <div class="mb-3">
+                                <input type="text" class="form-control" placeholder="회사명" aria-label="회사명" required>
+                            </div>
+                            <div class="mb-3">
+                                <input type="text" class="form-control" placeholder="담당자명" aria-label="담당자명" required>
+                            </div>
+                            <div class="mb-3">
+                                <input type="tel" class="form-control" placeholder="연락처 (예: 010-1234-5678)" aria-label="연락처" required>
+                            </div>
+                            <div class="mb-3">
+                                <input type="email" class="form-control" placeholder="이메일" aria-label="이메일">
+                            </div>
+                            <div class="mb-3">
+                                <textarea class="form-control" rows="3" placeholder="문의 내용을 간략히 적어주세요" aria-label="문의 내용"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary-custom w-100 shadow">문의하기</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer role="contentinfo">
         <div class="container">
             <div class="row">
                 <div class="col-lg-4 mb-5 mb-lg-0">
@@ -359,7 +610,7 @@
                 <div class="col-lg-2 offset-lg-1 col-md-4 mb-4">
                     <h5>Company</h5>
                     <ul class="list-unstyled mt-4" style="line-height: 2.2;">
-                        <li><a href="#">홈으로</a></li>
+                        <li><a href="/">홈으로</a></li>
                         <li><a href="#services">서비스 소개</a></li>
                         <li><a href="#contact">견적 문의</a></li>
                     </ul>
@@ -368,14 +619,13 @@
                     <h5>Support</h5>
                     <ul class="list-unstyled mt-4" style="line-height: 2.2;">
                         <li><a href="/apply">입사지원</a></li>
-                        <li><a href="#">개인정보처리방침</a></li>
+                        <li><a href="/privacy">개인정보처리방침</a></li>
                     </ul>
                 </div>
                 <div class="col-lg-3 col-md-4">
                     <h5>Contact Info</h5>
                     <ul class="list-unstyled mt-4 fs-6" style="line-height: 2;">
-                        <li><i class="bi bi-geo-alt-fill me-2 text-primary"></i> 6F-603, 1068, Hyohaeng-ro, Hwaseong-si,
-                            Gyeonggi-do</li>
+                        <li><i class="bi bi-geo-alt-fill me-2 text-primary"></i> 6F-603, 1068, Hyohaeng-ro, Hwaseong-si, Gyeonggi-do</li>
                         <li><i class="bi bi-envelope-fill me-2 text-primary"></i> ad@humetix.com</li>
                         <li><i class="bi bi-telephone-fill me-2 text-primary"></i> 070-8064-3484</li>
                     </ul>
@@ -387,7 +637,88 @@
         </div>
     </footer>
 
+    <!-- 맨 위로 가기 버튼 -->
+    <button class="scroll-top-btn" id="scrollTopBtn" aria-label="맨 위로 가기">
+        <i class="bi bi-chevron-up"></i>
+    </button>
+
+    <!-- 카카오톡 상담 버튼 -->
+    <a href="https://pf.kakao.com/_xgxkxbxj" target="_blank" rel="noopener noreferrer" class="kakao-btn" aria-label="카카오톡 상담">
+        <i class="bi bi-chat-fill"></i>
+    </a>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 네비게이션 스크롤 효과
+        const navbar = document.querySelector('.navbar');
+        const scrollTopBtn = document.getElementById('scrollTopBtn');
+
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+                scrollTopBtn.classList.add('show');
+            } else {
+                navbar.classList.remove('scrolled');
+                scrollTopBtn.classList.remove('show');
+            }
+        });
+
+        // 맨 위로 가기
+        scrollTopBtn.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        // 스크롤 애니메이션 (Intersection Observer)
+        const fadeElements = document.querySelectorAll('.fade-in');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.15 });
+
+        fadeElements.forEach(el => observer.observe(el));
+
+        // 카운터 애니메이션
+        const counters = document.querySelectorAll('.counter-number');
+        let countersStarted = false;
+
+        const counterObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && !countersStarted) {
+                    countersStarted = true;
+                    counters.forEach(counter => {
+                        const target = parseInt(counter.getAttribute('data-target'));
+                        const duration = 2000;
+                        const step = target / (duration / 16);
+                        let current = 0;
+
+                        const updateCounter = () => {
+                            current += step;
+                            if (current < target) {
+                                counter.textContent = Math.floor(current).toLocaleString();
+                                requestAnimationFrame(updateCounter);
+                            } else {
+                                counter.textContent = target.toLocaleString();
+                            }
+                        };
+                        updateCounter();
+                    });
+                }
+            });
+        }, { threshold: 0.5 });
+
+        counters.forEach(c => counterObserver.observe(c));
+
+        // 견적 문의 폼 제출
+        document.getElementById('contactForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('문의가 접수되었습니다. 빠른 시일 내에 연락드리겠습니다.');
+            this.reset();
+        });
+    </script>
 </body>
 
 </html>
