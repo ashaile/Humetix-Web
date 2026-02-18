@@ -85,35 +85,53 @@
             <a href="/humetix_master_99" class="btn">관리자 페이지</a>
         </div>
 
-        {% if not items %}
-        <p class="muted">접수된 문의가 없습니다.</p>
-        {% else %}
-        <table>
-            <thead>
-                <tr>
-                    <th>접수일</th>
-                    <th>회사명</th>
-                    <th>담당자</th>
-                    <th>연락처</th>
-                    <th>이메일</th>
-                    <th>내용</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in items %}
-                <tr>
-                    <td>{{ item.created_at.strftime('%Y-%m-%d %H:%M') if item.created_at else '' }}</td>
-                    <td>{{ item.company }}</td>
-                    <td>{{ item.name }}</td>
-                    <td>{{ item.phone }}</td>
-                    <td>{{ item.email or '-' }}</td>
-                    <td>{{ item.message or '-' }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% endif %}
+        <form method="post" action="{{ url_for('admin.delete_inquiries') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            {% if not items %}
+            <p class="muted">접수된 문의가 없습니다.</p>
+            {% else %}
+            <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom:12px;">
+                <label class="muted"><input type="checkbox" onclick="toggleAll(this)"> 전체 선택</label>
+                <button type="submit" class="btn" style="background:#dc3545;">선택 삭제</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:40px;">선택</th>
+                        <th>접수일</th>
+                        <th>회사명</th>
+                        <th>담당자</th>
+                        <th>연락처</th>
+                        <th>이메일</th>
+                        <th>내용</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td><input type="checkbox" name="selected_ids" value="{{ item.id }}"></td>
+                        <td>{{ item.created_at.strftime('%Y-%m-%d %H:%M') if item.created_at else '' }}</td>
+                        <td>{{ item.company }}</td>
+                        <td>{{ item.name }}</td>
+                        <td>{{ item.phone }}</td>
+                        <td>{{ item.email or '-' }}</td>
+                        <td>{{ item.message or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </form>
     </div>
+
+    <script>
+        function toggleAll(source) {
+            document.getElementsByName('selected_ids').forEach(cb => {
+                cb.checked = source.checked;
+            });
+        }
+    </script>
 </body>
 
 </html>

@@ -295,6 +295,24 @@ def inquiries():
 
     items = Inquiry.query.order_by(Inquiry.created_at.desc()).all()
     return render_template('admin_inquiries.html', items=items)
+
+
+@admin_bp.route('/inquiries/delete', methods=['POST'])
+def delete_inquiries():
+    if not session.get('is_admin'):
+        return redirect(url_for('auth.login'))
+
+    selected_ids = request.form.getlist('selected_ids')
+    if not selected_ids:
+        return redirect(url_for('admin.inquiries'))
+
+    for inquiry_id in selected_ids:
+        item = Inquiry.query.get(inquiry_id)
+        if item:
+            db.session.delete(item)
+    db.session.commit()
+
+    return redirect(url_for('admin.inquiries'))
 @admin_bp.route('/view_photo/<filename>')
 def view_photo(filename):
     return send_from_directory(UPLOAD_DIR, filename)
