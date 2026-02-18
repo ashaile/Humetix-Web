@@ -476,6 +476,7 @@
 </head>
 
 <body>
+    {% set status_labels = {'new':'신규','review':'검토','interview':'면접','offer':'오퍼','hired':'합격','rejected':'불합격'} %}
     <div class="container">
         <div class="header">
             <h2>관리자 페이지</h2>
@@ -534,8 +535,8 @@
                         <label class="filter-group-title">상태</label>
                         <select name="status" class="form-select">
                             <option value="">전체</option>
-                            {% for val, label in status_options %}
-                            <option value="{{ val }}" {% if filters.status==val %}selected{% endif %}>{{ label }}</option>
+                            {% for val in status_options %}
+                            <option value="{{ val }}" {% if filters.status==val %}selected{% endif %}>{{ status_labels[val] }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -632,9 +633,9 @@
                                 <div class="info-row" style="display:flex; align-items:center; gap:8px;">
                                     <span class="label-badge">상태</span>
                                     <select id="status-{{ entry.id }}" class="form-select" style="width: 160px; height: 32px;">
-                                        {% for val, label in status_options %}
-                                        <option value="{{ val }}" {% if entry.status==val %}selected{% endif %}>{{ label }}</option>
-                                        {% endfor %}
+                                    {% for val in status_options %}
+                                        <option value="{{ val }}" {% if entry.status==val %}selected{% endif %}>{{ status_labels[val] }}</option>
+                                    {% endfor %}
                                     </select>
                                     <button type="button" id="btn-status-{{ entry.id }}" class="btn btn-secondary"
                                         style="height: 32px; font-size: 0.8rem; padding: 0 10px;"

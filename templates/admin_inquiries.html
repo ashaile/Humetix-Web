@@ -128,6 +128,7 @@
 </head>
 
 <body>
+    {% set status_labels = {'new':'신규','in_progress':'진행중','done':'완료'} %}
     <div class="container">
         <div class="header">
             <h2>문의 목록</h2>
@@ -141,8 +142,8 @@
             <input type="text" name="q" class="filter-input" placeholder="회사명/담당자/연락처/이메일 검색" value="{{ q }}">
             <select name="status" class="filter-select">
                 <option value="">전체 상태</option>
-                {% for val, label in status_options %}
-                <option value="{{ val }}" {% if status==val %}selected{% endif %}>{{ label }}</option>
+                {% for val in status_options %}
+                <option value="{{ val }}" {% if status==val %}selected{% endif %}>{{ status_labels[val] }}</option>
                 {% endfor %}
             </select>
             <button type="submit" class="btn btn-primary">검색</button>
@@ -186,10 +187,10 @@
                         <td>{{ item.message or '-' }}</td>
                         <td>
                             <select id="status-{{ item.id }}" class="inline-input">
-                                {% for val, label in status_options %}
-                                <option value="{{ val }}" {% if item.status==val %}selected{% endif %}>{{ label }}</option>
-                                {% endfor %}
-                            </select>
+                                    {% for val in status_options %}
+                                    <option value="{{ val }}" {% if item.status==val %}selected{% endif %}>{{ status_labels[val] }}</option>
+                                    {% endfor %}
+                                </select>
                         </td>
                         <td>
                             <input type="text" id="assignee-{{ item.id }}" class="inline-input" value="{{ item.assignee or '' }}" placeholder="담당자">
