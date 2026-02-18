@@ -75,6 +75,42 @@
             color: #888;
             font-size: 0.85rem;
         }
+
+        /* 다크 모드 */
+        [data-theme="dark"] body {
+            background: #0f1217;
+            color: #e6e9ef;
+        }
+        [data-theme="dark"] .container {
+            background: #151a21;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+        [data-theme="dark"] th {
+            background: #1b222c;
+            color: #cfd6e4;
+        }
+        [data-theme="dark"] td {
+            background: #151a21;
+            color: #e6e9ef;
+            border-color: #2a3340;
+        }
+        [data-theme="dark"] table {
+            border-color: #2a3340;
+        }
+        .theme-toggle {
+            border: 1px solid #ccc;
+            background: transparent;
+            color: #555;
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            margin-right: 8px;
+        }
+        [data-theme="dark"] .theme-toggle {
+            border-color: #2a3340;
+            color: #e6e9ef;
+        }
     </style>
 </head>
 
@@ -82,7 +118,10 @@
     <div class="container">
         <div class="header">
             <h2>문의 목록</h2>
-            <a href="/humetix_master_99" class="btn">관리자 페이지</a>
+            <div>
+                <button type="button" id="themeToggle" class="theme-toggle">다크</button>
+                <a href="/humetix_master_99" class="btn">관리자 페이지</a>
+            </div>
         </div>
 
         <form method="post" action="{{ url_for('admin.delete_inquiries') }}">
@@ -131,6 +170,24 @@
                 cb.checked = source.checked;
             });
         }
+
+        const themeToggle = document.getElementById('themeToggle');
+        const rootEl = document.documentElement;
+        const applyTheme = (theme) => {
+            if (theme === 'dark') {
+                rootEl.setAttribute('data-theme', 'dark');
+                themeToggle.textContent = '라이트';
+            } else {
+                rootEl.removeAttribute('data-theme');
+                themeToggle.textContent = '다크';
+            }
+        };
+        applyTheme(localStorage.getItem('theme') || 'light');
+        themeToggle.addEventListener('click', () => {
+            const next = rootEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('theme', next);
+            applyTheme(next);
+        });
     </script>
 </body>
 

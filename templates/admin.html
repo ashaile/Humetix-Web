@@ -269,6 +269,104 @@
         .page-link:hover:not(.active) {
             background: #e9ecef;
         }
+
+        /* 다크 모드 */
+        [data-theme="dark"] body {
+            background: #0f1217;
+            color: #e6e9ef;
+        }
+        [data-theme="dark"] .container {
+            background: #151a21;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+        [data-theme="dark"] .header {
+            border-bottom-color: #2a3340;
+        }
+        [data-theme="dark"] .card {
+            background: #151a21;
+            border-color: #2a3340;
+        }
+        [data-theme="dark"] .card-header {
+            background: #1b222c;
+            border-bottom-color: #2a3340;
+        }
+        [data-theme="dark"] .filter-section {
+            background: #131820;
+            border-color: #2a3340;
+        }
+        [data-theme="dark"] .form-control,
+        [data-theme="dark"] .form-select,
+        [data-theme="dark"] .memo-textarea {
+            background: #111824;
+            color: #e6e9ef;
+            border-color: #2f3a4a;
+        }
+        [data-theme="dark"] .memo-box {
+            background: #141b26;
+            border-color: #2f3a4a;
+        }
+        [data-theme="dark"] .memo-textarea::placeholder {
+            color: #9aa6b5;
+        }
+        [data-theme="dark"] .label-badge {
+            color: #b9c3d1;
+        }
+        [data-theme="dark"] .data-val,
+        [data-theme="dark"] .info-row {
+            color: #e6e9ef;
+        }
+        [data-theme="dark"] .highlight {
+            color: #7fb2ff;
+        }
+        [data-theme="dark"] .page-link {
+            background: #151a21;
+            border-color: #2f3a4a;
+            color: #cfd6e4;
+        }
+        [data-theme="dark"] .page-link.active {
+            background: #2a5aa7;
+            border-color: #2a5aa7;
+            color: #fff;
+        }
+        [data-theme="dark"] .page-link:hover:not(.active) {
+            background: #1b222c;
+        }
+        [data-theme="dark"] .applicant-photo {
+            background: #0f141b;
+            border-color: #2f3a4a;
+            color: #9aa6b5;
+        }
+        [data-theme="dark"] .career-table th,
+        [data-theme="dark"] .career-table td {
+            border-color: #2f3a4a;
+        }
+        [data-theme="dark"] .btn-outline {
+            border-color: #2f3a4a;
+            color: #cfd6e4;
+            background: #151a21;
+        }
+        [data-theme="dark"] .career-table th {
+            background: #1b222c;
+            color: #cfd6e4;
+        }
+        [data-theme="dark"] .career-table td {
+            background: #151a21;
+            color: #e6e9ef;
+        }
+        .theme-toggle {
+            border: 1px solid #ccc;
+            background: transparent;
+            color: #555;
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            margin-right: 8px;
+        }
+        [data-theme="dark"] .theme-toggle {
+            border-color: #2a3340;
+            color: #e6e9ef;
+        }
     </style>
     <script>
         function toggleAll(source) {
@@ -335,6 +433,7 @@
         <div class="header">
             <h2>관리자 페이지</h2>
             <div>
+                <button type="button" id="themeToggle" class="theme-toggle">다크</button>
                 <a href="/inquiries" class="btn btn-outline">문의 목록</a>
                 <a href="/download_excel" class="btn btn-success">엑셀 다운로드</a>
                 <a href="/logout" class="btn btn-secondary">로그아웃</a>
@@ -542,6 +641,25 @@
         </div>
         {% endif %}
     </div>
+    <script>
+        const themeToggle = document.getElementById('themeToggle');
+        const rootEl = document.documentElement;
+        const applyTheme = (theme) => {
+            if (theme === 'dark') {
+                rootEl.setAttribute('data-theme', 'dark');
+                themeToggle.textContent = '라이트';
+            } else {
+                rootEl.removeAttribute('data-theme');
+                themeToggle.textContent = '다크';
+            }
+        };
+        applyTheme(localStorage.getItem('theme') || 'light');
+        themeToggle.addEventListener('click', () => {
+            const next = rootEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('theme', next);
+            applyTheme(next);
+        });
+    </script>
 </body>
 
 </html>
