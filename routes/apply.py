@@ -1,7 +1,6 @@
 ﻿import os
 import uuid
 from flask import Blueprint, render_template, request
-from werkzeug.utils import secure_filename
 from datetime import datetime
 from models import db, Application, Career, Inquiry
 
@@ -20,59 +19,68 @@ ALLOWED_MIME_TYPES = {
 }
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
+
 def allowed_file(filename):
-    """?덉슜???뚯씪 ?뺤옣?먯씤吏 ?뺤씤"""
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    """허용된 파일 확장자 확인"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 @apply_bp.route('/apply')
 def apply_form():
     return render_template('apply.html')
 
+
 @apply_bp.route('/submit', methods=['POST'])
 def submit():
     try:
         file_now = datetime.now().strftime('%Y%m%d_%H%M%S')
-        
-        # 1. ?좊텇利??ъ쭊 泥섎━
+
+        # 1. 신분증 사진 처리
         id_card = request.files.get('id_card')
         photo_filename = ""
-        
+
         if id_card and id_card.filename != '':
             if not allowed_file(id_card.filename):
-                return "<script>alert('?덉슜?섏? ?딅뒗 ?뚯씪 ?뺤떇?낅땲?? (jpg, png, gif, heic, webp留?媛??'); history.back();</script>"
+                return "<script>alert('허용되지 않는 파일 형식입니다. (jpg, png, gif, heic, webp만 가능)'); history.back();</script>"
 
             if id_card.mimetype and id_card.mimetype not in ALLOWED_MIME_TYPES:
                 if id_card.mimetype != 'application/octet-stream':
                     return "<script>alert('허용되지 않는 파일 형식입니다.'); history.back();</script>"
-            
+
             id_card.seek(0, 2)
             file_size = id_card.tell()
             id_card.seek(0)
             if file_size > MAX_FILE_SIZE:
-                return "<script>alert('?뚯씪 ?ш린媛 5MB瑜?珥덇낵?⑸땲?? ???묒? ?뚯씪???좏깮?댁＜?몄슂.'); history.back();</script>"
-            
-            # 留ㅼ쭅 諛붿씠??寃??(Pillow)
+                return "<script>alert('파일 크기가 5MB를 초과했습니다. 다른 파일을 선택해주세요.'); history.back();</script>"
+
+            # 매직 바이트 기반 이미지 검증(Pillow)
             try:
                 from PIL import Image
+                try:
+                    from pillow_heif import register_heif_opener
+                    register_heif_opener()
+                except Exception:
+                    pass
+
                 img = Image.open(id_card)
-                img.verify()  # ?ㅼ젣 ?대?吏 ?뚯씪?몄? 寃利?
-                id_card.seek(0)  # 寃利????뚯씪 ?ъ씤??珥덇린??
+                img.verify()  # 실제 이미지 파일인지 검증
+                id_card.seek(0)
+
                 img = Image.open(id_card)
                 img_format = (img.format or '').upper()
                 if img_format not in {'JPEG', 'PNG', 'GIF', 'WEBP', 'HEIC', 'HEIF'}:
                     return "<script>alert('유효하지 않은 이미지 형식입니다.'); history.back();</script>"
                 id_card.seek(0)
             except Exception:
-                return "<script>alert('?좏슚?섏? ?딆? ?대?吏 ?뚯씪?낅땲?? (?먯긽?섏뿀嫄곕굹 媛吏??대?吏)'); history.back();</script>"
-            
+                return "<script>alert('유효하지 않은 이미지 파일입니다. (손상 또는 지원하지 않는 형식)'); history.back();</script>"
+
             ext = os.path.splitext(id_card.filename)[1].lower()
             photo_name = f"{file_now}_id{ext}"
             photo_path = os.path.join(UPLOAD_DIR, photo_name)
             id_card.save(photo_path)
             photo_filename = photo_name
 
-        # 2. DB?????
+        # 2. DB 저장
         try:
             birth_date = datetime.strptime(request.form.get('birth'), '%Y-%m-%d').date() if request.form.get('birth') else None
             interview_date = datetime.strptime(request.form.get('interview_date'), '%Y-%m-%d').date() if request.form.get('interview_date') else None
@@ -82,7 +90,7 @@ def submit():
             height = int(request.form.get('height')) if request.form.get('height') else None
             weight = int(request.form.get('weight')) if request.form.get('weight') else None
             shoes = int(request.form.get('shoes')) if request.form.get('shoes') else None
-            
+
             agree = True if request.form.get('agree') == 'on' else False
 
             # 중복 지원 검증 (연락처/이메일)
@@ -95,11 +103,11 @@ def submit():
 
             new_app = Application(
                 id=str(uuid.uuid4()),
-                # timestamp??default濡??먮룞 ?ㅼ젙??
+                # timestamp는 default로 자동 설정됨
                 photo=photo_filename,
                 name=request.form.get('name'),
                 birth=birth_date,
-                gender=request.form.get('gender'), # ?깅퀎 ???
+                gender=request.form.get('gender'),
                 phone=request.form.get('phone'),
                 email=request.form.get('email'),
                 address=request.form.get('address'),
@@ -116,16 +124,16 @@ def submit():
                 start_date=start_date,
                 agree=agree,
                 advance_pay=request.form.get('advance_pay', ''),
-                insurance_type=request.form.get('insurance_type', '4?蹂댄뿕'),
+                insurance_type=request.form.get('insurance_type', '4대보험'),
             )
-            
-            # 寃쎈젰?ы빆
+
+            # 경력 사항
             for i in range(1, 4):
                 company = request.form.get(f'company{i}')
                 if company:
                     c_start = datetime.strptime(request.form.get(f'exp_start{i}'), '%Y-%m-%d').date() if request.form.get(f'exp_start{i}') else None
                     c_end = datetime.strptime(request.form.get(f'exp_end{i}'), '%Y-%m-%d').date() if request.form.get(f'exp_end{i}') else None
-                    
+
                     career = Career(
                         company=company,
                         start=c_start,
@@ -134,35 +142,35 @@ def submit():
                         reason=request.form.get(f'reason{i}'),
                     )
                     new_app.careers.append(career)
-            
+
             db.session.add(new_app)
             db.session.commit()
-            
-            # 3. 愿由ъ옄 ?뚮┝ 諛쒖넚 (?대찓??SMS)
+
+            # 3. 관리자 알림 발송 (이메일/SMS)
             from services.notification_service import NotificationService
             NotificationService.send_admin_notification(new_app.to_dict())
-            
-            return "<h1>吏?먯꽌 ?묒닔 ?꾨즺!</h1><script>setTimeout(function(){location.href='/';}, 2000);</script>"
-            
+
+            return "<h1>지원서 접수 완료!</h1><script>setTimeout(function(){location.href='/';}, 2000);</script>"
+
         except ValueError as ve:
-             # XSS 諛⑹?瑜??꾪빐 ?먮윭 硫붿떆吏 吏곸젒 ?몄텧 ?먯젣
-             import logging
-             logger = logging.getLogger(__name__)
-             logger.error(f"Form validation error: {str(ve)}")
-             return "<script>alert('?낅젰 ?묒떇???щ컮瑜댁? ?딆뒿?덈떎. ?ㅼ떆 ?뺤씤??二쇱꽭??'); history.back();</script>"
-        
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Form validation error: {str(ve)}")
+            return "<script>alert('입력 형식이 올바르지 않습니다. 다시 확인해주세요.'); history.back();</script>"
+
     except Exception as e:
         db.session.rollback()
-        # ?곸꽭 ?먮윭???쒕쾭 濡쒓렇?먮쭔 湲곕줉
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"Application submission error: {str(e)}", exc_info=True)
-        
-        # ?ъ슜?먯뿉寃뚮뒗 ?쇰컲?곸씤 硫붿떆吏 ?쒖떆
-        return render_template('error.html', 
-                             error_code="500", 
-                             error_message="吏?먯꽌 ?묒닔 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎", 
-                             error_description="?좎떆 ???ㅼ떆 ?쒕룄?댁＜?몄슂. 臾몄젣媛 吏?띾릺硫??대떦?먯뿉寃?臾몄쓽 諛붾엻?덈떎."), 500
+
+        return render_template(
+            'error.html',
+            error_code="500",
+            error_message="지원서 접수 중 오류가 발생했습니다",
+            error_description="잠시 후 다시 시도해주세요. 문제가 지속되면 관리자에게 문의 바랍니다."
+        ), 500
+
 
 @apply_bp.route('/contact_submit', methods=['POST'])
 def contact_submit():
