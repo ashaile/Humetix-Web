@@ -282,6 +282,9 @@
         [data-theme="dark"] .header {
             border-bottom-color: #2a3340;
         }
+        [data-theme="dark"] .header h2 {
+            color: #dbe4f2;
+        }
         [data-theme="dark"] .card {
             background: #151a21;
             border-color: #2a3340;
@@ -310,6 +313,12 @@
         }
         [data-theme="dark"] .label-badge {
             color: #b9c3d1;
+        }
+        [data-theme="dark"] .total-count {
+            color: #f5f8ff;
+        }
+        [data-theme="dark"] .total-count span {
+            color: #8fb9ff;
         }
         [data-theme="dark"] .data-val,
         [data-theme="dark"] .info-row {
@@ -502,7 +511,7 @@
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h3 style="font-size: 1.2rem; margin: 0; font-weight: 700;">
+            <h3 class="total-count" style="font-size: 1.2rem; margin: 0; font-weight: 700;">
                 총 <span style="color: var(--primary-color);">{{ pagination.total }}</span>명 지원
             </h3>
             <div>
