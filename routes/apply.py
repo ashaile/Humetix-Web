@@ -42,8 +42,9 @@ def submit():
             if not allowed_file(id_card.filename):
                 return "<script>alert('?덉슜?섏? ?딅뒗 ?뚯씪 ?뺤떇?낅땲?? (jpg, png, gif, heic, webp留?媛??'); history.back();</script>"
 
-            if id_card.mimetype not in ALLOWED_MIME_TYPES:
-                return "<script>alert('허용되지 않는 파일 형식입니다.'); history.back();</script>"
+            if id_card.mimetype and id_card.mimetype not in ALLOWED_MIME_TYPES:
+                if id_card.mimetype != 'application/octet-stream':
+                    return "<script>alert('허용되지 않는 파일 형식입니다.'); history.back();</script>"
             
             id_card.seek(0, 2)
             file_size = id_card.tell()
