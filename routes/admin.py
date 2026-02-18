@@ -100,9 +100,17 @@ def master_view():
     # 현재 페이지의 데이터만 딕셔너리로 변환
     data = [app.to_dict() for app in pagination.items]
 
-    status_options = ['new', 'in_progress', 'done']
-    return render_template('admin_inquiries.html', items=items, q=q, status=status,
-                           status_options=status_options)
+    status_options = ['new', 'review', 'interview', 'offer', 'hired', 'rejected']
+    return render_template(
+        'admin.html',
+        data=data,
+        pagination=pagination,
+        filters=filters,
+        search_query=search_query,
+        start_date=start_date,
+        end_date=end_date,
+        status_options=status_options
+    )
 
 
 @admin_bp.route('/inquiries/delete', methods=['POST'])
