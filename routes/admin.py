@@ -1,5 +1,6 @@
 import os
 from flask import Blueprint, render_template, request, redirect, url_for, session, send_file, send_from_directory
+from io import BytesIO
 from datetime import datetime
 import openpyxl
 from openpyxl import Workbook
@@ -385,6 +386,26 @@ def update_inquiry(inquiry_id):
     return redirect(url_for('admin.inquiries'))
 @admin_bp.route('/view_photo/<filename>')
 def view_photo(filename):
+    file_path = os.path.join(UPLOAD_DIR, filename)
+    if not os.path.exists(file_path):
+        return "Not Found", 404
+
+    ext = os.path.splitext(filename)[1].lower()
+    if ext in {'.heic', '.heif'}:
+        try:
+            from pillow_heif import register_heif_opener
+            register_heif_opener()
+            with PILImage.open(file_path) as img:
+                if img.mode not in ('RGB',):
+                    img = img.convert('RGB')
+                buf = BytesIO()
+                img.save(buf, format='JPEG', quality=85)
+                buf.seek(0)
+            return send_file(buf, mimetype='image/jpeg', download_name=f"{os.path.splitext(filename)[0]}.jpg")
+        except Exception as e:
+            logger.error(f"HEIC preview failed for {filename}: {e}")
+            return "Unsupported image", 415
+
     return send_from_directory(UPLOAD_DIR, filename)
 
 @admin_bp.route('/clear_data', methods=['POST'])

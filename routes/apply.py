@@ -93,14 +93,6 @@ def submit():
 
             agree = True if request.form.get('agree') == 'on' else False
 
-            # 중복 지원 검증 (연락처/이메일)
-            phone_val = request.form.get('phone')
-            email_val = request.form.get('email')
-            if phone_val and Application.query.filter(Application.phone == phone_val).first():
-                return "<script>alert('이미 등록된 연락처입니다. 중복 지원은 제한됩니다.'); history.back();</script>"
-            if email_val and Application.query.filter(Application.email == email_val).first():
-                return "<script>alert('이미 등록된 이메일입니다. 중복 지원은 제한됩니다.'); history.back();</script>"
-
             new_app = Application(
                 id=str(uuid.uuid4()),
                 # timestamp는 default로 자동 설정됨
