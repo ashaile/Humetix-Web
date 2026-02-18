@@ -7,6 +7,7 @@ from openpyxl.drawing.image import Image as ExcelImage
 from openpyxl.styles import Font, Alignment, Border, Side
 from PIL import Image as PILImage
 from models import db, Application
+from sqlalchemy.orm import joinedload
 
 import logging
 
@@ -42,7 +43,7 @@ def master_view():
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     
-    query = Application.query
+    query = Application.query.options(joinedload(Application.careers))
     
     # 1. 기본 검색 (이름/연락처)
     if search_query:
@@ -122,11 +123,10 @@ def delete_selected():
     if not selected_ids:
         return "<script>alert('삭제할 항목을 선택해주세요.'); history.back();</script>"
     
-    # 선택된 지원서 삭제
+    # 선택된 지원서 삭제 (ORM 캐스케이드 적용)
     for app_id in selected_ids:
         app = Application.query.get(app_id)
         if app:
-            # 사진 파일 삭제
             if app.photo:
                 try:
                     os.remove(os.path.join(UPLOAD_DIR, app.photo))
@@ -145,7 +145,7 @@ def download_excel():
         return redirect(url_for('auth.login'))
     
     try:
-        apps = Application.query.all()
+        apps = Application.query.options(joinedload(Application.careers)).all()
         logger.info(f"Found {len(apps)} applications for excel")
         data = [app.to_dict() for app in apps]
         
@@ -295,15 +295,25 @@ def clear_data():
     if not session.get('is_admin'):
         return redirect(url_for('auth.login'))
     
-    # 모든 지원서 삭제
-    Application.query.delete()
+    # 모든 지원서 삭제 (ORM 캐스케이드 적용) + 사진 정리
+    apps = Application.query.all()
+    referenced_photos = set()
+    for app in apps:
+        if app.photo:
+            referenced_photos.add(app.photo)
+            try:
+                os.remove(os.path.join(UPLOAD_DIR, app.photo))
+            except Exception as e:
+                logger.error(f"Error deleting photo {app.photo}: {e}")
+        db.session.delete(app)
     db.session.commit()
     
-    # 업로드된 사진들도 삭제
+    # 남아있는 업로드 파일 정리 (DB에 없는 파일)
     for f in os.listdir(UPLOAD_DIR):
-        try:
-            os.remove(os.path.join(UPLOAD_DIR, f))
-        except Exception as e:
-            logger.error(f"Error deleting file {f}: {e}")
+        if f not in referenced_photos:
+            try:
+                os.remove(os.path.join(UPLOAD_DIR, f))
+            except Exception as e:
+                logger.error(f"Error deleting leftover file {f}: {e}")
         
     return redirect(url_for('admin.master_view'))

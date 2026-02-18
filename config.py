@@ -1,9 +1,16 @@
 import os
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 class Config:
     """기본 설정 (모든 환경 공통)"""
     SECRET_KEY = os.environ.get('SECRET_KEY')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # 환경변수 DATABASE_URL이 있으면 사용, 없으면 로컬 SQLite
+    SQLALCHEMY_DATABASE_URI = os.environ.get(
+        'DATABASE_URL',
+        f"sqlite:///{os.path.join(BASE_DIR, 'humetix.db')}"
+    )
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB 제한 (전체 요청 크기)
     
     # 세션 보안 기본 설정 (오버라이딩 가능)

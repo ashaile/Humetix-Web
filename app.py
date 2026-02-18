@@ -29,9 +29,7 @@ if not os.path.exists(LOG_DIR):
 from logging.config import dictConfig
 dictConfig(app_config.get_logging_config(LOG_DIR))
 
-# DB 설정 (config.py로 이동하지 않은 동적 경로 설정 등은 유지 가능하나, 여기서는 URI도 config로 뺄 수 있음. 
-# 현재 구조 유지를 위해 DB URI는 유지하되, 나머지는 Config에서 처리됨)
-app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(BASE_DIR, 'humetix.db')}"
+# DB 설정은 config.py에서 일관되게 관리 (환경변수/기본값)
 
 # 초기화
 db.init_app(app)

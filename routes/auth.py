@@ -1,4 +1,5 @@
 import os
+import hmac
 import time
 import logging
 from flask import Blueprint, render_template, request, redirect, url_for, session
@@ -35,7 +36,7 @@ def login():
             return "<script>alert('너무 많은 로그인 시도가 있었습니다. 5분 후 다시 시도해주세요.'); history.back();</script>"
             
         password = request.form.get('password')
-        if password == ADMIN_PASSWORD:
+        if password and hmac.compare_digest(password, ADMIN_PASSWORD):
             session['is_admin'] = True
             # 로그인 성공 시 시도 기록 초기화
             if ip in LOGIN_ATTEMPTS:

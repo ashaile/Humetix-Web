@@ -9,6 +9,12 @@ humetix.db
 # 업로드 파일
 uploads/
 
+# Codex/Claude worktrees
+.claude/
+
+# Logs
+logs/
+
 # Python
 __pycache__/
 *.pyc

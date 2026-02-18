@@ -9,15 +9,15 @@ class Application(db.Model):
     __tablename__ = 'applications'
     
     id = db.Column(db.String(36), primary_key=True)
-    timestamp = db.Column(db.DateTime, default=datetime.now)
+    timestamp = db.Column(db.DateTime, default=datetime.now, index=True)
     photo = db.Column(db.String(200), default="")
     
     # 인적사항
-    name = db.Column(db.String(50), nullable=False)
+    name = db.Column(db.String(50), nullable=False, index=True)
     birth = db.Column(db.Date)
-    phone = db.Column(db.String(20))
+    phone = db.Column(db.String(20), index=True)
     email = db.Column(db.String(100))
-    gender = db.Column(db.String(10)) # 성별 추가
+    gender = db.Column(db.String(10), index=True) # 성별 추가
     address = db.Column(db.String(200))
     
     # 신체정보
@@ -28,17 +28,17 @@ class Application(db.Model):
     tshirt = db.Column(db.String(10))
     
     # 근무조건
-    shift = db.Column(db.String(10))
-    posture = db.Column(db.String(10))
-    overtime = db.Column(db.String(10))
-    holiday = db.Column(db.String(10))
+    shift = db.Column(db.String(10), index=True)
+    posture = db.Column(db.String(10), index=True)
+    overtime = db.Column(db.String(10), index=True)
+    holiday = db.Column(db.String(10), index=True)
     interview_date = db.Column(db.Date)
     start_date = db.Column(db.Date)
     agree = db.Column(db.Boolean, default=False)
     
     # 기타 희망사항
-    advance_pay = db.Column(db.String(10), default="")
-    insurance_type = db.Column(db.String(20), default="4대보험")
+    advance_pay = db.Column(db.String(10), default="", index=True)
+    insurance_type = db.Column(db.String(20), default="4대보험", index=True)
     memo = db.Column(db.Text, default="")  # 관리자용 메모 추가
     
     # 경력 관계
@@ -88,7 +88,7 @@ class Career(db.Model):
     __tablename__ = 'careers'
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    application_id = db.Column(db.String(36), db.ForeignKey('applications.id'), nullable=False)
+    application_id = db.Column(db.String(36), db.ForeignKey('applications.id'), nullable=False, index=True)
     company = db.Column(db.String(100))
     start = db.Column(db.Date)
     end = db.Column(db.Date)
