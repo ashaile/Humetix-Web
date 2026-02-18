@@ -573,21 +573,22 @@
                 <div class="col-lg-5 offset-lg-1 fade-in">
                     <div class="contact-form text-start">
                         <h4 class="fw-bold mb-4 text-dark">빠른 견적 문의</h4>
-                        <form id="contactForm">
+                        <form id="contactForm" action="{{ url_for('apply.contact_submit') }}" method="post">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <div class="mb-3">
-                                <input type="text" class="form-control" placeholder="회사명" aria-label="회사명" required>
+                                <input type="text" name="company" class="form-control" placeholder="회사명" aria-label="회사명" required>
                             </div>
                             <div class="mb-3">
-                                <input type="text" class="form-control" placeholder="담당자명" aria-label="담당자명" required>
+                                <input type="text" name="name" class="form-control" placeholder="담당자명" aria-label="담당자명" required>
                             </div>
                             <div class="mb-3">
-                                <input type="tel" class="form-control" placeholder="연락처 (예: 010-1234-5678)" aria-label="연락처" required>
+                                <input type="tel" name="phone" class="form-control" placeholder="연락처 (예: 010-1234-5678)" aria-label="연락처" required>
                             </div>
                             <div class="mb-3">
-                                <input type="email" class="form-control" placeholder="이메일" aria-label="이메일">
+                                <input type="email" name="email" class="form-control" placeholder="이메일" aria-label="이메일">
                             </div>
                             <div class="mb-3">
-                                <textarea class="form-control" rows="3" placeholder="문의 내용을 간략히 적어주세요" aria-label="문의 내용"></textarea>
+                                <textarea name="message" class="form-control" rows="3" placeholder="문의 내용을 간략히 적어주세요" aria-label="문의 내용"></textarea>
                             </div>
                             <button type="submit" class="btn btn-primary-custom w-100 shadow">문의하기</button>
                         </form>
@@ -712,12 +713,7 @@
 
         counters.forEach(c => counterObserver.observe(c));
 
-        // 견적 문의 폼 제출
-        document.getElementById('contactForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            alert('문의가 접수되었습니다. 빠른 시일 내에 연락드리겠습니다.');
-            this.reset();
-        });
+        // 견적 문의 폼은 서버로 제출됩니다.
     </script>
 </body>
 

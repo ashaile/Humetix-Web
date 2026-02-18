@@ -6,7 +6,7 @@ from openpyxl import Workbook
 from openpyxl.drawing.image import Image as ExcelImage
 from openpyxl.styles import Font, Alignment, Border, Side
 from PIL import Image as PILImage
-from models import db, Application
+from models import db, Application, Inquiry
 from sqlalchemy.orm import joinedload
 
 import logging
@@ -286,6 +286,15 @@ def download_excel():
         import traceback
         logger.error(traceback.format_exc())
         return f"Excel download failed: {str(e)}", 500
+
+
+@admin_bp.route('/inquiries')
+def inquiries():
+    if not session.get('is_admin'):
+        return redirect(url_for('auth.login'))
+
+    items = Inquiry.query.order_by(Inquiry.created_at.desc()).all()
+    return render_template('admin_inquiries.html', items=items)
 @admin_bp.route('/view_photo/<filename>')
 def view_photo(filename):
     return send_from_directory(UPLOAD_DIR, filename)

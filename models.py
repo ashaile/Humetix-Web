@@ -103,3 +103,16 @@ class Career(db.Model):
             "role": self.role,
             "reason": self.reason,
         }
+
+
+class Inquiry(db.Model):
+    """견적 문의 폼 접수"""
+    __tablename__ = 'inquiries'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    created_at = db.Column(db.DateTime, default=datetime.now, index=True)
+    company = db.Column(db.String(100), nullable=False)
+    name = db.Column(db.String(50), nullable=False)
+    phone = db.Column(db.String(30), nullable=False)
+    email = db.Column(db.String(100))
+    message = db.Column(db.Text)

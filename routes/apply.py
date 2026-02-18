@@ -1,9 +1,9 @@
-import os
+﻿import os
 import uuid
 from flask import Blueprint, render_template, request
 from werkzeug.utils import secure_filename
 from datetime import datetime
-from models import db, Application, Career
+from models import db, Application, Career, Inquiry
 
 apply_bp = Blueprint('apply', __name__)
 
@@ -13,7 +13,7 @@ ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'heic', 'heif', 'webp'}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
 def allowed_file(filename):
-    """허용된 파일 확장자인지 확인"""
+    """?덉슜???뚯씪 ?뺤옣?먯씤吏 ?뺤씤"""
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -26,28 +26,28 @@ def submit():
     try:
         file_now = datetime.now().strftime('%Y%m%d_%H%M%S')
         
-        # 1. 신분증 사진 처리
+        # 1. ?좊텇利??ъ쭊 泥섎━
         id_card = request.files.get('id_card')
         photo_filename = ""
         
         if id_card and id_card.filename != '':
             if not allowed_file(id_card.filename):
-                return "<script>alert('허용되지 않는 파일 형식입니다. (jpg, png, gif, heic, webp만 가능)'); history.back();</script>"
+                return "<script>alert('?덉슜?섏? ?딅뒗 ?뚯씪 ?뺤떇?낅땲?? (jpg, png, gif, heic, webp留?媛??'); history.back();</script>"
             
             id_card.seek(0, 2)
             file_size = id_card.tell()
             id_card.seek(0)
             if file_size > MAX_FILE_SIZE:
-                return "<script>alert('파일 크기가 5MB를 초과합니다. 더 작은 파일을 선택해주세요.'); history.back();</script>"
+                return "<script>alert('?뚯씪 ?ш린媛 5MB瑜?珥덇낵?⑸땲?? ???묒? ?뚯씪???좏깮?댁＜?몄슂.'); history.back();</script>"
             
-            # 매직 바이트 검사 (Pillow)
+            # 留ㅼ쭅 諛붿씠??寃??(Pillow)
             try:
                 from PIL import Image
                 img = Image.open(id_card)
-                img.verify()  # 실제 이미지 파일인지 검증
-                id_card.seek(0)  # 검증 후 파일 포인터 초기화
+                img.verify()  # ?ㅼ젣 ?대?吏 ?뚯씪?몄? 寃利?
+                id_card.seek(0)  # 寃利????뚯씪 ?ъ씤??珥덇린??
             except Exception:
-                return "<script>alert('유효하지 않은 이미지 파일입니다. (손상되었거나 가짜 이미지)'); history.back();</script>"
+                return "<script>alert('?좏슚?섏? ?딆? ?대?吏 ?뚯씪?낅땲?? (?먯긽?섏뿀嫄곕굹 媛吏??대?吏)'); history.back();</script>"
             
             ext = os.path.splitext(id_card.filename)[1].lower()
             photo_name = f"{file_now}_id{ext}"
@@ -55,7 +55,7 @@ def submit():
             id_card.save(photo_path)
             photo_filename = photo_name
 
-        # 2. DB에 저장
+        # 2. DB?????
         try:
             birth_date = datetime.strptime(request.form.get('birth'), '%Y-%m-%d').date() if request.form.get('birth') else None
             interview_date = datetime.strptime(request.form.get('interview_date'), '%Y-%m-%d').date() if request.form.get('interview_date') else None
@@ -70,11 +70,11 @@ def submit():
 
             new_app = Application(
                 id=str(uuid.uuid4()),
-                # timestamp는 default로 자동 설정됨
+                # timestamp??default濡??먮룞 ?ㅼ젙??
                 photo=photo_filename,
                 name=request.form.get('name'),
                 birth=birth_date,
-                gender=request.form.get('gender'), # 성별 저장
+                gender=request.form.get('gender'), # ?깅퀎 ???
                 phone=request.form.get('phone'),
                 email=request.form.get('email'),
                 address=request.form.get('address'),
@@ -91,10 +91,10 @@ def submit():
                 start_date=start_date,
                 agree=agree,
                 advance_pay=request.form.get('advance_pay', ''),
-                insurance_type=request.form.get('insurance_type', '4대보험'),
+                insurance_type=request.form.get('insurance_type', '4?蹂댄뿕'),
             )
             
-            # 경력사항
+            # 寃쎈젰?ы빆
             for i in range(1, 4):
                 company = request.form.get(f'company{i}')
                 if company:
@@ -113,28 +113,51 @@ def submit():
             db.session.add(new_app)
             db.session.commit()
             
-            # 3. 관리자 알림 발송 (이메일/SMS)
+            # 3. 愿由ъ옄 ?뚮┝ 諛쒖넚 (?대찓??SMS)
             from services.notification_service import NotificationService
             NotificationService.send_admin_notification(new_app.to_dict())
             
-            return "<h1>지원서 접수 완료!</h1><script>setTimeout(function(){location.href='/';}, 2000);</script>"
+            return "<h1>吏?먯꽌 ?묒닔 ?꾨즺!</h1><script>setTimeout(function(){location.href='/';}, 2000);</script>"
             
         except ValueError as ve:
-             # XSS 방지를 위해 에러 메시지 직접 노출 자제
+             # XSS 諛⑹?瑜??꾪빐 ?먮윭 硫붿떆吏 吏곸젒 ?몄텧 ?먯젣
              import logging
              logger = logging.getLogger(__name__)
              logger.error(f"Form validation error: {str(ve)}")
-             return "<script>alert('입력 양식이 올바르지 않습니다. 다시 확인해 주세요.'); history.back();</script>"
+             return "<script>alert('?낅젰 ?묒떇???щ컮瑜댁? ?딆뒿?덈떎. ?ㅼ떆 ?뺤씤??二쇱꽭??'); history.back();</script>"
         
     except Exception as e:
         db.session.rollback()
-        # 상세 에러는 서버 로그에만 기록
+        # ?곸꽭 ?먮윭???쒕쾭 濡쒓렇?먮쭔 湲곕줉
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"Application submission error: {str(e)}", exc_info=True)
         
-        # 사용자에게는 일반적인 메시지 표시
+        # ?ъ슜?먯뿉寃뚮뒗 ?쇰컲?곸씤 硫붿떆吏 ?쒖떆
         return render_template('error.html', 
                              error_code="500", 
-                             error_message="지원서 접수 중 오류가 발생했습니다", 
-                             error_description="잠시 후 다시 시도해주세요. 문제가 지속되면 담당자에게 문의 바랍니다."), 500
+                             error_message="吏?먯꽌 ?묒닔 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎", 
+                             error_description="?좎떆 ???ㅼ떆 ?쒕룄?댁＜?몄슂. 臾몄젣媛 吏?띾릺硫??대떦?먯뿉寃?臾몄쓽 諛붾엻?덈떎."), 500
+
+@apply_bp.route('/contact_submit', methods=['POST'])
+def contact_submit():
+    company = request.form.get('company', '').strip()
+    name = request.form.get('name', '').strip()
+    phone = request.form.get('phone', '').strip()
+    email = request.form.get('email', '').strip()
+    message = request.form.get('message', '').strip()
+
+    if not company or not name or not phone:
+        return "<script>alert('필수 항목을 입력해주세요.'); history.back();</script>"
+
+    inquiry = Inquiry(
+        company=company,
+        name=name,
+        phone=phone,
+        email=email,
+        message=message
+    )
+    db.session.add(inquiry)
+    db.session.commit()
+
+    return "<script>alert('문의가 접수되었습니다. 빠른 시일 내에 연락드리겠습니다.'); location.href='/'</script>"
