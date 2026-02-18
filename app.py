@@ -1,5 +1,5 @@
 ﻿import os
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify
 from dotenv import load_dotenv
 from flask_wtf.csrf import CSRFProtect
 from flask_migrate import Migrate
@@ -57,6 +57,14 @@ def index():
 @app.route('/privacy')
 def privacy():
     return render_template('privacy.html')
+
+@app.route('/health')
+def health():
+    try:
+        db.session.execute(db.text('SELECT 1'))
+        return jsonify({"status": "healthy", "database": "connected"}), 200
+    except Exception as e:
+        return jsonify({"status": "unhealthy", "database": str(e)}), 503
 
 @app.errorhandler(404)
 def page_not_found(e):

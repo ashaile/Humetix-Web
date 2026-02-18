@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 
 <head>
@@ -7,36 +7,49 @@
     <title>문의 목록</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg: #f4f7f9;
+            --surface: #ffffff;
+            --text: #333;
+            --muted: #666;
+            --border: #dee2e6;
+            --primary: #003057;
+        }
+        [data-theme="dark"] {
+            --bg: #0f1217;
+            --surface: #151a21;
+            --text: #e6e9ef;
+            --muted: #a7b0bd;
+            --border: #2a3340;
+            --primary: #2a5aa7;
+        }
         body {
             font-family: 'Noto Sans KR', sans-serif;
-            background: #f4f7f9;
+            background: var(--bg);
             padding: 20px;
-            color: #333;
+            color: var(--text);
         }
-
         .container {
-            max-width: 1100px;
+            max-width: 1200px;
             margin: 0 auto;
-            background: white;
+            background: var(--surface);
             padding: 30px;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--border);
         }
-
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             padding-bottom: 15px;
-            border-bottom: 2px solid #003057;
+            border-bottom: 2px solid var(--primary);
         }
-
         .header h2 {
             margin: 0;
-            color: #003057;
+            color: var(--primary);
         }
-
         .btn {
             display: inline-flex;
             justify-content: center;
@@ -53,63 +66,63 @@
             background: #6c757d;
             color: white;
         }
-
+        .btn-danger { background: #dc3545; }
+        .btn-primary { background: var(--primary); }
         table {
             width: 100%;
             border-collapse: collapse;
         }
-
-        th,
-        td {
-            border: 1px solid #dee2e6;
+        th, td {
+            border: 1px solid var(--border);
             padding: 10px;
             text-align: left;
-            font-size: 0.95rem;
+            font-size: 0.92rem;
+            vertical-align: top;
         }
-
-        th {
-            background: #f8f9fa;
-        }
-
-        .muted {
-            color: #888;
-            font-size: 0.85rem;
-        }
-
-        /* 다크 모드 */
-        [data-theme="dark"] body {
-            background: #0f1217;
-            color: #e6e9ef;
-        }
-        [data-theme="dark"] .container {
-            background: #151a21;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-        }
-        [data-theme="dark"] th {
-            background: #1b222c;
-            color: #cfd6e4;
-        }
-        [data-theme="dark"] td {
-            background: #151a21;
-            color: #e6e9ef;
-            border-color: #2a3340;
-        }
-        [data-theme="dark"] table {
-            border-color: #2a3340;
-        }
+        th { background: #f8f9fa; }
+        [data-theme="dark"] th { background: #1b222c; color: #cfd6e4; }
+        [data-theme="dark"] td { background: #151a21; }
+        .muted { color: var(--muted); font-size: 0.85rem; }
         .theme-toggle {
-            border: 1px solid #ccc;
+            border: 1px solid var(--border);
             background: transparent;
-            color: #555;
+            color: var(--text);
             border-radius: 20px;
             padding: 6px 14px;
             font-weight: 700;
             font-size: 0.85rem;
             margin-right: 8px;
         }
-        [data-theme="dark"] .theme-toggle {
-            border-color: #2a3340;
-            color: #e6e9ef;
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .filter-input, .filter-select {
+            height: 36px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0 10px;
+            background: transparent;
+            color: var(--text);
+        }
+        .inline-input {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 6px 8px;
+            background: transparent;
+            color: var(--text);
+        }
+        .inline-textarea {
+            width: 100%;
+            min-height: 60px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 6px 8px;
+            background: transparent;
+            color: var(--text);
         }
     </style>
 </head>
@@ -124,6 +137,17 @@
             </div>
         </div>
 
+        <form method="get" action="{{ url_for('admin.inquiries') }}" class="filter-bar">
+            <input type="text" name="q" class="filter-input" placeholder="회사명/담당자/연락처/이메일 검색" value="{{ q }}">
+            <select name="status" class="filter-select">
+                <option value="">전체 상태</option>
+                {% for val, label in status_options %}
+                <option value="{{ val }}" {% if status==val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary">검색</button>
+        </form>
+
         <form method="post" action="{{ url_for('admin.delete_inquiries') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
@@ -132,7 +156,7 @@
             {% else %}
             <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom:12px;">
                 <label class="muted"><input type="checkbox" onclick="toggleAll(this)"> 전체 선택</label>
-                <button type="submit" class="btn" style="background:#dc3545;">선택 삭제</button>
+                <button type="submit" class="btn btn-danger">선택 삭제</button>
             </div>
             <table>
                 <thead>
@@ -144,6 +168,10 @@
                         <th>연락처</th>
                         <th>이메일</th>
                         <th>내용</th>
+                        <th>상태</th>
+                        <th>담당자(내부)</th>
+                        <th>관리자 메모</th>
+                        <th style="width:90px;">저장</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -156,6 +184,22 @@
                         <td>{{ item.phone }}</td>
                         <td>{{ item.email or '-' }}</td>
                         <td>{{ item.message or '-' }}</td>
+                        <td>
+                            <select id="status-{{ item.id }}" class="inline-input">
+                                {% for val, label in status_options %}
+                                <option value="{{ val }}" {% if item.status==val %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td>
+                            <input type="text" id="assignee-{{ item.id }}" class="inline-input" value="{{ item.assignee or '' }}" placeholder="담당자">
+                        </td>
+                        <td>
+                            <textarea id="memo-{{ item.id }}" class="inline-textarea" placeholder="메모">{{ item.admin_memo or '' }}</textarea>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-primary" style="height:32px;" onclick="saveInquiry({{ item.id }})">저장</button>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -169,6 +213,28 @@
             document.getElementsByName('selected_ids').forEach(cb => {
                 cb.checked = source.checked;
             });
+        }
+
+        async function saveInquiry(id) {
+            const status = document.getElementById(`status-${id}`).value;
+            const assignee = document.getElementById(`assignee-${id}`).value;
+            const memo = document.getElementById(`memo-${id}`).value;
+
+            const formData = new FormData();
+            formData.append('status', status);
+            formData.append('assignee', assignee);
+            formData.append('admin_memo', memo);
+            formData.append('csrf_token', '{{ csrf_token() }}');
+
+            const res = await fetch(`/inquiries/update/${id}`, {
+                method: 'POST',
+                body: formData
+            });
+            if (res.ok) {
+                alert('저장되었습니다.');
+            } else {
+                alert('저장에 실패했습니다.');
+            }
         }
 
         const themeToggle = document.getElementById('themeToggle');

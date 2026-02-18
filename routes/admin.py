@@ -37,6 +37,7 @@ def master_view():
         'agree': request.args.get('agree'),
         'advance_pay': request.args.get('advance_pay'),
         'insurance_type': request.args.get('insurance_type'),
+        'status': request.args.get('status'),
     }
     
     # 날짜 필터
@@ -77,6 +78,9 @@ def master_view():
         
     if filters['insurance_type']:
         query = query.filter(Application.insurance_type == filters['insurance_type'])
+
+    if filters['status']:
+        query = query.filter(Application.status == filters['status'])
     
     # 3. 날짜 범위 검색 (접수일 기준)
     if start_date:
@@ -94,10 +98,20 @@ def master_view():
     
     # 현재 페이지의 데이터만 딕셔너리로 변환
     data = [app.to_dict() for app in pagination.items]
+
+    status_options = [
+        ('new', '??'),
+        ('review', '??'),
+        ('interview', '??'),
+        ('offer', '??'),
+        ('hired', '??'),
+        ('rejected', '???'),
+    ]
+
     
     return render_template('admin.html', data=data, pagination=pagination,
                          search_query=search_query, search_type=search_type,
-                         filters=filters, start_date=start_date, end_date=end_date) # 필터 상태 유지 위해 전달
+                         filters=filters, start_date=start_date, end_date=end_date, status_options=status_options) # 필터 상태 유지 위해 전달
 
 @admin_bp.route('/update_memo/<app_id>', methods=['POST'])
 def update_memo(app_id):
@@ -113,6 +127,24 @@ def update_memo(app_id):
     db.session.commit()
     
     return {"success": True, "message": "Memo updated"}
+
+
+@admin_bp.route('/update_status/<app_id>', methods=['POST'])
+def update_status(app_id):
+    if not session.get('is_admin'):
+        return {"success": False, "message": "Unauthorized"}, 401
+
+    app = Application.query.get(app_id)
+    if not app:
+        return {"success": False, "message": "Application not found"}, 404
+
+    status = request.form.get('status', '').strip()
+    if status:
+        app.status = status
+        db.session.commit()
+        return {"success": True, "message": "Status updated"}
+
+    return {"success": False, "message": "Invalid status"}, 400
 
 @admin_bp.route('/delete_selected', methods=['POST'])
 def delete_selected():
@@ -293,8 +325,29 @@ def inquiries():
     if not session.get('is_admin'):
         return redirect(url_for('auth.login'))
 
-    items = Inquiry.query.order_by(Inquiry.created_at.desc()).all()
-    return render_template('admin_inquiries.html', items=items)
+    q = request.args.get('q', '').strip()
+    status = request.args.get('status', '').strip()
+
+    query = Inquiry.query
+    if q:
+        like_q = f"%{q}%"
+        query = query.filter(
+            (Inquiry.company.like(like_q)) |
+            (Inquiry.name.like(like_q)) |
+            (Inquiry.phone.like(like_q)) |
+            (Inquiry.email.like(like_q))
+        )
+    if status:
+        query = query.filter(Inquiry.status == status)
+
+    items = query.order_by(Inquiry.created_at.desc()).all()
+    status_options = [
+        ('new', '신규'),
+        ('in_progress', '진행중'),
+        ('done', '완료'),
+    ]
+    return render_template('admin_inquiries.html', items=items, q=q, status=status,
+                           status_options=status_options)
 
 
 @admin_bp.route('/inquiries/delete', methods=['POST'])
@@ -310,6 +363,23 @@ def delete_inquiries():
         item = Inquiry.query.get(inquiry_id)
         if item:
             db.session.delete(item)
+    db.session.commit()
+
+    return redirect(url_for('admin.inquiries'))
+
+
+@admin_bp.route('/inquiries/update/<int:inquiry_id>', methods=['POST'])
+def update_inquiry(inquiry_id):
+    if not session.get('is_admin'):
+        return redirect(url_for('auth.login'))
+
+    item = Inquiry.query.get(inquiry_id)
+    if not item:
+        return redirect(url_for('admin.inquiries'))
+
+    item.status = request.form.get('status', item.status)
+    item.assignee = request.form.get('assignee', item.assignee)
+    item.admin_memo = request.form.get('admin_memo', item.admin_memo)
     db.session.commit()
 
     return redirect(url_for('admin.inquiries'))

@@ -10,6 +10,14 @@ apply_bp = Blueprint('apply', __name__)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UPLOAD_DIR = os.path.join(BASE_DIR, 'uploads')
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'heic', 'heif', 'webp'}
+ALLOWED_MIME_TYPES = {
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/heic',
+    'image/heif',
+    'image/webp'
+}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
 def allowed_file(filename):
@@ -33,6 +41,9 @@ def submit():
         if id_card and id_card.filename != '':
             if not allowed_file(id_card.filename):
                 return "<script>alert('?덉슜?섏? ?딅뒗 ?뚯씪 ?뺤떇?낅땲?? (jpg, png, gif, heic, webp留?媛??'); history.back();</script>"
+
+            if id_card.mimetype not in ALLOWED_MIME_TYPES:
+                return "<script>alert('허용되지 않는 파일 형식입니다.'); history.back();</script>"
             
             id_card.seek(0, 2)
             file_size = id_card.tell()
@@ -46,6 +57,11 @@ def submit():
                 img = Image.open(id_card)
                 img.verify()  # ?ㅼ젣 ?대?吏 ?뚯씪?몄? 寃利?
                 id_card.seek(0)  # 寃利????뚯씪 ?ъ씤??珥덇린??
+                img = Image.open(id_card)
+                img_format = (img.format or '').upper()
+                if img_format not in {'JPEG', 'PNG', 'GIF', 'WEBP', 'HEIC', 'HEIF'}:
+                    return "<script>alert('유효하지 않은 이미지 형식입니다.'); history.back();</script>"
+                id_card.seek(0)
             except Exception:
                 return "<script>alert('?좏슚?섏? ?딆? ?대?吏 ?뚯씪?낅땲?? (?먯긽?섏뿀嫄곕굹 媛吏??대?吏)'); history.back();</script>"
             
@@ -67,6 +83,14 @@ def submit():
             shoes = int(request.form.get('shoes')) if request.form.get('shoes') else None
             
             agree = True if request.form.get('agree') == 'on' else False
+
+            # 중복 지원 검증 (연락처/이메일)
+            phone_val = request.form.get('phone')
+            email_val = request.form.get('email')
+            if phone_val and Application.query.filter(Application.phone == phone_val).first():
+                return "<script>alert('이미 등록된 연락처입니다. 중복 지원은 제한됩니다.'); history.back();</script>"
+            if email_val and Application.query.filter(Application.email == email_val).first():
+                return "<script>alert('이미 등록된 이메일입니다. 중복 지원은 제한됩니다.'); history.back();</script>"
 
             new_app = Application(
                 id=str(uuid.uuid4()),
