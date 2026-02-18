@@ -146,6 +146,28 @@ def update_inquiry(inquiry_id):
     db.session.commit()
 
     return redirect(url_for('admin.inquiries'))
+
+
+@admin_bp.route('/delete_selected', methods=['POST'])
+def delete_selected():
+    if not session.get('is_admin'):
+        return redirect(url_for('auth.login'))
+
+    selected_ids = request.form.getlist('selected_ids')
+    if not selected_ids:
+        return redirect(url_for('admin.master_view'))
+
+    apps = Application.query.filter(Application.id.in_(selected_ids)).all()
+    for app in apps:
+        if app.photo:
+            try:
+                os.remove(os.path.join(UPLOAD_DIR, app.photo))
+            except Exception as e:
+                logger.error(f"Error deleting photo {app.photo}: {e}")
+        db.session.delete(app)
+    db.session.commit()
+
+    return redirect(url_for('admin.master_view'))
 @admin_bp.route('/view_photo/<filename>')
 def view_photo(filename):
     file_path = os.path.join(UPLOAD_DIR, filename)
