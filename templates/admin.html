@@ -153,7 +153,16 @@
         .info-columns {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 24px;
+            gap: 16px;
+        }
+        .info-columns .left-group {
+            max-width: 420px;
+        }
+        .info-columns .right-group {
+            max-width: 420px;
+        }
+        .info-columns .right-group .info-block-title:first-of-type {
+            margin-top: 0;
         }
         .info-block-title {
             margin: 6px 0 10px 0;
@@ -380,6 +389,12 @@
         }
         [data-theme="dark"] .highlight {
             color: #7fb2ff;
+        }
+        @media (max-width: 1100px) {
+            .info-columns .left-group,
+            .info-columns .right-group {
+                max-width: none;
+            }
         }
         @media (max-width: 900px) {
             .info-columns {
@@ -694,7 +709,7 @@
 
                     <div class="applicant-info">
                         <div class="info-columns">
-                            <div>
+                            <div class="left-group">
                                 <div class="info-block-title">기본정보</div>
                                 <div class="info-grid">
                                     <div class="info-label">생년월일</div>
@@ -708,8 +723,7 @@
                                     <div class="info-label">사진</div>
                                     <div class="info-value">{{ "있음" if entry.photo else "없음" }}</div>
                                 </div>
-                            </div>
-                            <div>
+                                <div class="info-divider"></div>
                                 <div class="info-block-title">신체/사이즈</div>
                                 <div class="info-grid">
                                     <div class="info-label">신체</div>
@@ -719,7 +733,8 @@
                                     <div class="info-label">사이즈</div>
                                     <div class="info-value">신발: {{ entry.body.shoes or '-' }} / 티셔츠: {{ entry.body.tshirt or '-' }}</div>
                                 </div>
-                                <div class="info-divider"></div>
+                            </div>
+                            <div class="right-group">
                                 <div class="info-block-title">근무/희망</div>
                                 <div class="info-grid">
                                     <div class="info-label">근무</div>
