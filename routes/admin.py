@@ -125,11 +125,15 @@ def download_excel():
         if not vision_text:
             return ""
         import re
-        m = re.search(r"(\\d+(?:[\\.,]\\d+)?)", vision_text)
+        m = re.search(r"(\d+(?:[\.,]\d+)?)", str(vision_text))
         if not m:
-            return ""
+            cleaned = re.sub(r"[^0-9\.,]", "", str(vision_text))
+            if not cleaned:
+                return ""
+            m = re.search(r"(\d+(?:[\.,]\d+)?)", cleaned)
+            if not m:
+                return ""
         val = m.group(1)
-        # 템플릿 표기는 1,0 형태가 많아 콤마로 통일
         return val.replace(".", ",")
 
     def parse_vision_type(vision_text):
@@ -151,12 +155,13 @@ def download_excel():
         ws.title = title
         if hasattr(ws, "_images"):
             ws._images = []
-        for col in ["B", "C", "D", "E", "F", "G", "H"]:
-            if ws.column_dimensions[col].width:
-                ws.column_dimensions[col].width = ws.column_dimensions[col].width + 0.5
+        # Slightly tighten column widths for readability
+        for col_key, dim in ws.column_dimensions.items():
+            if dim.width and dim.width > 1.5:
+                dim.width = round(dim.width * 0.9, 2)
 
-        # 기본정보
-        set_value(ws, "O4", name)
+        # Basic info
+        set_value(ws, "O4", f"(한글) {name}" if name else "")
         if app.birth:
             today = datetime.now().date()
             age = today.year - app.birth.year - ((today.month, today.day) < (app.birth.month, app.birth.day))
@@ -169,13 +174,13 @@ def download_excel():
         set_value(ws, "O7", app.email or "")
         set_value(ws, "O8", app.address or "")
 
-        # 학력사항 (데이터 없으면 공란)
+        # Education (leave blank if not provided)
         set_value(ws, "O11", "")
         set_value(ws, "AK11", "")
         set_value(ws, "O12", "")
         set_value(ws, "AK12", "")
 
-        # 경력사항 (최대 3줄)
+        # Careers (max 3 rows)
         career_rows = [15, 16, 17]
         for idx, row in enumerate(career_rows):
             if idx < len(app.careers):
@@ -193,7 +198,7 @@ def download_excel():
         if len(app.careers) > 3:
             set_value(ws, "D17", f"{app.careers[2].company or ''} 외 {len(app.careers) - 2}건")
 
-        # 신체/사이즈
+        # Body / size
         set_value(ws, "K23", app.tshirt or "")
         set_value(ws, "O23", "")
         vision_val = parse_vision_value(app.vision)
@@ -206,7 +211,7 @@ def download_excel():
         set_value(ws, "AG23", f"{app.weight}kg" if app.weight is not None else "")
         set_value(ws, "AK23", f"{app.shoes}mm" if app.shoes is not None else "")
 
-        # 근무조건/확인사항
+        # Work conditions / confirmations
         set_value(ws, "L28", app.shift or "")
         set_value(ws, "L29", app.overtime or "")
         set_value(ws, "L30", app.holiday or "")
@@ -214,7 +219,6 @@ def download_excel():
         set_value(ws, "L32", "")
         set_value(ws, "AG32", app.start_date.strftime("%Y-%m-%d") if app.start_date else "")
 
-        # 사진 삽입 (B4:H8)
         if app.photo:
             photo_path = os.path.join(UPLOAD_DIR, app.photo)
             if os.path.exists(photo_path):
