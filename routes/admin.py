@@ -4,7 +4,7 @@ from io import BytesIO
 from datetime import datetime
 from openpyxl import load_workbook
 from openpyxl.drawing.image import Image as ExcelImage
-from openpyxl.styles import Font
+from openpyxl.styles import Font, Border, Side
 from PIL import Image as PILImage, ImageOps
 from models import db, Application, Inquiry
 from sqlalchemy.orm import joinedload
@@ -175,6 +175,14 @@ def download_excel():
             ws["O4"].font = Font(size=14)
             set_value(ws, "R4", name)
             ws["R4"].font = Font(size=24, bold=True)
+            # Name cell border: top double, left none, bottom/right thin
+            top = Side(style="double")
+            bottom = Side(style="thin")
+            right = Side(style="thin")
+            name_border = Border(top=top, bottom=bottom, right=right)
+            for row in ws["R4:AB4"]:
+                for cell in row:
+                    cell.border = name_border
         else:
             set_value(ws, "O4", "")
         if app.birth:
