@@ -4,7 +4,7 @@ from io import BytesIO
 from datetime import datetime
 from openpyxl import load_workbook
 from openpyxl.drawing.image import Image as ExcelImage
-from openpyxl.cell.rich_text import CellRichText, TextBlock, InlineFont
+from openpyxl.styles import Font
 from PIL import Image as PILImage, ImageOps
 from models import db, Application, Inquiry
 from sqlalchemy.orm import joinedload
@@ -164,11 +164,17 @@ def download_excel():
 
         # Basic info
         if name:
-            rt = CellRichText()
-            rt.append(TextBlock(InlineFont(sz=14), "(한글)"))
-            rt.append(TextBlock(InlineFont(sz=14), " " * 7))
-            rt.append(TextBlock(InlineFont(sz=24, b=True), name))
-            ws["O4"].value = rt
+            # Split label/name across merged cells to avoid rich-text write errors
+            for rng in list(ws.merged_cells.ranges):
+                if rng.coord == "O4:AB4":
+                    ws.unmerge_cells("O4:AB4")
+                    break
+            ws.merge_cells("O4:Q4")
+            ws.merge_cells("R4:AB4")
+            set_value(ws, "O4", "(한글)")
+            ws["O4"].font = Font(size=14)
+            set_value(ws, "R4", name)
+            ws["R4"].font = Font(size=24, bold=True)
         else:
             set_value(ws, "O4", "")
         if app.birth:
