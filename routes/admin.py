@@ -147,9 +147,10 @@ def download_excel():
             f"\uD2B9\uADFC:{app.holiday or '-'}",
         ])
 
+        unknown = "\uBBF8\uC815"
         schedule = "\n".join([
-            f"\uBA74\uC811:{app.interview_date.strftime('%Y-%m-%d') if app.interview_date else '\uBBF8\uC815'}",
-            f"\uC785\uC0AC:{app.start_date.strftime('%Y-%m-%d') if app.start_date else '\uBBF8\uC815'}",
+            f"\uBA74\uC811:{app.interview_date.strftime('%Y-%m-%d') if app.interview_date else unknown}",
+            f"\uC785\uC0AC:{app.start_date.strftime('%Y-%m-%d') if app.start_date else unknown}",
         ])
 
         wish = "\n".join([
