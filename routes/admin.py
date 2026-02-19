@@ -4,7 +4,7 @@ from io import BytesIO
 from datetime import datetime
 from openpyxl import load_workbook
 from openpyxl.drawing.image import Image as ExcelImage
-from PIL import Image as PILImage
+from PIL import Image as PILImage, ImageOps
 from models import db, Application, Inquiry
 from sqlalchemy.orm import joinedload
 
@@ -208,6 +208,7 @@ def download_excel():
                     except Exception:
                         pass
                     with PILImage.open(photo_path) as img:
+                        img = ImageOps.exif_transpose(img)
                         if img.mode not in ('RGB',):
                             img = img.convert('RGB')
                         # estimate target size from merged range B4:H8
