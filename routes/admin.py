@@ -6,6 +6,7 @@ import openpyxl
 from openpyxl import Workbook
 from openpyxl.drawing.image import Image as ExcelImage
 from openpyxl.styles import Font, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
 from PIL import Image as PILImage
 from models import db, Application, Inquiry
 from sqlalchemy.orm import joinedload
@@ -113,52 +114,113 @@ def download_excel():
 
     wb = Workbook()
     ws = wb.active
-    ws.title = "Applications"
+    ws.title = "\uC9C0\uC6D0\uC11C"
 
     headers = [
-        "ID", "접수일", "성명", "생년월일", "성별", "연락처", "이메일", "주소",
-        "키(cm)", "몸무게(kg)", "시력", "신발", "티셔츠",
-        "근무형태", "근무방식", "잔업", "특근", "면접일", "입사일",
-        "가불", "급여형태", "상태", "메모", "사진여부"
+        "\uC544\uC774\uB514", "\uC811\uC218\uC77C", "\uC131\uBA85", "\uC5F0\uB77D\uCC98", "\uC774\uBA54\uC77C", "\uC8FC\uC18C",
+        "\uC2E0\uCCB4", "\uC2DC\uB825", "\uC0AC\uC774\uC988", "\uADFC\uBB34", "\uC77C\uC815", "\uD76C\uB9DD",
+        "\uC0C1\uD0DC", "\uBA54\uBAA8", "\uC0AC\uC9C4"
     ]
     ws.append(headers)
 
-    for app in apps:
+    header_font = Font(bold=True)
+    for cell in ws[1]:
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = f"A1:{get_column_letter(len(headers))}1"
+
+    photo_col = get_column_letter(len(headers))
+
+    for row_idx, app in enumerate(apps, start=2):
+        height_val = f"{app.height}cm" if app.height is not None else "-"
+        weight_val = f"{app.weight}kg" if app.weight is not None else "-"
+        body = f"{height_val} / {weight_val}"
+
+        size = f"\uC2E0\uBC1C:{app.shoes if app.shoes is not None else '-'} / \uD2F0\uC154\uCE20:{app.tshirt or '-'}"
+
+        work = "\n".join([
+            f"\uD615\uD0DC:{app.shift or '-'}",
+            f"\uBC29\uC2DD:{app.posture or '-'}",
+            f"\uC794\uC5C5:{app.overtime or '-'}",
+            f"\uD2B9\uADFC:{app.holiday or '-'}",
+        ])
+
+        schedule = "\n".join([
+            f"\uBA74\uC811:{app.interview_date.strftime('%Y-%m-%d') if app.interview_date else '\uBBF8\uC815'}",
+            f"\uC785\uC0AC:{app.start_date.strftime('%Y-%m-%d') if app.start_date else '\uBBF8\uC815'}",
+        ])
+
+        wish = "\n".join([
+            f"\uAC00\uBD88:{app.advance_pay or '-'}",
+            f"\uAE09\uC5EC:{app.insurance_type or '-'}",
+        ])
+
         ws.append([
             app.id,
             app.timestamp.strftime('%Y-%m-%d %H:%M:%S') if app.timestamp else "",
             app.name or "",
-            app.birth.strftime('%Y-%m-%d') if app.birth else "",
-            app.gender or "",
             app.phone or "",
             app.email or "",
             app.address or "",
-            app.height if app.height is not None else "",
-            app.weight if app.weight is not None else "",
+            body,
             app.vision or "",
-            app.shoes if app.shoes is not None else "",
-            app.tshirt or "",
-            app.shift or "",
-            app.posture or "",
-            app.overtime or "",
-            app.holiday or "",
-            app.interview_date.strftime('%Y-%m-%d') if app.interview_date else "",
-            app.start_date.strftime('%Y-%m-%d') if app.start_date else "",
-            app.advance_pay or "",
-            app.insurance_type or "",
+            size,
+            work,
+            schedule,
+            wish,
             app.status or "",
             app.memo or "",
-            "Y" if app.photo else "N",
+            "",
         ])
 
-    for col in ws.columns:
-        max_len = 0
-        col_letter = col[0].column_letter
-        for cell in col:
-            if cell.value is None:
-                continue
-            max_len = max(max_len, len(str(cell.value)))
-        ws.column_dimensions[col_letter].width = min(max(10, max_len + 2), 40)
+        for col_idx in range(1, len(headers) + 1):
+            cell = ws.cell(row=row_idx, column=col_idx)
+            cell.alignment = Alignment(wrap_text=True, vertical="top")
+
+        if app.photo:
+            photo_path = os.path.join(UPLOAD_DIR, app.photo)
+            if os.path.exists(photo_path):
+                try:
+                    try:
+                        from pillow_heif import register_heif_opener
+                        register_heif_opener()
+                    except Exception:
+                        pass
+                    with PILImage.open(photo_path) as img:
+                        if img.mode not in ('RGB',):
+                            img = img.convert('RGB')
+                        img.thumbnail((120, 160))
+                        from io import BytesIO as _BytesIO
+                        img_stream = _BytesIO()
+                        img.save(img_stream, format='PNG')
+                        img_stream.seek(0)
+                        excel_img = ExcelImage(img_stream)
+                        ws.add_image(excel_img, f"{photo_col}{row_idx}")
+                        ws.row_dimensions[row_idx].height = max(ws.row_dimensions[row_idx].height or 0, img.height * 0.75)
+                except Exception:
+                    pass
+
+    col_widths = {
+        "A": 38,  # ID
+        "B": 18,  # 접수일
+        "C": 10,  # 성명
+        "D": 16,  # 연락처
+        "E": 24,  # 이메일
+        "F": 28,  # 주소
+        "G": 16,  # 신체
+        "H": 12,  # 시력
+        "I": 18,  # 사이즈
+        "J": 22,  # 근무
+        "K": 22,  # 일정
+        "L": 18,  # 희망
+        "M": 10,  # 상태
+        "N": 30,  # 메모
+        "O": 12,  # 사진
+    }
+    for col, width in col_widths.items():
+        ws.column_dimensions[col].width = width
 
     buf = BytesIO()
     wb.save(buf)
@@ -174,11 +236,11 @@ def download_excel():
 @admin_bp.route('/update_memo/<app_id>', methods=['POST'])
 def update_memo(app_id):
     if not session.get('is_admin'):
-        return jsonify({"success": False, "message": "권한이 없습니다."}), 401
+        return jsonify({"success": False, "message": "\uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4."}), 401
 
     app = Application.query.get(app_id)
     if not app:
-        return jsonify({"success": False, "message": "지원서를 찾을 수 없습니다."}), 404
+        return jsonify({"success": False, "message": "\uC9C0\uC6D0\uC11C\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4."}), 404
 
     app.memo = request.form.get('memo', '')
     db.session.commit()
@@ -188,16 +250,16 @@ def update_memo(app_id):
 @admin_bp.route('/update_status/<app_id>', methods=['POST'])
 def update_status(app_id):
     if not session.get('is_admin'):
-        return jsonify({"success": False, "message": "권한이 없습니다."}), 401
+        return jsonify({"success": False, "message": "\uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4."}), 401
 
     app = Application.query.get(app_id)
     if not app:
-        return jsonify({"success": False, "message": "지원서를 찾을 수 없습니다."}), 404
+        return jsonify({"success": False, "message": "\uC9C0\uC6D0\uC11C\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4."}), 404
 
     status_val = request.form.get('status', '')
     allowed = {'new', 'review', 'interview', 'offer', 'hired', 'rejected'}
     if status_val not in allowed:
-        return jsonify({"success": False, "message": "유효하지 않은 상태입니다."}), 400
+        return jsonify({"success": False, "message": "\uC720\uD6A8\uD558\uC9C0 \uC54A\uC740 \uC0C1\uD0DC\uC785\uB2C8\uB2E4."}), 400
 
     app.status = status_val
     db.session.commit()
