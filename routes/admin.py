@@ -1,5 +1,5 @@
 import os
-from flask import Blueprint, render_template, request, redirect, url_for, session, send_file, send_from_directory
+from flask import Blueprint, render_template, request, redirect, url_for, session, send_file, send_from_directory, jsonify
 from io import BytesIO
 from datetime import datetime
 import openpyxl
@@ -116,10 +116,10 @@ def download_excel():
     ws.title = "Applications"
 
     headers = [
-        "ID", "???", "??", "????", "??", "???", "???", "??",
-        "?(cm)", "???(kg)", "??", "??", "???",
-        "????", "????", "??", "??", "???", "???",
-        "??", "????", "??", "??", "????"
+        "ID", "접수일", "성명", "생년월일", "성별", "연락처", "이메일", "주소",
+        "키(cm)", "몸무게(kg)", "시력", "신발", "티셔츠",
+        "근무형태", "근무방식", "잔업", "특근", "면접일", "입사일",
+        "가불", "급여형태", "상태", "메모", "사진여부"
     ]
     ws.append(headers)
 
@@ -169,6 +169,39 @@ def download_excel():
         download_name="humetix_applications.xlsx",
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
+
+@admin_bp.route('/update_memo/<app_id>', methods=['POST'])
+def update_memo(app_id):
+    if not session.get('is_admin'):
+        return jsonify({"success": False, "message": "권한이 없습니다."}), 401
+
+    app = Application.query.get(app_id)
+    if not app:
+        return jsonify({"success": False, "message": "지원서를 찾을 수 없습니다."}), 404
+
+    app.memo = request.form.get('memo', '')
+    db.session.commit()
+    return jsonify({"success": True})
+
+
+@admin_bp.route('/update_status/<app_id>', methods=['POST'])
+def update_status(app_id):
+    if not session.get('is_admin'):
+        return jsonify({"success": False, "message": "권한이 없습니다."}), 401
+
+    app = Application.query.get(app_id)
+    if not app:
+        return jsonify({"success": False, "message": "지원서를 찾을 수 없습니다."}), 404
+
+    status_val = request.form.get('status', '')
+    allowed = {'new', 'review', 'interview', 'offer', 'hired', 'rejected'}
+    if status_val not in allowed:
+        return jsonify({"success": False, "message": "유효하지 않은 상태입니다."}), 400
+
+    app.status = status_val
+    db.session.commit()
+    return jsonify({"success": True})
 
 @admin_bp.route('/inquiries/delete', methods=['POST'])
 def delete_inquiries():
