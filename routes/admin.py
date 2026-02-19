@@ -132,6 +132,16 @@ def download_excel():
         # 템플릿 표기는 1,0 형태가 많아 콤마로 통일
         return val.replace(".", ",")
 
+    def parse_vision_type(vision_text):
+        if not vision_text:
+            return ""
+        text = str(vision_text)
+        if "교정" in text:
+            return "교정"
+        if "나안" in text:
+            return "나안"
+        return ""
+
     for app in apps:
         date_str = app.timestamp.strftime("%Y-%m-%d") if app.timestamp else "0000-00-00"
         name = app.name or ""
@@ -191,6 +201,9 @@ def download_excel():
             vision_val = str(app.vision).strip()
         set_value(ws, "U23", vision_val)
         set_value(ws, "Z23", vision_val)
+        vision_type = parse_vision_type(app.vision)
+        if vision_type:
+            set_value(ws, "R22", f"시 력 ( 나안 , 교정 ) - {vision_type}")
         set_value(ws, "AC23", f"{app.height}cm" if app.height is not None else "")
         set_value(ws, "AG23", f"{app.weight}kg" if app.weight is not None else "")
         set_value(ws, "AK23", f"{app.shoes}mm" if app.shoes is not None else "")
