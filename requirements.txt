@@ -8,3 +8,4 @@ Flask-WTF==1.2.1
 Flask-SQLAlchemy==3.1.1
 Flask-Migrate==4.0.5
 pytest==7.4.0
+reportlab>=4.0

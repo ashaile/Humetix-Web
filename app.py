@@ -36,6 +36,16 @@ db.init_app(app)
 migrate = Migrate(app, db)
 csrf = CSRFProtect(app)
 
+# JSON API와 관리자 AJAX 엔드포인트는 CSRF 면제
+from routes.attendance import attendance_bp
+from routes.payslip import payslip_bp
+from routes.advance import advance_bp
+from routes.employee import employee_bp
+csrf.exempt(attendance_bp)
+csrf.exempt(payslip_bp)
+csrf.exempt(advance_bp)
+csrf.exempt(employee_bp)
+
 # uploads 폴더 생성
 UPLOAD_DIR = os.path.join(BASE_DIR, 'uploads')
 if not os.path.exists(UPLOAD_DIR):
@@ -49,6 +59,10 @@ from routes.admin import admin_bp
 app.register_blueprint(auth_bp)
 app.register_blueprint(apply_bp)
 app.register_blueprint(admin_bp)
+app.register_blueprint(attendance_bp)
+app.register_blueprint(payslip_bp)
+app.register_blueprint(advance_bp)
+app.register_blueprint(employee_bp)
 
 @app.route('/')
 def index():

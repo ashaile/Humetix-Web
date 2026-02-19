@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HUMETIX - 가불 신청</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f8f7f4;
+            --bg2: #fff;
+            --bg3: #f0efec;
+            --text: #1a1a1a;
+            --text2: #6b6b6b;
+            --accent: #e85d26;
+            --accent-bg: #fef3ee;
+            --border: #e8e6e1;
+            --success: #22a867;
+            --success-bg: #edfbf3;
+            --radius: 12px;
+            --radius-sm: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 520px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+
+        .page-title {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: -.5px;
+            margin-bottom: 8px;
+        }
+
+        .page-desc {
+            color: var(--text2);
+            font-size: 14px;
+            margin-bottom: 28px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+            padding: 16px 20px;
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            justify-content: center;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all .2s;
+            font-family: inherit;
+            white-space: nowrap;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #d14e1a;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(232, 93, 38, .3);
+        }
+
+        .btn-outline {
+            background: var(--bg2);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-sm {
+            padding: 7px 14px;
+            font-size: 13px;
+        }
+
+        .input-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+        }
+
+        .input-card h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text2);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-family: inherit;
+            background: var(--bg);
+            color: var(--text);
+            transition: border-color .2s;
+        }
+
+        .form-textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(232, 93, 38, .1);
+        }
+
+        .success-msg {
+            background: var(--success-bg);
+            border: 1px solid #86efac;
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            font-size: 14px;
+            color: #166534;
+            font-weight: 500;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .error-msg {
+            background: #fef2f2;
+            border: 1px solid #fca5a5;
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            font-size: 14px;
+            color: #dc2626;
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+
+        .info-box {
+            background: var(--accent-bg);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            font-size: 12px;
+            color: var(--accent);
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="nav-links">
+            <a href="/" class="btn btn-outline">🏠 홈</a>
+            <a href="/attendance" class="btn btn-outline">📋 근태관리</a>
+            <a href="/advance" class="btn btn-primary">💰 가불신청</a>
+        </div>
+
+        <h1 class="page-title">가불 신청</h1>
+        <p class="page-desc">가불을 신청합니다. 관리자 승인 후 급여에서 차감됩니다.</p>
+
+        {% if success %}
+        <div class="success-msg">✅ 가불 신청이 접수되었습니다. 관리자 승인을 기다려주세요.</div>
+        {% endif %}
+
+        {% if errors %}
+        <div class="error-msg">
+            {% for e in errors %}<div>• {{ e }}</div>{% endfor %}
+        </div>
+        {% endif %}
+
+        {% if not success %}
+        <div class="input-card">
+            <h3>🏦 가불 신청서</h3>
+            <div class="info-box">
+                ℹ️ <b>가불 한도 안내</b><br>
+                - 주간 근무자: 최대 300,000원<br>
+                - 교대 근무자: 최대 500,000원
+            </div>
+            <form method="post" action="/advance" onsubmit="return validateAdvance()">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="form-group">
+                    <label class="form-label">생년월일 (YYMMDD)</label>
+                    <input type="text" name="birth_date" class="form-input" placeholder="예: 900101" maxlength="6"
+                        required value="{{ form.get('birth_date','') if form else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">이름</label>
+                    <input type="text" name="emp_name" class="form-input" required
+                        value="{{ form.get('emp_name','') if form else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">근무 형태</label>
+                    <div style="display:flex;gap:12px;margin-top:4px;">
+                        <label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;">
+                            <input type="radio" name="work_type" value="weekly" checked onchange="updateLimit()"> 주간 근무
+                        </label>
+                        <label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;">
+                            <input type="radio" name="work_type" value="shift" onchange="updateLimit()"> 교대 근무
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">신청 월</label>
+                    <input type="month" name="request_month" class="form-input" required
+                        value="{{ form.get('request_month','') if form else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">신청 금액 (원)</label>
+                    <input type="number" name="amount" id="amount-input" class="form-input" required min="1"
+                        placeholder="금액 입력" value="{{ form.get('amount','') if form else '' }}">
+                    <div id="limit-msg" style="font-size:12px;color:var(--text2);margin-top:4px;">
+                        * 현재 적용 한도: 300,000원
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">사유 (선택)</label>
+                    <textarea name="reason" class="form-textarea"
+                        placeholder="한도 증액 필요 시 작성해주세요">{{ form.get('reason','') if form else '' }}</textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;">
+                    가불 신청
+                </button>
+            </form>
+        </div>
+
+        <script>
+            // 초기 한도 설정 및 동적 변경
+            const LIMIT_WEEKLY = 300000;
+            const LIMIT_SHIFT = 500000;
+
+            function updateLimit() {
+                const type = document.querySelector('input[name="work_type"]:checked').value;
+                const msg = document.getElementById('limit-msg');
+                const limit = type === 'weekly' ? LIMIT_WEEKLY : LIMIT_SHIFT;
+                msg.innerHTML = `* 현재 적용 한도: ${limit.toLocaleString()}원`;
+            }
+
+            function validateAdvance() {
+                const type = document.querySelector('input[name="work_type"]:checked').value;
+                const amount = parseInt(document.getElementById('amount-input').value) || 0;
+                const limit = type === 'weekly' ? LIMIT_WEEKLY : LIMIT_SHIFT;
+
+                if (amount > limit) {
+                    alert(`선택하신 근무 형태의 가불 한도는 ${limit.toLocaleString()}원입니다.\n한도를 초과하여 신청할 수 없습니다.`);
+                    return false;
+                }
+                return true;
+            }
+
+            // 페이지 로드 시 초기 상태 반영
+            window.onload = function () {
+                updateLimit();
+            }
+        </script>
+        {% endif %}
+    </div>
+</body>
+
+</html>
