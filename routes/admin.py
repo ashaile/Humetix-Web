@@ -125,8 +125,12 @@ def download_excel():
         if not vision_text:
             return ""
         import re
-        m = re.search(r"(\\d+(?:\\.\\d+)?)", vision_text)
-        return m.group(1) if m else ""
+        m = re.search(r"(\\d+(?:[\\.,]\\d+)?)", vision_text)
+        if not m:
+            return ""
+        val = m.group(1)
+        # 템플릿 표기는 1,0 형태가 많아 콤마로 통일
+        return val.replace(".", ",")
 
     for app in apps:
         date_str = app.timestamp.strftime("%Y-%m-%d") if app.timestamp else "0000-00-00"
@@ -183,6 +187,8 @@ def download_excel():
         set_value(ws, "K23", app.tshirt or "")
         set_value(ws, "O23", "")
         vision_val = parse_vision_value(app.vision)
+        if not vision_val and app.vision:
+            vision_val = str(app.vision).strip()
         set_value(ws, "U23", vision_val)
         set_value(ws, "Z23", vision_val)
         set_value(ws, "AC23", f"{app.height}cm" if app.height is not None else "")
