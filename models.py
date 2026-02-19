@@ -38,7 +38,7 @@ class Application(db.Model):
     agree = db.Column(db.Boolean, default=False)
     
     # 기타 희망사항
-    advance_pay = db.Column(db.String(10), default="", index=True)
+    advance_pay = db.Column(db.String(10), default="???", index=True)
     insurance_type = db.Column(db.String(20), default="4대보험", index=True)
     memo = db.Column(db.Text, default="")  # 관리자용 메모
     status = db.Column(db.String(20), default="new", index=True)
@@ -48,6 +48,9 @@ class Application(db.Model):
     
     def to_dict(self):
         """기존 JSON 형식과 동일한 딕셔너리 반환 (템플릿 호환)"""
+        def _safe_str(val):
+            return "" if val is None else str(val)
+
         return {
             "id": self.id,
             "timestamp": self.timestamp.strftime('%Y-%m-%d %H:%M:%S') if self.timestamp else "",
@@ -64,11 +67,11 @@ class Application(db.Model):
             },
             "career": [c.to_dict() for c in self.careers],
             "body": {
-                "height": str(self.height),
-                "weight": str(self.weight),
-                "vision": self.vision,
-                "shoes": str(self.shoes),
-                "tshirt": self.tshirt,
+                "height": _safe_str(self.height),
+                "weight": _safe_str(self.weight),
+                "vision": self.vision or "",
+                "shoes": _safe_str(self.shoes),
+                "tshirt": self.tshirt or "",
             },
             "work_condition": {
                 "shift": self.shift,

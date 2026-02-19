@@ -1,0 +1,28 @@
+{
+  "name": "humetix_project",
+  "version": "1.0.0",
+  "description": "Humetix 입사지원 관리 시스템입니다. Flask 기반의 웹 애플리케이션으로, 지원서 접수, 관리자 조회, 엑셀 다운로드 기능을 제공합니다.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ashaile/Humetix-Web.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ashaile/Humetix-Web/issues"
+  },
+  "homepage": "https://github.com/ashaile/Humetix-Web#readme",
+  "dependencies": {
+    "dotenv": "^17.3.1",
+    "openai": "^6.22.0"
+  }
+}

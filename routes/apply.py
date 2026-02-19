@@ -93,6 +93,12 @@ def submit():
 
             agree = True if request.form.get('agree') == 'on' else False
 
+            vision_type = request.form.get('vision_type')
+            vision_value = request.form.get('vision_value')
+            vision = None
+            if vision_type or vision_value:
+                vision = f"{vision_type or ''} {vision_value or ''}".strip()
+
             new_app = Application(
                 id=str(uuid.uuid4()),
                 # timestamp는 default로 자동 설정됨
@@ -105,7 +111,7 @@ def submit():
                 address=request.form.get('address'),
                 height=height,
                 weight=weight,
-                vision=f"{request.form.get('vision_type')} {request.form.get('vision_value')}",
+                vision=vision,
                 shoes=shoes,
                 tshirt=request.form.get('tshirt'),
                 shift=request.form.get('shift'),
@@ -115,8 +121,8 @@ def submit():
                 interview_date=interview_date,
                 start_date=start_date,
                 agree=agree,
-                advance_pay=request.form.get('advance_pay', ''),
-                insurance_type=request.form.get('insurance_type', '4대보험'),
+                advance_pay=request.form.get('advance_pay', '비희망'),
+                insurance_type=request.form.get('insurance_type', '3.3%'),
             )
 
             # 경력 사항

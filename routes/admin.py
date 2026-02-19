@@ -20,84 +20,73 @@ admin_bp = Blueprint('admin', __name__)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UPLOAD_DIR = os.path.join(BASE_DIR, 'uploads')
 
-@admin_bp.route('/humetix_master_99')
-def master_view():
-    if not session.get('is_admin'):
-        return redirect(url_for('auth.login'))
-    
-    search_type = request.args.get('type', 'name')
-    search_query = request.args.get('q', '')
-    
-    # 상세 필터 파라미터 받기
+def build_filtered_query(args):
+    search_type = args.get('type', 'name')
+    search_query = args.get('q', '')
+
     filters = {
-        'gender': request.args.get('gender'),
-        'shift': request.args.get('shift'),
-        'posture': request.args.get('posture'),
-        'overtime': request.args.get('overtime'),
-        'holiday': request.args.get('holiday'),
-        'agree': request.args.get('agree'),
-        'advance_pay': request.args.get('advance_pay'),
-        'insurance_type': request.args.get('insurance_type'),
-        'status': request.args.get('status'),
+        'gender': args.get('gender'),
+        'shift': args.get('shift'),
+        'posture': args.get('posture'),
+        'overtime': args.get('overtime'),
+        'holiday': args.get('holiday'),
+        'agree': args.get('agree'),
+        'advance_pay': args.get('advance_pay'),
+        'insurance_type': args.get('insurance_type'),
+        'status': args.get('status'),
     }
-    
-    # 날짜 필터
-    start_date = request.args.get('start_date')
-    end_date = request.args.get('end_date')
-    
+
+    start_date = args.get('start_date')
+    end_date = args.get('end_date')
+
     query = Application.query.options(joinedload(Application.careers))
-    
-    # 1. 기본 검색 (이름/연락처)
+
     if search_query:
         if search_type == 'name':
             query = query.filter(Application.name.contains(search_query))
         elif search_type == 'phone':
             query = query.filter(Application.phone.contains(search_query))
-            
-    # 2. 상세 필터 적용
+
     if filters['gender']:
         query = query.filter(Application.gender == filters['gender'])
-        
     if filters['shift']:
         query = query.filter(Application.shift == filters['shift'])
-        
     if filters['posture']:
         query = query.filter(Application.posture == filters['posture'])
-        
     if filters['overtime']:
         query = query.filter(Application.overtime == filters['overtime'])
-        
     if filters['holiday']:
         query = query.filter(Application.holiday == filters['holiday'])
-
-    if filters['agree']: # 정보제공 동의 여부 (on/off)
+    if filters['agree']:
         is_agree = True if filters['agree'] == 'on' else False
         query = query.filter(Application.agree == is_agree)
-        
     if filters['advance_pay']:
         query = query.filter(Application.advance_pay == filters['advance_pay'])
-        
     if filters['insurance_type']:
         query = query.filter(Application.insurance_type == filters['insurance_type'])
-
     if filters['status']:
         query = query.filter(Application.status == filters['status'])
-    
-    # 3. 날짜 범위 검색 (접수일 기준)
+
     if start_date:
         s_date = datetime.strptime(start_date, '%Y-%m-%d')
         query = query.filter(Application.timestamp >= s_date)
-        
     if end_date:
         e_date = datetime.strptime(end_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
         query = query.filter(Application.timestamp <= e_date)
-            
-    # 4. 페이지네이션 적용 (10개씩)
+
+    return query, filters, search_query, start_date, end_date
+
+@admin_bp.route('/humetix_master_99')
+def master_view():
+    if not session.get('is_admin'):
+        return redirect(url_for('auth.login'))
+
+    query, filters, search_query, start_date, end_date = build_filtered_query(request.args)
+
     page = request.args.get('page', 1, type=int)
     per_page = 10
     pagination = query.order_by(Application.timestamp.desc()).paginate(page=page, per_page=per_page, error_out=False)
-    
-    # 현재 페이지의 데이터만 딕셔너리로 변환
+
     data = [app.to_dict() for app in pagination.items]
 
     status_options = ['new', 'review', 'interview', 'offer', 'hired', 'rejected']
@@ -109,9 +98,77 @@ def master_view():
         search_query=search_query,
         start_date=start_date,
         end_date=end_date,
-        status_options=status_options
+        status_options=status_options,
+        query_string=request.query_string.decode()
     )
 
+
+@admin_bp.route('/download_excel')
+def download_excel():
+    if not session.get('is_admin'):
+        return redirect(url_for('auth.login'))
+
+    query, _, _, _, _ = build_filtered_query(request.args)
+    apps = query.order_by(Application.timestamp.desc()).all()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Applications"
+
+    headers = [
+        "ID", "???", "??", "????", "??", "???", "???", "??",
+        "?(cm)", "???(kg)", "??", "??", "???",
+        "????", "????", "??", "??", "???", "???",
+        "??", "????", "??", "??", "????"
+    ]
+    ws.append(headers)
+
+    for app in apps:
+        ws.append([
+            app.id,
+            app.timestamp.strftime('%Y-%m-%d %H:%M:%S') if app.timestamp else "",
+            app.name or "",
+            app.birth.strftime('%Y-%m-%d') if app.birth else "",
+            app.gender or "",
+            app.phone or "",
+            app.email or "",
+            app.address or "",
+            app.height if app.height is not None else "",
+            app.weight if app.weight is not None else "",
+            app.vision or "",
+            app.shoes if app.shoes is not None else "",
+            app.tshirt or "",
+            app.shift or "",
+            app.posture or "",
+            app.overtime or "",
+            app.holiday or "",
+            app.interview_date.strftime('%Y-%m-%d') if app.interview_date else "",
+            app.start_date.strftime('%Y-%m-%d') if app.start_date else "",
+            app.advance_pay or "",
+            app.insurance_type or "",
+            app.status or "",
+            app.memo or "",
+            "Y" if app.photo else "N",
+        ])
+
+    for col in ws.columns:
+        max_len = 0
+        col_letter = col[0].column_letter
+        for cell in col:
+            if cell.value is None:
+                continue
+            max_len = max(max_len, len(str(cell.value)))
+        ws.column_dimensions[col_letter].width = min(max(10, max_len + 2), 40)
+
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return send_file(
+        buf,
+        as_attachment=True,
+        download_name="humetix_applications.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
 @admin_bp.route('/inquiries/delete', methods=['POST'])
 def delete_inquiries():

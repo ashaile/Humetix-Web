@@ -175,6 +175,17 @@
             font-size: 0.95rem;
             line-height: 1.5;
         }
+        .info-group-title {
+            margin: 8px 0 6px 0;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #666;
+            letter-spacing: 0.2px;
+            text-transform: uppercase;
+        }
+        [data-theme="dark"] .info-group-title {
+            color: #b9c3d1;
+        }
 
         .label-badge {
             display: inline-block;
@@ -483,7 +494,7 @@
             <div>
                 <button type="button" id="themeToggle" class="theme-toggle">다크</button>
                 <a href="/inquiries" class="btn btn-outline">문의 목록</a>
-                <a href="/download_excel" class="btn btn-success">엑셀 다운로드</a>
+                <a href="/download_excel{{ '?' + query_string if query_string else '' }}" class="btn btn-success">엑셀 다운로드</a>
                 <a href="/logout" class="btn btn-secondary">로그아웃</a>
             </div>
         </div>
@@ -511,24 +522,33 @@
                         <label class="filter-group-title">근무형태</label>
                         <select name="shift" class="form-select">
                             <option value="">전체</option>
-                            <option value="가능" {% if filters.shift=='가능' %}selected{% endif %}>교대 가능</option>
-                            <option value="불가능" {% if filters.shift=='불가능' %}selected{% endif %}>교대 불가</option>
+                            <option value="주간" {% if filters.shift=='주간' %}selected{% endif %}>주간</option>
+                            <option value="2교대" {% if filters.shift=='2교대' %}selected{% endif %}>2교대</option>
                         </select>
                     </div>
                     <div>
-                        <label class="filter-group-title">좌식근무</label>
+                        <label class="filter-group-title">근무방식</label>
                         <select name="posture" class="form-select">
                             <option value="">전체</option>
-                            <option value="가능" {% if filters.posture=='가능' %}selected{% endif %}>가능</option>
-                            <option value="불가능" {% if filters.posture=='불가능' %}selected{% endif %}>불가능</option>
+                            <option value="무관" {% if filters.posture=='무관' %}selected{% endif %}>무관</option>
+                            <option value="좌식" {% if filters.posture=='좌식' %}selected{% endif %}>좌식</option>
+                            <option value="입식" {% if filters.posture=='입식' %}selected{% endif %}>입식</option>
                         </select>
                     </div>
                     <div>
-                        <label class="filter-group-title">잔업/특근</label>
+                        <label class="filter-group-title">잔업</label>
                         <select name="overtime" class="form-select">
                             <option value="">전체</option>
                             <option value="가능" {% if filters.overtime=='가능' %}selected{% endif %}>가능</option>
                             <option value="불가능" {% if filters.overtime=='불가능' %}selected{% endif %}>불가능</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="filter-group-title">특근</label>
+                        <select name="holiday" class="form-select">
+                            <option value="">전체</option>
+                            <option value="가능" {% if filters.holiday=='가능' %}selected{% endif %}>가능</option>
+                            <option value="불가능" {% if filters.holiday=='불가능' %}selected{% endif %}>불가능</option>
                         </select>
                     </div>
                     <div>
@@ -538,6 +558,22 @@
                             {% for val in status_options %}
                             <option value="{{ val }}" {% if filters.status==val %}selected{% endif %}>{{ status_labels[val] }}</option>
                             {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="filter-group-title">가불 희망</label>
+                        <select name="advance_pay" class="form-select">
+                            <option value="">전체</option>
+                            <option value="희망" {% if filters.advance_pay=='희망' %}selected{% endif %}>희망</option>
+                            <option value="비희망" {% if filters.advance_pay=='비희망' %}selected{% endif %}>비희망</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="filter-group-title">급여 형태</label>
+                        <select name="insurance_type" class="form-select">
+                            <option value="">전체</option>
+                            <option value="3.3%" {% if filters.insurance_type=='3.3%' %}selected{% endif %}>3.3%</option>
+                            <option value="4대보험" {% if filters.insurance_type=='4대보험' %}selected{% endif %}>4대보험</option>
                         </select>
                     </div>
                     <div>
@@ -611,19 +647,34 @@
                     <div class="applicant-info">
                         <div class="row" style="display: flex; gap: 30px;">
                             <div style="flex: 1;">
+                                <div class="info-group-title">기본정보</div>
                                 <div class="info-row"><span class="label-badge">생년월일</span> <span class="data-val">{{ entry.info.birth }}</span></div>
                                 <div class="info-row"><span class="label-badge">연락처</span> <span class="data-val">{{ entry.info.phone }}</span></div>
+                                <div class="info-row"><span class="label-badge">이메일</span> <span class="data-val">{{ entry.info.email or '-' }}</span></div>
                                 <div class="info-row"><span class="label-badge">주소</span> <span class="data-val">{{ entry.info.address }}</span></div>
+                                <div class="info-row"><span class="label-badge">사진</span> <span class="data-val">{{ "있음" if entry.photo else "없음" }}</span></div>
                             </div>
                             <div style="flex: 1;">
-                                <div class="info-row"><span class="label-badge">신체</span> <span class="data-val">{{ entry.body.height }}cm / {{ entry.body.weight }}kg</span></div>
+                                <div class="info-group-title">신체/사이즈</div>
+                                <div class="info-row"><span class="label-badge">신체</span> <span class="data-val">{{ entry.body.height or '-' }}cm / {{ entry.body.weight or '-' }}kg</span></div>
+                                <div class="info-row"><span class="label-badge">시력</span> <span class="data-val">{{ entry.body.vision or '-' }}</span></div>
+                                <div class="info-row"><span class="label-badge">사이즈</span> <span class="data-val">신발: {{ entry.body.shoes or '-' }} / 티셔츠: {{ entry.body.tshirt or '-' }}</span></div>
+                                <div class="info-group-title">근무/희망</div>
                                 <div class="info-row"><span class="label-badge">근무</span>
                                     <span class="data-val">
                                         교대:{{ entry.work_condition.shift or '-' }} /
-                                        좌식:{{ entry.work_condition.posture or '-' }} /
-                                        잔업:{{ entry.work_condition.overtime or '-' }}
+                                        방식:{{ entry.work_condition.posture or '-' }} /
+                                        잔업:{{ entry.work_condition.overtime or '-' }} /
+                                        특근:{{ entry.work_condition.holiday or '-' }}
                                     </span>
                                 </div>
+                                <div class="info-row"><span class="label-badge">희망</span>
+                                    <span class="data-val">
+                                        가불:{{ entry.extra.advance_pay or '-' }} /
+                                        급여:{{ entry.extra.insurance_type or '-' }}
+                                    </span>
+                                </div>
+                                <div class="info-group-title">일정/상태</div>
                                 <div class="info-row">
                                     <span class="label-badge">일정</span>
                                     <span class="highlight">면접: {{ entry.work_condition.interview_date or '미정' }}</span>
