@@ -4,6 +4,7 @@ from io import BytesIO
 from datetime import datetime
 from openpyxl import load_workbook
 from openpyxl.drawing.image import Image as ExcelImage
+from openpyxl.styles import Font
 from PIL import Image as PILImage, ImageOps
 from models import db, Application, Inquiry
 from sqlalchemy.orm import joinedload
@@ -161,7 +162,11 @@ def download_excel():
                 dim.width = round(dim.width * 0.9, 2)
 
         # Basic info
-        set_value(ws, "O4", f"(한글) {name}" if name else "")
+        if name:
+            set_value(ws, "O4", f"(한글){' ' * 7}{name}")
+            ws["O4"].font = Font(size=24)
+        else:
+            set_value(ws, "O4", "")
         if app.birth:
             today = datetime.now().date()
             age = today.year - app.birth.year - ((today.month, today.day) < (app.birth.month, app.birth.day))
@@ -206,7 +211,7 @@ def download_excel():
         set_value(ws, "Z23", vision_val)
         vision_type = parse_vision_type(app.vision)
         if vision_type:
-            set_value(ws, "R22", f"시 력 ( 나안 , 교정 ) - {vision_type}")
+            set_value(ws, "R22", f"시 력 ( 나안 , 교정 )-{vision_type}")
         set_value(ws, "AC23", f"{app.height}cm" if app.height is not None else "")
         set_value(ws, "AG23", f"{app.weight}kg" if app.weight is not None else "")
         set_value(ws, "AK23", f"{app.shoes}mm" if app.shoes is not None else "")
