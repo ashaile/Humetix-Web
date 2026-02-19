@@ -137,10 +137,19 @@ def download_excel():
         ws.title = title
         if hasattr(ws, "_images"):
             ws._images = []
+        for col in ["B", "C", "D", "E", "F", "G", "H"]:
+            if ws.column_dimensions[col].width:
+                ws.column_dimensions[col].width = ws.column_dimensions[col].width + 0.5
 
         # 기본정보
         set_value(ws, "O4", name)
-        set_value(ws, "AG4", app.birth.strftime("%Y-%m-%d") if app.birth else "")
+        if app.birth:
+            today = datetime.now().date()
+            age = today.year - app.birth.year - ((today.month, today.day) < (app.birth.month, app.birth.day))
+            birth_display = app.birth.strftime("%y년%m월%d일") + f" ({age}세)"
+        else:
+            birth_display = ""
+        set_value(ws, "AG4", birth_display)
         set_value(ws, "O6", app.phone or "")
         set_value(ws, "AG6", "")
         set_value(ws, "O7", app.email or "")
@@ -210,12 +219,17 @@ def download_excel():
                             return h if h else 15
                         width_px = int(sum(col_width(c) * 7 for c in ["B","C","D","E","F","G","H"]))
                         height_px = int(sum(row_height(r) * 1.33 for r in range(4, 9)))
-                        img.thumbnail((width_px, height_px))
+                        # keep higher source resolution to avoid blur
+                        max_dim = (800, 1000)
+                        if img.width > max_dim[0] or img.height > max_dim[1]:
+                            img.thumbnail(max_dim)
                         from io import BytesIO as _BytesIO
                         img_stream = _BytesIO()
                         img.save(img_stream, format='PNG', optimize=False)
                         img_stream.seek(0)
                         excel_img = ExcelImage(img_stream)
+                        excel_img.width = width_px
+                        excel_img.height = height_px
                         ws.add_image(excel_img, "B4")
                 except Exception:
                     pass
