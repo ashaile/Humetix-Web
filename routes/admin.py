@@ -68,11 +68,17 @@ def build_filtered_query(args):
         query = query.filter(Application.status == filters['status'])
 
     if start_date:
-        s_date = datetime.strptime(start_date, '%Y-%m-%d')
-        query = query.filter(Application.timestamp >= s_date)
+        try:
+            s_date = datetime.strptime(start_date, '%Y-%m-%d')
+            query = query.filter(Application.timestamp >= s_date)
+        except ValueError:
+            start_date = ''
     if end_date:
-        e_date = datetime.strptime(end_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
-        query = query.filter(Application.timestamp <= e_date)
+        try:
+            e_date = datetime.strptime(end_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+            query = query.filter(Application.timestamp <= e_date)
+        except ValueError:
+            end_date = ''
 
     return query, filters, search_query, start_date, end_date
 
@@ -303,8 +309,12 @@ def update_memo(app_id):
         return jsonify({"success": False, "message": "\uC9C0\uC6D0\uC11C\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4."}), 404
 
     app.memo = request.form.get('memo', '')
-    db.session.commit()
-    return jsonify({"success": True})
+    try:
+        db.session.commit()
+        return jsonify({"success": True})
+    except Exception:
+        db.session.rollback()
+        return jsonify({"success": False, "message": "저장 중 오류가 발생했습니다."}), 500
 
 
 @admin_bp.route('/update_status/<app_id>', methods=['POST'])
@@ -322,8 +332,12 @@ def update_status(app_id):
         return jsonify({"success": False, "message": "\uC720\uD6A8\uD558\uC9C0 \uC54A\uC740 \uC0C1\uD0DC\uC785\uB2C8\uB2E4."}), 400
 
     app.status = status_val
-    db.session.commit()
-    return jsonify({"success": True})
+    try:
+        db.session.commit()
+        return jsonify({"success": True})
+    except Exception:
+        db.session.rollback()
+        return jsonify({"success": False, "message": "상태 저장 중 오류가 발생했습니다."}), 500
 
 @admin_bp.route('/inquiries')
 def inquiries():

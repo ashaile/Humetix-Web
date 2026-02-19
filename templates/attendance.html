@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HUMETIX - 근태관리</title>
     <link
-        href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
     <style>
         :root {
@@ -16,7 +16,6 @@
             --text: #1a1a1a;
             --text2: #6b6b6b;
             --accent: #e85d26;
-            --accent2: #ff8c5a;
             --accent-bg: #fef3ee;
             --border: #e8e6e1;
             --success: #22a867;
@@ -36,35 +35,10 @@
         }
 
         body {
-            font-family: 'Noto Sans KR', sans-serif;
+            font-family: "Noto Sans KR", sans-serif;
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        @keyframes fadeUp {
-            from {
-                opacity: 0;
-                transform: translateY(16px)
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0)
-            }
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(-12px)
-            }
-
-            to {
-                opacity: 1;
-                transform: translateX(0)
-            }
         }
 
         .container {
@@ -73,148 +47,21 @@
             padding: 32px 24px;
         }
 
-        .page-title {
-            font-size: 26px;
-            font-weight: 800;
-            letter-spacing: -.5px;
-            margin-bottom: 8px;
-            animation: fadeUp .4s ease;
-        }
-
-        .page-desc {
-            color: var(--text2);
-            font-size: 14px;
-            margin-bottom: 28px;
-            animation: fadeUp .4s ease .05s both;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 28px;
-        }
-
-        .stat-card {
-            background: var(--bg2);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 20px;
-            animation: fadeUp .5s ease both;
-            transition: transform .2s, box-shadow .2s;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .stat-label {
-            font-size: 12px;
-            color: var(--text2);
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: .5px;
-            margin-bottom: 8px;
-        }
-
-        .stat-value {
-            font-size: 28px;
-            font-weight: 800;
-            font-family: 'JetBrains Mono', monospace;
-            letter-spacing: -1px;
-        }
-
-        .stat-value.accent {
-            color: var(--accent)
-        }
-
-        .stat-value.success {
-            color: var(--success)
-        }
-
-        .stat-value.night {
-            color: var(--night)
-        }
-
-        .stat-sub {
-            font-size: 12px;
-            color: var(--text2);
-            margin-top: 4px;
-        }
-
-        .table-wrap {
-            background: var(--bg2);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            overflow: hidden;
-            animation: fadeUp .5s ease .15s both;
-            margin-bottom: 28px;
-        }
-
-        .table-header {
+        .nav-links {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border);
+            gap: 10px;
+            margin: 0 auto 24px auto;
             flex-wrap: wrap;
-            gap: 12px;
+            padding: 16px 20px;
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            justify-content: center;
+            max-width: 520px;
         }
 
-        .table-title {
-            font-weight: 700;
-            font-size: 15px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-        }
-
-        thead {
-            background: var(--bg3);
-        }
-
-        th {
-            padding: 12px 18px;
-            text-align: left;
-            font-weight: 600;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: .5px;
-            color: var(--text2);
-            white-space: nowrap;
-        }
-
-        td {
-            padding: 14px 18px;
-            border-top: 1px solid var(--border);
-            white-space: nowrap;
-        }
-
-        tr:hover td {
-            background: var(--bg3);
-        }
-
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        .badge-day {
-            background: var(--accent-bg);
-            color: var(--accent);
-        }
-
-        .badge-night {
-            background: var(--night-bg);
-            color: var(--night);
+        .nav-links a {
+            text-decoration: none;
         }
 
         .btn {
@@ -259,13 +106,47 @@
             font-size: 13px;
         }
 
-        .mono {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 13px;
+        .page-title {
+            font-size: 26px;
+            font-weight: 800;
+            margin-bottom: 8px;
         }
 
-        .emp-name {
+        .page-desc {
+            color: var(--text2);
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+
+        .tab-row {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 24px;
+            background: var(--bg3);
+            padding: 4px;
+            border-radius: var(--radius-sm);
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .tab-btn {
+            padding: 7px 16px;
+            border-radius: 6px;
+            border: none;
+            font-size: 13px;
             font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            background: transparent;
+            color: var(--text2);
+            transition: all .2s;
+        }
+
+        .tab-btn.active {
+            background: var(--bg2);
+            color: var(--text);
+            box-shadow: var(--shadow);
         }
 
         .input-card {
@@ -273,14 +154,14 @@
             border: 1px solid var(--border);
             border-radius: var(--radius);
             padding: 28px;
-            animation: fadeUp .5s ease both;
-            max-width: 520px;
+            max-width: 540px;
+            margin: 0 auto;
         }
 
         .input-card h3 {
             font-size: 18px;
             font-weight: 700;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
 
         .form-group {
@@ -307,14 +188,6 @@
             font-family: inherit;
             background: var(--bg);
             color: var(--text);
-            transition: border-color .2s;
-        }
-
-        .form-input:focus,
-        .form-select:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(232, 93, 38, .1);
         }
 
         .time-row {
@@ -338,7 +211,6 @@
             font-size: 12px;
             cursor: pointer;
             font-family: inherit;
-            transition: all .15s;
         }
 
         .quick-btn:hover,
@@ -353,14 +225,13 @@
             border: 1px solid #86efac;
             border-radius: var(--radius-sm);
             padding: 14px 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
             font-size: 14px;
             color: #166534;
-            font-weight: 500;
-            animation: fadeUp .3s ease;
+            font-weight: 600;
             margin-bottom: 16px;
+            max-width: 540px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .error-msg {
@@ -374,59 +245,96 @@
             margin-bottom: 16px;
         }
 
-        .tab-row {
+        .filter-bar {
             display: flex;
-            gap: 4px;
-            margin-bottom: 24px;
-            background: var(--bg3);
-            padding: 4px;
-            border-radius: var(--radius-sm);
-            width: fit-content;
-            margin: 0 auto 24px auto;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
         }
 
-        .tab-btn {
-            padding: 7px 16px;
-            border-radius: 6px;
-            border: none;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            font-family: inherit;
-            background: transparent;
-            color: var(--text2);
-            transition: all .2s;
-            text-decoration: none;
-        }
-
-        .tab-btn.active {
+        .table-wrap {
             background: var(--bg2);
-            color: var(--text);
-            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .table-title {
+            font-weight: 700;
+            font-size: 15px;
         }
 
         .table-scroll {
             overflow-x: auto;
         }
 
-        .nav-links {
-            display: flex;
-            gap: 10px;
-            margin: 0 auto 28px auto;
-            flex-wrap: wrap;
-            padding: 16px 20px;
-            background: var(--bg2);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            justify-content: center;
-            max-width: 520px;
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
         }
 
-        .nav-links a {
-            text-decoration: none;
+        thead {
+            background: var(--bg3);
         }
 
-        @media(max-width:768px) {
+        th {
+            padding: 12px 18px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--text2);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 14px 18px;
+            border-top: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        .mono {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 13px;
+        }
+
+        .emp-name {
+            font-weight: 600;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-day {
+            background: var(--accent-bg);
+            color: var(--accent);
+        }
+
+        .badge-night {
+            background: var(--night-bg);
+            color: var(--night);
+        }
+
+        @media(max-width: 768px) {
             .container {
                 padding: 16px;
             }
@@ -440,46 +348,46 @@
 
 <body>
     <div class="container">
-        <!-- Navigation -->
         <div class="nav-links">
             <a href="/" class="btn btn-outline">🏠 홈</a>
             <a href="/attendance" class="btn btn-primary">📋 근태관리</a>
             <a href="/advance" class="btn btn-outline">💰 가불신청</a>
         </div>
 
-        <!-- Tab Navigation -->
         <div class="tab-row">
-            <button class="tab-btn active" onclick="showTab('input')">근무 입력</button>
-            <button class="tab-btn" onclick="showTab('records')">근태 기록</button>
+            <button class="tab-btn active" type="button" onclick="showTab('input')">근무 입력</button>
+            <button class="tab-btn" type="button" onclick="showTab('records')">근태 기록</button>
         </div>
 
-
-
-        <!-- ② Input Tab -->
-        <div id="tab-input" style="max-width: 520px; margin: 0 auto;">
+        <div id="tab-input" style="max-width: 540px; margin: 0 auto;">
             <h1 class="page-title">근무 입력</h1>
-            <p class="page-desc">출퇴근 및 잔업 시간을 입력하세요</p>
+            <p class="page-desc">출퇴근 및 근무 정보를 입력하세요.</p>
 
             <div id="input-success" style="display:none">
-                <div class="success-msg">✅ 근무 기록이 정상적으로 등록되었습니다!</div>
+                <div class="success-msg">근무 기록이 저장되었습니다.</div>
             </div>
 
             <div class="input-card" id="input-form-card">
-                <h3>📋 근무 시간 입력</h3>
+                <h3>근무 시간 입력</h3>
                 <form id="attendance-form" onsubmit="return submitAttendance(event)">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
                     <div class="form-group">
                         <label class="form-label">생년월일 (YYMMDD)</label>
-                        <input type="text" class="form-input" name="birth_date" placeholder="예: 900101" maxlength="6"
+                        <input type="text" class="form-input" name="birth_date" maxlength="6" placeholder="950927"
                             required>
                     </div>
+
                     <div class="form-group">
                         <label class="form-label">이름</label>
                         <input type="text" class="form-input" name="emp_name" required>
                     </div>
+
                     <div class="form-group">
                         <label class="form-label">부서</label>
-                        <input type="text" class="form-input" name="dept" placeholder="부서명 입력">
+                        <input type="text" class="form-input" name="dept">
                     </div>
+
                     <div class="form-group">
                         <label class="form-label">날짜</label>
                         <input type="date" class="form-input" name="work_date" value="{{ today.strftime('%Y-%m-%d') }}"
@@ -493,7 +401,7 @@
                             <option value="night">야간 근무</option>
                             <option value="annual">연차</option>
                             <option value="absent">결근</option>
-                            <option value="holiday">비가동/휴무</option>
+                            <option value="holiday">휴무</option>
                             <option value="early">조퇴</option>
                         </select>
                     </div>
@@ -503,64 +411,51 @@
                             <label class="form-label">출근 시간</label>
                             <input type="time" class="form-input" name="clock_in" value="08:30" required>
                             <div class="quick-btns">
-                                <button type="button" class="quick-btn"
-                                    onclick="setTime('clock_in','06:00')">06:00</button>
-                                <button type="button" class="quick-btn"
-                                    onclick="setTime('clock_in','07:00')">07:00</button>
-                                <button type="button" class="quick-btn"
-                                    onclick="setTime('clock_in','08:00')">08:00</button>
-                                <button type="button" class="quick-btn active"
-                                    onclick="setTime('clock_in','08:30')">08:30</button>
-                                <button type="button" class="quick-btn"
-                                    onclick="setTime('clock_in','17:30')">17:30</button>
-                                <button type="button" class="quick-btn"
-                                    onclick="setTime('clock_in','19:00')">19:00</button>
+                                <button type="button" class="quick-btn" onclick="setTime('clock_in','06:00')">06:00</button>
+                                <button type="button" class="quick-btn" onclick="setTime('clock_in','07:00')">07:00</button>
+                                <button type="button" class="quick-btn" onclick="setTime('clock_in','08:00')">08:00</button>
+                                <button type="button" class="quick-btn active" onclick="setTime('clock_in','08:30')">08:30</button>
+                                <button type="button" class="quick-btn" onclick="setTime('clock_in','17:30')">17:30</button>
+                                <button type="button" class="quick-btn" onclick="setTime('clock_in','19:00')">19:00</button>
                             </div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">퇴근 시간</label>
                             <input type="time" class="form-input" name="clock_out" value="19:00" required>
                             <div class="quick-btns">
-                                <button type="button" class="quick-btn"
-                                    onclick="setTime('clock_out','04:00')">04:00</button>
-                                <button type="button" class="quick-btn"
-                                    onclick="setTime('clock_out','05:00')">05:00</button>
-                                <button type="button" class="quick-btn"
-                                    onclick="setTime('clock_out','08:30')">08:30</button>
-                                <button type="button" class="quick-btn"
-                                    onclick="setTime('clock_out','17:30')">17:30</button>
-                                <button type="button" class="quick-btn active"
-                                    onclick="setTime('clock_out','19:00')">19:00</button>
-                                <button type="button" class="quick-btn"
-                                    onclick="setTime('clock_out','21:00')">21:00</button>
+                                <button type="button" class="quick-btn" onclick="setTime('clock_out','04:00')">04:00</button>
+                                <button type="button" class="quick-btn" onclick="setTime('clock_out','05:00')">05:00</button>
+                                <button type="button" class="quick-btn" onclick="setTime('clock_out','08:30')">08:30</button>
+                                <button type="button" class="quick-btn" onclick="setTime('clock_out','17:30')">17:30</button>
+                                <button type="button" class="quick-btn active" onclick="setTime('clock_out','19:00')">19:00</button>
+                                <button type="button" class="quick-btn" onclick="setTime('clock_out','21:00')">21:00</button>
                             </div>
                         </div>
                     </div>
+
                     <div id="form-error" class="error-msg" style="display:none"></div>
-                    <button type="submit" class="btn btn-primary"
-                        style="width:100%;justify-content:center;padding:12px;">
+                    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;">
                         근무 기록 등록
                     </button>
                 </form>
             </div>
         </div>
 
-        <!-- ③ Records Tab -->
         <div id="tab-records" style="display:none">
             <h1 class="page-title">근태 기록</h1>
-            <p class="page-desc">직원별 출퇴근 및 잔업 기록</p>
+            <p class="page-desc">날짜/이름 기준으로 근태 기록을 조회하세요.</p>
 
-            <form id="filter-form" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
+            <form id="filter-form" class="filter-bar" onsubmit="event.preventDefault(); loadRecords();">
                 <input type="date" class="form-input" id="f-start" style="width:auto">
                 <span style="color:var(--text2)">~</span>
                 <input type="date" class="form-input" id="f-end" style="width:auto">
-                <input type="text" class="form-input" id="f-emp" placeholder="이름" style="width:150px">
+                <input type="text" class="form-input" id="f-emp" placeholder="이름" style="width:160px">
                 <button type="button" class="btn btn-primary btn-sm" onclick="loadRecords()">조회</button>
             </form>
 
             <div class="table-wrap">
                 <div class="table-header">
-                    <div class="table-title">근태 기록 조회 결과</div>
+                    <div class="table-title">근태 기록 목록</div>
                 </div>
                 <div class="table-scroll">
                     <table>
@@ -570,18 +465,49 @@
                                 <th>날짜</th>
                                 <th>출근</th>
                                 <th>퇴근</th>
-                                <th>총근무</th>
-                                <th>잔업</th>
-                                <th>심야</th>
-                                <th>특근</th>
+                                <th>총근무(h)</th>
+                                <th>잔업(h)</th>
+                                <th>심야(h)</th>
+                                <th>특근(h)</th>
                                 <th>구분</th>
                             </tr>
                         </thead>
                         <tbody id="records-tbody">
+                            {% if records %}
+                            {% for r in records %}
                             <tr>
-                                <td colspan="9" style="text-align:center;padding:24px;color:var(--text2);">조회 버튼을 클릭하세요.
+                                <td class="emp-name">{{ r.emp_name }}</td>
+                                <td class="mono">{{ r.work_date.strftime('%Y-%m-%d') if r.work_date else '' }}</td>
+                                <td class="mono">{{ r.clock_in or '' }}</td>
+                                <td class="mono">{{ r.clock_out or '' }}</td>
+                                <td class="mono">{{ r.total_work_hours }}h</td>
+                                <td class="mono">{{ r.overtime_hours }}h</td>
+                                <td class="mono">{{ r.night_hours }}h</td>
+                                <td class="mono" style="color:#d946ef;font-weight:600">{{ r.holiday_work_hours or 0 }}h</td>
+                                <td>
+                                    {% if r.work_type == 'night' %}
+                                    <span class="badge badge-night">야간</span>
+                                    {% elif r.work_type == 'normal' %}
+                                    <span class="badge badge-day">주간</span>
+                                    {% elif r.work_type == 'annual' %}
+                                    <span class="badge badge-day">연차</span>
+                                    {% elif r.work_type == 'absent' %}
+                                    <span class="badge badge-day">결근</span>
+                                    {% elif r.work_type == 'holiday' %}
+                                    <span class="badge badge-day">휴무</span>
+                                    {% elif r.work_type == 'early' %}
+                                    <span class="badge badge-day">조퇴</span>
+                                    {% else %}
+                                    <span class="badge badge-day">{{ r.work_type }}</span>
+                                    {% endif %}
                                 </td>
                             </tr>
+                            {% endfor %}
+                            {% else %}
+                            <tr>
+                                <td colspan="9" style="text-align:center;padding:24px;color:var(--text2);">기록이 없습니다.</td>
+                            </tr>
+                            {% endif %}
                         </tbody>
                     </table>
                 </div>
@@ -590,104 +516,156 @@
     </div>
 
     <script>
-        function toggleTimeInputs(val) {
-            const row = document.getElementById('time-inputs');
-            // 시간 입력이 필요 없는 유형들 (결근, 비가동/휴무, 연차 등 생략)
-            const noTimeTypes = ['absent', 'holiday', 'annual'];
-
-            if (noTimeTypes.includes(val)) {
-                row.style.display = 'none';
-                // 필수 해제
-                row.querySelectorAll('input').forEach(i => i.required = false);
-            } else {
-                row.style.display = 'grid';
-                row.querySelectorAll('input').forEach(i => i.required = true);
-            }
-        }
-
-        function showTab(name) {
-            document.getElementById('tab-input').style.display = name === 'input' ? '' : 'none';
-            document.getElementById('tab-records').style.display = name === 'records' ? '' : 'none';
-            document.querySelectorAll('.tab-btn').forEach((b, i) => {
-                b.classList.toggle('active', ['input', 'records'][i] === name);
+        function toggleTimeInputs(value) {
+            const row = document.getElementById("time-inputs");
+            const noTimeTypes = ["absent", "holiday", "annual"];
+            const required = !noTimeTypes.includes(value);
+            row.style.display = required ? "grid" : "none";
+            row.querySelectorAll("input").forEach((input) => {
+                input.required = required;
             });
         }
 
-        function setTime(field, val) {
-            document.querySelector(`[name="${field}"]`).value = val;
-            const parent = document.querySelector(`[name="${field}"]`).closest('.form-group');
-            parent.querySelectorAll('.quick-btn').forEach(b => {
-                b.classList.toggle('active', b.textContent.trim() === val);
+        function showTab(name) {
+            document.getElementById("tab-input").style.display = name === "input" ? "" : "none";
+            document.getElementById("tab-records").style.display = name === "records" ? "" : "none";
+            const tabs = document.querySelectorAll(".tab-btn");
+            tabs[0].classList.toggle("active", name === "input");
+            tabs[1].classList.toggle("active", name === "records");
+        }
+
+        function setTime(field, value) {
+            const input = document.querySelector(`[name="${field}"]`);
+            input.value = value;
+            const group = input.closest(".form-group");
+            group.querySelectorAll(".quick-btn").forEach((btn) => {
+                btn.classList.toggle("active", btn.textContent.trim() === value);
             });
         }
 
         function submitAttendance(e) {
             e.preventDefault();
-            const form = document.getElementById('attendance-form');
+            const form = document.getElementById("attendance-form");
+            const errorEl = document.getElementById("form-error");
+            const successEl = document.getElementById("input-success");
+            const formCard = document.getElementById("input-form-card");
+
+            errorEl.style.display = "none";
+            successEl.style.display = "none";
+
             const fd = new FormData(form);
             const data = {};
             fd.forEach((v, k) => data[k] = v);
-            data.emp_id = parseInt(data.emp_id);
 
-            fetch('/api/attendance', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+            const csrfToken = (data.csrf_token || "").trim();
+            delete data.csrf_token;
+
+            if (!csrfToken) {
+                errorEl.style.display = "";
+                errorEl.textContent = "보안 토큰이 없습니다. 새로고침 후 다시 시도해 주세요.";
+                return false;
+            }
+
+            fetch("/api/attendance", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken,
+                },
+                credentials: "same-origin",
+                body: JSON.stringify(data),
             })
-                .then(r => r.json())
-                .then(res => {
-                    if (res.success) {
-                        document.getElementById('input-success').style.display = '';
-                        document.getElementById('input-form-card').style.display = 'none';
-                        setTimeout(() => {
-                            document.getElementById('input-success').style.display = 'none';
-                            document.getElementById('input-form-card').style.display = '';
-                            form.reset();
-                        }, 3000);
-                    } else {
-                        document.getElementById('form-error').style.display = '';
-                        document.getElementById('form-error').textContent = res.error || '오류가 발생했습니다.';
+                .then(async (r) => {
+                    const raw = await r.text();
+                    let parsed = {};
+                    try {
+                        parsed = raw ? JSON.parse(raw) : {};
+                    } catch (_err) {
+                        parsed = {};
                     }
+
+                    if (!r.ok) {
+                        const csrfFailed = raw.includes("CSRF") || raw.includes("csrf");
+                        const message = parsed.error
+                            || (csrfFailed
+                                ? "세션이 만료되었거나 보안 토큰이 유효하지 않습니다. 새로고침 후 다시 시도해 주세요."
+                                : `요청 실패 (${r.status})`);
+                        throw new Error(message);
+                    }
+                    return parsed;
                 })
-                .catch(() => {
-                    document.getElementById('form-error').style.display = '';
-                    document.getElementById('form-error').textContent = '서버 연결 실패';
+                .then((res) => {
+                    if (!res.success) {
+                        throw new Error(res.error || "근무 기록 저장에 실패했습니다.");
+                    }
+
+                    successEl.style.display = "";
+                    formCard.style.display = "none";
+                    setTimeout(() => {
+                        successEl.style.display = "none";
+                        formCard.style.display = "";
+                        form.reset();
+                        toggleTimeInputs("normal");
+                    }, 1400);
+                })
+                .catch((err) => {
+                    errorEl.style.display = "";
+                    errorEl.textContent = err.message || "서버 연결 실패";
                 });
+
             return false;
         }
 
         function loadRecords() {
-            const s = document.getElementById('f-start').value;
-            const e = document.getElementById('f-end').value;
-            const emp = document.getElementById('f-emp').value;
-            let url = '/api/attendance?';
-            if (s) url += 'start_date=' + s + '&';
-            if (e) url += 'end_date=' + e + '&';
-            if (emp) url += 'emp_name=' + emp + '&';
+            const start = document.getElementById("f-start").value;
+            const end = document.getElementById("f-end").value;
+            const emp = document.getElementById("f-emp").value.trim();
+            const params = new URLSearchParams();
+            if (start) params.append("start_date", start);
+            if (end) params.append("end_date", end);
+            if (emp) params.append("emp_name", emp);
 
-            fetch(url)
-                .then(r => r.json())
-                .then(data => {
-                    const tbody = document.getElementById('records-tbody');
+            fetch(`/api/attendance?${params.toString()}`)
+                .then((r) => r.json())
+                .then((data) => {
+                    const tbody = document.getElementById("records-tbody");
                     if (!data.records || data.records.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text2);">결과가 없습니다.</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text2);">기록이 없습니다.</td></tr>';
                         return;
                     }
-                    tbody.innerHTML = data.records.map((r, i) => `
-      <tr style="animation:slideIn .3s ease ${i * 0.03}s both">
-        <td class="emp-name">${r.emp_name}</td>
-        <td class="mono">${r.work_date}</td>
-        <td class="mono">${r.clock_in}</td>
-        <td class="mono">${r.clock_out}</td>
-        <td class="mono">${r.total_work_hours}h</td>
-        <td class="mono">${r.overtime_hours}h</td>
-        <td class="mono">${r.night_hours}h</td>
-        <td class="mono" style="color:#d946ef;font-weight:600">${r.holiday_work_hours || 0}h</td>
-        <td><span class="badge ${r.work_type === 'normal' ? 'badge-day' : 'badge-night'}">${r.work_type === 'normal' ? '☀ 주간' : '☽ 야간'}</span></td>
-      </tr>
-    `).join('');
+
+                    tbody.innerHTML = data.records.map((r) => {
+                        const badgeClass = r.work_type === "night" ? "badge-night" : "badge-day";
+                        const workTypeLabelMap = {
+                            normal: "주간",
+                            night: "야간",
+                            annual: "연차",
+                            absent: "결근",
+                            holiday: "휴무",
+                            early: "조퇴",
+                        };
+                        const workTypeLabel = workTypeLabelMap[r.work_type] || r.work_type;
+                        return `
+                            <tr>
+                                <td class="emp-name">${r.emp_name}</td>
+                                <td class="mono">${r.work_date || ""}</td>
+                                <td class="mono">${r.clock_in || ""}</td>
+                                <td class="mono">${r.clock_out || ""}</td>
+                                <td class="mono">${r.total_work_hours}h</td>
+                                <td class="mono">${r.overtime_hours}h</td>
+                                <td class="mono">${r.night_hours}h</td>
+                                <td class="mono" style="color:#d946ef;font-weight:600">${r.holiday_work_hours || 0}h</td>
+                                <td><span class="badge ${badgeClass}">${workTypeLabel}</span></td>
+                            </tr>
+                        `;
+                    }).join("");
                 });
         }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const workType = document.querySelector('select[name="work_type"]').value;
+            toggleTimeInputs(workType);
+        });
     </script>
 </body>
 

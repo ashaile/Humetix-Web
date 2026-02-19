@@ -31,7 +31,7 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            font-family: 'Noto Sans KR', sans-serif;
+            font-family: "Noto Sans KR", sans-serif;
         }
 
         .login-card {
@@ -46,7 +46,7 @@
 
         .btn-login {
             background-color: var(--primary);
-            color: white;
+            color: #fff;
             border: none;
             padding: 12px;
             width: 100%;
@@ -57,7 +57,7 @@
 
         .btn-login:hover {
             background-color: #002040;
-            color: white;
+            color: #fff;
         }
 
         .form-control {
@@ -88,7 +88,9 @@
             <h3 class="fw-bold m-0" style="color:var(--primary);">관리자 로그인</h3>
             <button type="button" id="themeToggle" class="theme-toggle">다크</button>
         </div>
-        <p class="text-center mb-4" style="font-size: 0.9rem; color: var(--muted);">지원서 관리 페이지 접근을 위해<br>비밀번호를 입력해주세요.</p>
+        <p class="text-center mb-4" style="font-size: 0.9rem; color: var(--muted);">
+            지원서 관리 페이지 접근을 위해<br>관리자 비밀번호를 입력해 주세요.
+        </p>
 
         <form action="/login" method="POST">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -99,25 +101,25 @@
             <button type="submit" class="btn btn-login">로그인</button>
         </form>
         <div class="text-center mt-3">
-            <a href="/" style="color: var(--muted); text-decoration: none; font-size: 0.9rem;">← 홈으로 돌아가기</a>
+            <a href="/" style="color: var(--muted); text-decoration: none; font-size: 0.9rem;">홈으로 돌아가기</a>
         </div>
     </div>
     <script>
-        const themeToggle = document.getElementById('themeToggle');
+        const themeToggle = document.getElementById("themeToggle");
         const rootEl = document.documentElement;
         const applyTheme = (theme) => {
-            if (theme === 'dark') {
-                rootEl.setAttribute('data-theme', 'dark');
-                themeToggle.textContent = '라이트';
+            if (theme === "dark") {
+                rootEl.setAttribute("data-theme", "dark");
+                themeToggle.textContent = "라이트";
             } else {
-                rootEl.removeAttribute('data-theme');
-                themeToggle.textContent = '다크';
+                rootEl.removeAttribute("data-theme");
+                themeToggle.textContent = "다크";
             }
         };
-        applyTheme(localStorage.getItem('theme') || 'light');
-        themeToggle.addEventListener('click', () => {
-            const next = rootEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-            localStorage.setItem('theme', next);
+        applyTheme(localStorage.getItem("theme") || "light");
+        themeToggle.addEventListener("click", () => {
+            const next = rootEl.getAttribute("data-theme") === "dark" ? "light" : "dark";
+            localStorage.setItem("theme", next);
             applyTheme(next);
         });
     </script>

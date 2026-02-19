@@ -14,7 +14,7 @@ from config import config_by_name
 
 app = Flask(__name__)
 # Nginx 프록시 뒤에서 HTTPS 관련 헤더 정보를 올바르게 처리하기 위해 적용
-app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
 # 환경 설정 적용 (기본값 production)
 env_name = os.environ.get('FLASK_ENV', 'production')
@@ -36,15 +36,11 @@ db.init_app(app)
 migrate = Migrate(app, db)
 csrf = CSRFProtect(app)
 
-# JSON API와 관리자 AJAX 엔드포인트는 CSRF 면제
+# Blueprint import
 from routes.attendance import attendance_bp
 from routes.payslip import payslip_bp
 from routes.advance import advance_bp
 from routes.employee import employee_bp
-csrf.exempt(attendance_bp)
-csrf.exempt(payslip_bp)
-csrf.exempt(advance_bp)
-csrf.exempt(employee_bp)
 
 # uploads 폴더 생성
 UPLOAD_DIR = os.path.join(BASE_DIR, 'uploads')

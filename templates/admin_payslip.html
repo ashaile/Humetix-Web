@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 
 <head>
@@ -116,6 +116,15 @@
 
         .btn-success:hover {
             background: #1a9157;
+        }
+
+        .btn-danger {
+            background: #dc2626;
+            color: #fff;
+        }
+
+        .btn-danger:hover {
+            background: #b91c1c;
         }
 
         .btn-sm {
@@ -297,13 +306,13 @@
         <p class="page-desc">월별 급여를 생성하고 PDF/엑셀로 다운로드합니다.</p>
 
         <div class="info-box">
-            ℹ️ 시급: {{ '{:,}'.format(hourly_wage) }}원 | 기본 산정: {{ '209h 고정' if salary_mode == 'standard' else '실근무시간' }}
-            | 잔업 1.5배 | 심야(22~06시) 0.5배 가산 | 휴게 1h 제외
+            시급: {{ '{:,}'.format(hourly_wage) }}원 | 기본 산정: {{ '209h 고정' if salary_mode == 'standard' else '실근무시간' }}
+            | 잔업 1.5배 | 심야(22~06) 0.5배 가산 | 휴게 1h 제외
         </div>
 
-        <!-- 급여 생성 -->
+        <!-- 湲됱뿬 ?앹꽦 -->
         <div class="generate-card">
-            <h3>📊 급여 일괄 생성</h3>
+            <h3>월 급여 일괄 생성</h3>
             <div id="gen-msg"></div>
             <div class="generate-row">
                 <div class="form-group">
@@ -313,15 +322,15 @@
                 <div class="form-group">
                     <label class="form-label">산정 방식</label>
                     <select class="form-select" id="gen-mode">
-                        <option value="standard" {{ 'selected' if salary_mode=='standard' }}>209h 고정 (주휴포함)</option>
-                        <option value="actual" {{ 'selected' if salary_mode=='actual' }}>실근무시간 기준</option>
+                        <option value="standard" {{ 'selected' if salary_mode=='standard' else '' }}>209h 고정 (주휴포함)</option>
+                        <option value="actual" {{ 'selected' if salary_mode=='actual' else '' }}>실근무시간 기준</option>
                     </select>
                 </div>
                 <button class="btn btn-success" onclick="generatePayslips()">생성/재생성</button>
             </div>
         </div>
 
-        <!-- 월별 조회 -->
+        <!-- ?붾퀎 議고쉶 -->
         <form method="get" action="/admin/payslip" class="filter-bar">
             <input type="month" name="month" class="form-input" value="{{ month }}">
             <button type="submit" class="btn btn-primary btn-sm">조회</button>
@@ -331,8 +340,9 @@
             <div class="table-header">
                 <div class="table-title">{{ month }} 급여명세서 ({{ payslips|length }}건)</div>
                 <div class="table-actions">
-                    <a href="/admin/payslip/excel?month={{ month }}" class="btn btn-outline btn-sm">📥 엑셀</a>
-                    <a href="/admin/payslip/pdf?month={{ month }}" class="btn btn-outline btn-sm">📄 PDF</a>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="deleteMonthPayslips()">해당 월 전체 삭제</button>
+                    <a href="/admin/payslip/excel?month={{ month }}" class="btn btn-outline btn-sm">엑셀 다운로드</a>
+                    <a href="/admin/payslip/pdf?month={{ month }}" class="btn btn-outline btn-sm">PDF 다운로드</a>
                 </div>
             </div>
             <div class="table-scroll">
@@ -341,19 +351,22 @@
                         <tr>
                             <th>이름</th>
                             <th>부서</th>
-                            <th>산정</th>
+                            <th>방식</th>
                             <th>총근무(h)</th>
                             <th>잔업(h)</th>
                             <th>심야(h)</th>
+                            <th>휴일(h)</th>
                             <th>기본급</th>
                             <th>잔업수당</th>
-                            <th>심야가산</th>
+                            <th>심야수당</th>
+                            <th>휴일수당</th>
                             <th>총지급</th>
                             <th>소득세</th>
                             <th>4대보험</th>
                             <th>가불차감</th>
                             <th>실수령</th>
                             <th>PDF</th>
+                            <th>삭제</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -365,9 +378,11 @@
                             <td class="mono">{{ ps.total_work_hours }}</td>
                             <td class="mono">{{ ps.ot_hours }}</td>
                             <td class="mono">{{ ps.night_hours }}</td>
+                            <td class="mono">{{ ps.holiday_hours }}</td>
                             <td class="mono">{{ '{:,}'.format(ps.base_salary) }}</td>
                             <td class="mono">{{ '{:,}'.format(ps.ot_pay) }}</td>
                             <td class="mono">{{ '{:,}'.format(ps.night_pay) }}</td>
+                            <td class="mono">{{ '{:,}'.format(ps.holiday_pay) }}</td>
                             <td class="mono" style="font-weight:600">{{ '{:,}'.format(ps.gross) }}</td>
                             <td class="mono" style="color:#dc2626">-{{ '{:,}'.format(ps.tax) }}</td>
                             <td class="mono" style="color:#dc2626">-{{ '{:,}'.format(ps.insurance) }}</td>
@@ -375,14 +390,18 @@
                                 '{:,}'.format(ps.advance_deduction) }}{% else %}0{% endif %}</td>
                             <td class="mono" style="font-weight:700;color:var(--accent)">{{ '{:,}'.format(ps.net) }}
                             </td>
-                            <td><a href="/admin/payslip/pdf?month={{ month }}&emp_id={{ ps.emp_id }}"
+                            <td><a href="/admin/payslip/pdf?month={{ month }}&employee_id={{ ps.employee_id }}"
                                     class="btn btn-outline btn-sm">PDF</a></td>
+                            <td>
+                                <button type="button" class="btn btn-outline btn-sm"
+                                    style="color:#dc2626;border-color:#dc2626;"
+                                    onclick="deletePayslip({{ ps.id }}, '{{ ps.emp_name }}')">삭제</button>
+                            </td>
                         </tr>
                         {% endfor %}
                         {% if not payslips %}
                         <tr>
-                            <td colspan="15" style="text-align:center;padding:24px;color:var(--text2);">급여 데이터가 없습니다. 먼저
-                                급여를 생성하세요.</td>
+                            <td colspan="18" style="text-align:center;padding:24px;color:var(--text2);">급여 데이터가 없습니다. 먼저 급여를 생성해 주세요.</td>
                         </tr>
                         {% endif %}
                     </tbody>
@@ -392,6 +411,8 @@
     </div>
 
     <script>
+        const csrfToken = '{{ csrf_token() }}';
+
         function generatePayslips() {
             const month = document.getElementById('gen-month').value;
             const mode = document.getElementById('gen-mode').value;
@@ -400,23 +421,73 @@
             const fd = new FormData();
             fd.append('month', month);
             fd.append('salary_mode', mode);
+            fd.append('csrf_token', csrfToken);
 
             fetch('/admin/payslip/generate', { method: 'POST', body: fd })
                 .then(r => r.json())
                 .then(res => {
                     const el = document.getElementById('gen-msg');
                     if (res.success) {
-                        el.innerHTML = `<div class="success-msg">✅ 생성 ${res.created}건, 갱신 ${res.updated}건 완료</div>`;
+                        el.innerHTML = `<div class="success-msg">생성 ${res.created}건, 갱신 ${res.updated}건 완료</div>`;
                         setTimeout(() => location.reload(), 1500);
                     } else {
-                        el.innerHTML = `<div class="error-msg">❌ ${res.error}</div>`;
+                        el.innerHTML = `<div class="error-msg">오류: ${res.error}</div>`;
                     }
                 })
                 .catch(() => {
                     document.getElementById('gen-msg').innerHTML = '<div class="error-msg">서버 연결 실패</div>';
                 });
         }
+
+        async function deletePayslip(payslipId, empName) {
+            if (!confirm(`${empName} 급여명세서를 삭제하시겠습니까?`)) {
+                return;
+            }
+
+            const response = await fetch(`/admin/payslip/${payslipId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                },
+                credentials: 'same-origin',
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                alert(result.error || '삭제 중 오류가 발생했습니다.');
+                return;
+            }
+            location.reload();
+        }
+
+        async function deleteMonthPayslips() {
+            const month = document.querySelector('input[name="month"]').value;
+            if (!month) {
+                alert('삭제할 월을 먼저 선택하세요.');
+                return;
+            }
+            if (!confirm(`${month} 급여명세서를 전체 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('month', month);
+            formData.append('csrf_token', csrfToken);
+
+            const response = await fetch('/admin/payslip/delete-month', {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin',
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                alert(result.error || '월별 삭제 중 오류가 발생했습니다.');
+                return;
+            }
+            alert(`${result.month} 급여명세서 ${result.deleted}건을 삭제했습니다.`);
+            location.reload();
+        }
     </script>
 </body>
 
 </html>
+

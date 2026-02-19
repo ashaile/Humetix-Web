@@ -399,6 +399,8 @@
     <div class="toast" id="toast"></div>
 
     <script>
+        const csrfToken = '{{ csrf_token() }}';
+
         function showToast(msg) {
             const el = document.getElementById('toast');
             el.textContent = msg;
@@ -419,7 +421,7 @@
 
             const res = await fetch('/api/employees', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
                 body: JSON.stringify(body)
             });
             const data = await res.json();
@@ -438,7 +440,7 @@
 
             const res = await fetch('/api/employees/' + id, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
                 body: JSON.stringify({ is_active: false, resign_date: resignDate })
             });
             const data = await res.json();
@@ -454,7 +456,7 @@
         async function reactivate(id) {
             const res = await fetch('/api/employees/' + id, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
                 body: JSON.stringify({ is_active: true, resign_date: '' })
             });
             const data = await res.json();
@@ -470,7 +472,7 @@
         async function deleteEmployee(id, name) {
             if (!confirm(name + ' 사원을 명부에서 삭제하시겠습니까?\n(퇴사 처리를 권장합니다)')) return;
 
-            const res = await fetch('/api/employees/' + id, { method: 'DELETE' });
+            const res = await fetch('/api/employees/' + id, { method: 'DELETE', headers: { 'X-CSRFToken': csrfToken } });
             const data = await res.json();
 
             if (data.success) {

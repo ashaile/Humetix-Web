@@ -350,12 +350,15 @@
     <div class="toast" id="toast"></div>
 
     <script>
+        const csrfToken = '{{ csrf_token() }}';
+
         function processAdvance(id, action) {
             const comment = action === 'reject' ? prompt('반려 사유를 입력하세요:') : '';
             if (action === 'reject' && comment === null) return; // 취소
 
             const fd = new FormData();
             fd.append('comment', comment || '');
+            fd.append('csrf_token', csrfToken);
 
             fetch(`/admin/advance/${id}/${action}`, { method: 'POST', body: fd })
                 .then(r => r.json())
