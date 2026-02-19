@@ -117,7 +117,7 @@ def download_excel():
     ws.title = "\uC9C0\uC6D0\uC11C"
 
     col_widths = {
-        "A": 12, "B": 14, "C": 14, "D": 38, "E": 14, "F": 38, "G": 14, "H": 44,
+        "A": 16, "B": 18, "C": 14, "D": 38, "E": 14, "F": 38, "G": 14, "H": 44,
     }
     for col, width in col_widths.items():
         ws.column_dimensions[col].width = width
@@ -237,10 +237,10 @@ def download_excel():
                     with PILImage.open(photo_path) as img:
                         if img.mode not in ('RGB',):
                             img = img.convert('RGB')
-                        img.thumbnail((120, 160))
+                        img.thumbnail((220, 300))
                         from io import BytesIO as _BytesIO
                         img_stream = _BytesIO()
-                        img.save(img_stream, format='PNG')
+                        img.save(img_stream, format='PNG', optimize=False)
                         img_stream.seek(0)
                         excel_img = ExcelImage(img_stream)
                         ws.add_image(excel_img, f"A{row + 1}")
@@ -248,10 +248,10 @@ def download_excel():
                     pass
 
         for r in range(row + 1, row + 15):
-            ws.row_dimensions[r].height = 24
-        ws.row_dimensions[row + 1].height = 110
+            ws.row_dimensions[r].height = 26
+        ws.row_dimensions[row + 1].height = 160
         ws.row_dimensions[row + 2].height = 20
-        ws.row_dimensions[row + 12].height = 60
+        ws.row_dimensions[row + 12].height = 70
 
         row += 16
 
