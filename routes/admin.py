@@ -197,8 +197,6 @@ def download_excel():
         set_value(ws, "K23", app.tshirt or "")
         set_value(ws, "O23", "")
         vision_val = parse_vision_value(app.vision)
-        if not vision_val and app.vision:
-            vision_val = str(app.vision).strip()
         set_value(ws, "U23", vision_val)
         set_value(ws, "Z23", vision_val)
         vision_type = parse_vision_type(app.vision)
