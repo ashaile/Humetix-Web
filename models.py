@@ -220,6 +220,29 @@ class AttendanceRecord(db.Model):
         }
 
 
+class OperationCalendarDay(db.Model):
+    __tablename__ = "operation_calendar_days"
+    __table_args__ = (
+        db.UniqueConstraint("work_date", name="uq_operation_calendar_work_date"),
+        db.Index("ix_operation_calendar_work_date", "work_date"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    work_date = db.Column(db.Date, nullable=False, index=True)
+    day_type = db.Column(db.String(20), nullable=False, default="workday")
+    note = db.Column(db.String(200), default="")
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "work_date": self.work_date.strftime("%Y-%m-%d") if self.work_date else "",
+            "day_type": self.day_type,
+            "note": self.note or "",
+        }
+
+
 class Payslip(db.Model):
     __tablename__ = "payslips"
     __table_args__ = (

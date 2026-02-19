@@ -4,6 +4,7 @@
 # 데이터 파일
 applications.json
 humetix.db
+tests/*.db
 *.xlsx
 
 # 업로드 파일

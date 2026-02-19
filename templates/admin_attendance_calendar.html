@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HUMETIX - 운영캘린더</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f8f7f4;
+            --bg2: #fff;
+            --bg3: #f0efec;
+            --text: #1a1a1a;
+            --text2: #6b6b6b;
+            --accent: #e85d26;
+            --border: #e8e6e1;
+            --radius: 12px;
+            --radius-sm: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Noto Sans KR", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            padding: 16px 20px;
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+        }
+
+        .nav-links a {
+            text-decoration: none;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all .2s;
+            font-family: inherit;
+            white-space: nowrap;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #d14e1a;
+        }
+
+        .btn-outline {
+            background: var(--bg2);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-outline:hover {
+            background: var(--bg3);
+        }
+
+        .btn-sm {
+            padding: 7px 14px;
+            font-size: 13px;
+        }
+
+        .page-title {
+            font-size: 26px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .page-desc {
+            color: var(--text2);
+            font-size: 14px;
+            margin-bottom: 18px;
+        }
+
+        .month-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .form-input {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-family: inherit;
+            background: var(--bg);
+        }
+
+        .table-wrap {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .table-scroll {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        thead {
+            background: var(--bg3);
+        }
+
+        th {
+            padding: 12px 14px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            color: var(--text2);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 10px 14px;
+            border-top: 1px solid var(--border);
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+
+        .mono {
+            font-family: "JetBrains Mono", monospace;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-workday {
+            background: #eefaf2;
+            color: #15803d;
+        }
+
+        .badge-paidleave {
+            background: #fef3ee;
+            color: #c2410c;
+        }
+
+        .badge-unpaidleave {
+            background: #eef2ff;
+            color: #3730a3;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="nav-links">
+            <a href="/humetix_master_99" class="btn btn-outline">🏠 관리자 홈</a>
+            <a href="/admin/attendance" class="btn btn-outline">📋 근태관리</a>
+            <a href="/admin/attendance-calendar" class="btn btn-primary">🗓 운영캘린더</a>
+            <a href="/admin/payslip" class="btn btn-outline">💰 급여명세서</a>
+            <a href="/admin/advance" class="btn btn-outline">🏦 가불관리</a>
+            <a href="/admin/employees" class="btn btn-outline">👥 사원명부</a>
+        </div>
+
+        <h1 class="page-title">운영캘린더 관리</h1>
+        <p class="page-desc">기본 규칙: 토요일=무급휴무일, 일요일/공휴일=유급휴무일</p>
+
+        <form method="get" action="/admin/attendance-calendar" class="month-bar">
+            <input type="month" name="month" value="{{ month }}" class="form-input">
+            <button type="submit" class="btn btn-primary btn-sm">조회</button>
+            <a href="/admin/attendance" class="btn btn-outline btn-sm">근태관리로 돌아가기</a>
+        </form>
+
+        <div class="table-wrap">
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>날짜</th>
+                            <th>요일</th>
+                            <th>기본 판정</th>
+                            <th>운영캘린더</th>
+                            <th>메모</th>
+                            <th>최종 판정</th>
+                            <th>저장</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in days %}
+                        <tr>
+                            <td class="mono">{{ row.date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ ['월','화','수','목','금','토','일'][row.date.weekday()] }}</td>
+                            <td>
+                                {% if row.default_type == 'paid_leave' %}
+                                <span class="badge badge-paidleave">유급휴무일</span>
+                                {% elif row.default_type == 'unpaid_leave' %}
+                                <span class="badge badge-unpaidleave">무급휴무일</span>
+                                {% else %}
+                                <span class="badge badge-workday">일반근무일</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <select name="day_type" class="form-input" form="calendar-form-{{ loop.index }}">
+                                    <option value="default" {% if row.override_type=='default' %}selected{% endif %}>기본 규칙 사용</option>
+                                    <option value="workday" {% if row.override_type=='workday' %}selected{% endif %}>일반근무일</option>
+                                    <option value="paid_leave" {% if row.override_type=='paid_leave' %}selected{% endif %}>유급휴무일</option>
+                                    <option value="unpaid_leave" {% if row.override_type=='unpaid_leave' %}selected{% endif %}>무급휴무일</option>
+                                </select>
+                            </td>
+                            <td>
+                                <input type="text" name="note" class="form-input" maxlength="200" value="{{ row.note }}"
+                                    placeholder="사유 메모" form="calendar-form-{{ loop.index }}">
+                            </td>
+                            <td>
+                                {% if row.effective_type == 'paid_leave' %}
+                                <span class="badge badge-paidleave">유급휴무일</span>
+                                {% elif row.effective_type == 'unpaid_leave' %}
+                                <span class="badge badge-unpaidleave">무급휴무일</span>
+                                {% else %}
+                                <span class="badge badge-workday">일반근무일</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <form id="calendar-form-{{ loop.index }}" method="post" action="/admin/attendance-calendar">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="month" value="{{ month }}">
+                                    <input type="hidden" name="work_date" value="{{ row.date.strftime('%Y-%m-%d') }}">
+                                </form>
+                                <button type="submit" class="btn btn-primary btn-sm" form="calendar-form-{{ loop.index }}">저장</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if not days %}
+                        <tr>
+                            <td colspan="7" style="text-align:center;color:var(--text2);padding:24px;">표시할 데이터가 없습니다.</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,217 +1,426 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>문의 목록</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <title>HUMETIX - 문의 목록</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
     <style>
         :root {
-            --bg: #f4f7f9;
-            --surface: #ffffff;
-            --text: #333;
-            --muted: #666;
-            --border: #dee2e6;
-            --primary: #003057;
+            --bg: #f7f8fb;
+            --card: #ffffff;
+            --muted: #f1f4f8;
+            --line: #e1e6ef;
+            --text: #182233;
+            --sub: #6a7384;
+            --primary: #0f3f6d;
+            --danger: #e23a4c;
+            --radius: 14px;
+            --shadow: 0 14px 30px rgba(15, 40, 70, 0.08);
         }
+
         [data-theme="dark"] {
-            --bg: #0f1217;
-            --surface: #151a21;
-            --text: #e6e9ef;
-            --muted: #a7b0bd;
-            --border: #2a3340;
-            --primary: #2a5aa7;
+            --bg: #0f141c;
+            --card: #151c27;
+            --muted: #1b2432;
+            --line: #2a3548;
+            --text: #e4ecf9;
+            --sub: #97a5bc;
+            --primary: #7fb2ff;
+            --danger: #ff6b80;
+            --shadow: 0 18px 32px rgba(0, 0, 0, 0.28);
         }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Noto Sans KR', sans-serif;
+            margin: 0;
+            font-family: "Noto Sans KR", sans-serif;
             background: var(--bg);
-            padding: 20px;
             color: var(--text);
         }
+
         .container {
-            max-width: 1200px;
+            max-width: 1320px;
             margin: 0 auto;
-            background: var(--surface);
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            border: 1px solid var(--border);
+            padding: 30px 20px;
         }
-        .header {
+
+        .shell {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            padding: 24px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .title {
+            margin: 0;
+            font-size: 42px;
+            line-height: 1.05;
+            color: var(--primary);
+            font-weight: 800;
+        }
+
+        .theme-toggle {
+            border: 1px solid var(--line);
+            background: var(--card);
+            color: var(--text);
+            border-radius: 999px;
+            padding: 8px 14px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .nav-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 18px;
+            padding-bottom: 14px;
+            border-bottom: 2px solid #1f4b7a;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            padding: 9px 14px;
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+            transition: transform .18s ease;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-outline {
+            background: var(--card);
+            color: var(--text);
+            border-color: var(--line);
+        }
+
+        .btn-primary {
+            background: #0f3f6d;
+            color: #fff;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        .btn-sm {
+            padding: 7px 12px;
+            font-size: 12px;
+        }
+
+        .btn-color-orange {
+            background: #f26b3a;
+            color: #fff;
+        }
+
+        .btn-color-teal {
+            background: #0f8b8d;
+            color: #fff;
+        }
+
+        .btn-color-blue {
+            background: #2e7cc7;
+            color: #fff;
+        }
+
+        .btn-color-purple {
+            background: #8a4db5;
+            color: #fff;
+        }
+
+        .btn-color-green {
+            background: #2f9e44;
+            color: #fff;
+        }
+
+        .btn-color-gray {
+            background: #7f8b99;
+            color: #fff;
+        }
+
+        .btn-color-active {
+            background: #ffffff;
+            color: #111827;
+            border-color: #cfd7e3;
+        }
+
+        .filter-card {
+            background: var(--muted);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: minmax(280px, 1fr) 180px auto auto;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .field {
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: var(--card);
+            color: var(--text);
+            padding: 10px 12px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .summary {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid var(--primary);
+            gap: 10px;
+            margin: 10px 0 12px;
+            flex-wrap: wrap;
         }
-        .header h2 {
-            margin: 0;
+
+        .summary strong {
+            font-size: 32px;
             color: var(--primary);
+            letter-spacing: -0.02em;
         }
-        .btn {
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            padding: 0.5rem 1rem;
-            font-size: 0.95rem;
-            font-weight: 500;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            text-decoration: none;
-            height: 38px;
-            box-sizing: border-box;
-            background: #6c757d;
-            color: white;
+
+        .table-box {
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: var(--card);
+            overflow: hidden;
         }
-        .btn-danger { background: #dc3545; }
-        .btn-primary { background: var(--primary); }
+
+        .table-scroll {
+            overflow-x: auto;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
+            min-width: 1240px;
+            font-size: 13px;
         }
-        th, td {
-            border: 1px solid var(--border);
-            padding: 10px;
+
+        thead {
+            background: var(--muted);
+        }
+
+        th {
             text-align: left;
-            font-size: 0.92rem;
+            padding: 12px 10px;
+            font-size: 12px;
+            color: var(--sub);
+            border-bottom: 1px solid var(--line);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 10px;
+            border-top: 1px solid var(--line);
             vertical-align: top;
         }
-        th { background: #f8f9fa; }
-        [data-theme="dark"] th { background: #1b222c; color: #cfd6e4; }
-        [data-theme="dark"] td { background: #151a21; }
-        .muted { color: var(--muted); font-size: 0.85rem; }
-        .theme-toggle {
-            border: 1px solid var(--border);
-            background: transparent;
-            color: var(--text);
-            border-radius: 20px;
-            padding: 6px 14px;
-            font-weight: 700;
-            font-size: 0.85rem;
-            margin-right: 8px;
+
+        tr:hover td {
+            background: var(--muted);
         }
-        .filter-bar {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-bottom: 12px;
+
+        .mono {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 12px;
         }
-        .filter-input, .filter-select {
-            height: 36px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 0 10px;
-            background: transparent;
-            color: var(--text);
+
+        .empty {
+            text-align: center;
+            padding: 56px 18px;
+            color: var(--sub);
         }
-        .inline-input {
-            width: 100%;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 6px 8px;
-            background: transparent;
-            color: var(--text);
-        }
+
+        .inline-input,
         .inline-textarea {
             width: 100%;
-            min-height: 60px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 6px 8px;
-            background: transparent;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 8px 10px;
+            background: var(--card);
             color: var(--text);
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        .inline-textarea {
+            min-height: 66px;
+            resize: vertical;
+        }
+
+        .helper {
+            font-size: 13px;
+            color: var(--sub);
+        }
+
+        @media (max-width: 980px) {
+            .container {
+                padding: 16px;
+            }
+
+            .shell {
+                padding: 16px;
+            }
+
+            .title {
+                font-size: 36px;
+            }
+
+            .filter-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 
 <body>
-    {% set status_labels = {'new':'신규','in_progress':'진행중','done':'완료'} %}
+    {% set status_labels = {'new':'접수', 'in_progress':'진행중', 'done':'완료'} %}
     <div class="container">
-        <div class="header">
-            <h2>문의 목록</h2>
-            <div>
+        <div class="shell">
+            <div class="topbar">
+                <h1 class="title">관리자 페이지</h1>
                 <button type="button" id="themeToggle" class="theme-toggle">다크</button>
-                <a href="/humetix_master_99" class="btn">관리자 페이지</a>
             </div>
+
+            <div class="nav-links">
+                <a href="/humetix_master_99" class="btn btn-outline">🏠 관리자 홈</a>
+                <a href="/admin/attendance" class="btn btn-color-orange">📋 근태관리</a>
+                <a href="/admin/attendance-calendar" class="btn btn-color-teal">🗓 운영캘린더</a>
+                <a href="/admin/payslip" class="btn btn-color-blue">💰 급여명세서</a>
+                <a href="/admin/advance" class="btn btn-color-purple">🏦 가불관리</a>
+                <a href="/admin/employees" class="btn btn-color-green">👥 사원명부</a>
+                <a href="/inquiries" class="btn btn-color-active">문의 목록</a>
+                <a href="/logout" class="btn btn-color-gray">로그아웃</a>
+            </div>
+
+            <div class="filter-card">
+                <form method="get" action="{{ url_for('admin.inquiries') }}" class="filter-grid">
+                    <input type="text" name="q" class="field" placeholder="회사명/담당자/연락처/이메일 검색" value="{{ q }}">
+                    <select name="status" class="field">
+                        <option value="">전체 상태</option>
+                        {% for val in status_options %}
+                        <option value="{{ val }}" {% if status==val %}selected{% endif %}>{{ status_labels[val] }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-primary">조건 검색</button>
+                    <a href="{{ url_for('admin.inquiries') }}" class="btn btn-outline">초기화</a>
+                </form>
+            </div>
+
+            <form method="post" action="{{ url_for('admin.delete_inquiries') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="summary">
+                    <div class="helper">총 <strong>{{ items|length }}</strong> 건 문의</div>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <label class="helper">
+                            <input type="checkbox" onclick="toggleAll(this)"> 전체 선택
+                        </label>
+                        <button type="submit" class="btn btn-danger btn-sm">선택 삭제</button>
+                    </div>
+                </div>
+
+                {% if not items %}
+                <div class="table-box">
+                    <div class="empty">접수된 문의가 없거나 검색 결과가 없습니다.</div>
+                </div>
+                {% else %}
+                <div class="table-box">
+                    <div class="table-scroll">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width:44px;">선택</th>
+                                    <th>접수일</th>
+                                    <th>회사명</th>
+                                    <th>담당자</th>
+                                    <th>연락처</th>
+                                    <th>이메일</th>
+                                    <th>문의 내용</th>
+                                    <th>상태</th>
+                                    <th>담당자(내부)</th>
+                                    <th>관리자 메모</th>
+                                    <th style="width:84px;">저장</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in items %}
+                                <tr>
+                                    <td><input type="checkbox" name="selected_ids" value="{{ item.id }}"></td>
+                                    <td class="mono">{{ item.created_at.strftime('%Y-%m-%d %H:%M') if item.created_at else '' }}</td>
+                                    <td>{{ item.company }}</td>
+                                    <td>{{ item.name }}</td>
+                                    <td>{{ item.phone }}</td>
+                                    <td>{{ item.email or '-' }}</td>
+                                    <td>{{ item.message or '-' }}</td>
+                                    <td>
+                                        <select id="status-{{ item.id }}" class="inline-input">
+                                            {% for val in status_options %}
+                                            <option value="{{ val }}" {% if item.status==val %}selected{% endif %}>{{ status_labels[val] }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input type="text" id="assignee-{{ item.id }}" class="inline-input"
+                                            value="{{ item.assignee or '' }}" placeholder="담당자">
+                                    </td>
+                                    <td>
+                                        <textarea id="memo-{{ item.id }}" class="inline-textarea"
+                                            placeholder="메모">{{ item.admin_memo or '' }}</textarea>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-primary btn-sm"
+                                            onclick="saveInquiry({{ item.id }})">저장</button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+            </form>
         </div>
-
-        <form method="get" action="{{ url_for('admin.inquiries') }}" class="filter-bar">
-            <input type="text" name="q" class="filter-input" placeholder="회사명/담당자/연락처/이메일 검색" value="{{ q }}">
-            <select name="status" class="filter-select">
-                <option value="">전체 상태</option>
-                {% for val in status_options %}
-                <option value="{{ val }}" {% if status==val %}selected{% endif %}>{{ status_labels[val] }}</option>
-                {% endfor %}
-            </select>
-            <button type="submit" class="btn btn-primary">검색</button>
-        </form>
-
-        <form method="post" action="{{ url_for('admin.delete_inquiries') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-            {% if not items %}
-            <p class="muted">접수된 문의가 없습니다.</p>
-            {% else %}
-            <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom:12px;">
-                <label class="muted"><input type="checkbox" onclick="toggleAll(this)"> 전체 선택</label>
-                <button type="submit" class="btn btn-danger">선택 삭제</button>
-            </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width:40px;">선택</th>
-                        <th>접수일</th>
-                        <th>회사명</th>
-                        <th>담당자</th>
-                        <th>연락처</th>
-                        <th>이메일</th>
-                        <th>내용</th>
-                        <th>상태</th>
-                        <th>담당자(내부)</th>
-                        <th>관리자 메모</th>
-                        <th style="width:90px;">저장</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in items %}
-                    <tr>
-                        <td><input type="checkbox" name="selected_ids" value="{{ item.id }}"></td>
-                        <td>{{ item.created_at.strftime('%Y-%m-%d %H:%M') if item.created_at else '' }}</td>
-                        <td>{{ item.company }}</td>
-                        <td>{{ item.name }}</td>
-                        <td>{{ item.phone }}</td>
-                        <td>{{ item.email or '-' }}</td>
-                        <td>{{ item.message or '-' }}</td>
-                        <td>
-                            <select id="status-{{ item.id }}" class="inline-input">
-                                    {% for val in status_options %}
-                                    <option value="{{ val }}" {% if item.status==val %}selected{% endif %}>{{ status_labels[val] }}</option>
-                                    {% endfor %}
-                                </select>
-                        </td>
-                        <td>
-                            <input type="text" id="assignee-{{ item.id }}" class="inline-input" value="{{ item.assignee or '' }}" placeholder="담당자">
-                        </td>
-                        <td>
-                            <textarea id="memo-{{ item.id }}" class="inline-textarea" placeholder="메모">{{ item.admin_memo or '' }}</textarea>
-                        </td>
-                        <td>
-                            <button type="button" class="btn btn-primary" style="height:32px;" onclick="saveInquiry({{ item.id }})">저장</button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% endif %}
-        </form>
     </div>
 
     <script>
         function toggleAll(source) {
-            document.getElementsByName('selected_ids').forEach(cb => {
+            document.getElementsByName("selected_ids").forEach(cb => {
                 cb.checked = source.checked;
             });
         }
@@ -222,37 +431,39 @@
             const memo = document.getElementById(`memo-${id}`).value;
 
             const formData = new FormData();
-            formData.append('status', status);
-            formData.append('assignee', assignee);
-            formData.append('admin_memo', memo);
-            formData.append('csrf_token', '{{ csrf_token() }}');
+            formData.append("status", status);
+            formData.append("assignee", assignee);
+            formData.append("admin_memo", memo);
+            formData.append("csrf_token", "{{ csrf_token() }}");
 
             const res = await fetch(`/inquiries/update/${id}`, {
-                method: 'POST',
+                method: "POST",
                 body: formData
             });
             if (res.ok) {
-                alert('저장되었습니다.');
+                alert("저장되었습니다.");
             } else {
-                alert('저장에 실패했습니다.');
+                alert("저장에 실패했습니다.");
             }
         }
 
-        const themeToggle = document.getElementById('themeToggle');
-        const rootEl = document.documentElement;
-        const applyTheme = (theme) => {
-            if (theme === 'dark') {
-                rootEl.setAttribute('data-theme', 'dark');
-                themeToggle.textContent = '라이트';
+        const themeToggle = document.getElementById("themeToggle");
+        const root = document.documentElement;
+
+        function applyTheme(theme) {
+            if (theme === "dark") {
+                root.setAttribute("data-theme", "dark");
+                themeToggle.textContent = "라이트";
             } else {
-                rootEl.removeAttribute('data-theme');
-                themeToggle.textContent = '다크';
+                root.removeAttribute("data-theme");
+                themeToggle.textContent = "다크";
             }
-        };
-        applyTheme(localStorage.getItem('theme') || 'light');
-        themeToggle.addEventListener('click', () => {
-            const next = rootEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-            localStorage.setItem('theme', next);
+        }
+
+        applyTheme(localStorage.getItem("theme") || "light");
+        themeToggle.addEventListener("click", () => {
+            const next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+            localStorage.setItem("theme", next);
             applyTheme(next);
         });
     </script>

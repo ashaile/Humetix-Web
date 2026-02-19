@@ -220,6 +220,31 @@
             border-color: var(--accent);
         }
 
+        .work-type-btns {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .work-type-btn {
+            padding: 7px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            font-size: 12px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600;
+            color: var(--text2);
+        }
+
+        .work-type-btn:hover,
+        .work-type-btn.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+
         .success-msg {
             background: var(--success-bg);
             border: 1px solid #86efac;
@@ -374,8 +399,7 @@
 
                     <div class="form-group">
                         <label class="form-label">생년월일 (YYMMDD)</label>
-                        <input type="text" class="form-input" name="birth_date" maxlength="6" placeholder="950927"
-                            required>
+                        <input type="text" class="form-input" name="birth_date" maxlength="6" required>
                     </div>
 
                     <div class="form-group">
@@ -396,14 +420,21 @@
 
                     <div class="form-group">
                         <label class="form-label">근무 유형</label>
-                        <select class="form-select" name="work_type" onchange="toggleTimeInputs(this.value)">
-                            <option value="normal">주간 근무</option>
-                            <option value="night">야간 근무</option>
-                            <option value="annual">연차</option>
-                            <option value="absent">결근</option>
-                            <option value="holiday">휴무</option>
-                            <option value="early">조퇴</option>
-                        </select>
+                        <input type="hidden" name="work_type" value="normal">
+                        <div class="work-type-btns">
+                            <button type="button" class="work-type-btn active" data-work-type="normal"
+                                onclick="setWorkType('normal')">주간 근무</button>
+                            <button type="button" class="work-type-btn" data-work-type="night"
+                                onclick="setWorkType('night')">야간 근무</button>
+                            <button type="button" class="work-type-btn" data-work-type="annual"
+                                onclick="setWorkType('annual')">연차</button>
+                            <button type="button" class="work-type-btn" data-work-type="absent"
+                                onclick="setWorkType('absent')">결근</button>
+                            <button type="button" class="work-type-btn" data-work-type="holiday"
+                                onclick="setWorkType('holiday')">휴무</button>
+                            <button type="button" class="work-type-btn" data-work-type="early"
+                                onclick="setWorkType('early')">조퇴</button>
+                        </div>
                     </div>
 
                     <div class="time-row" id="time-inputs">
@@ -412,7 +443,9 @@
                             <input type="time" class="form-input" name="clock_in" value="08:30" required>
                             <div class="quick-btns">
                                 <button type="button" class="quick-btn" onclick="setTime('clock_in','06:00')">06:00</button>
+                                <button type="button" class="quick-btn" onclick="setTime('clock_in','06:30')">06:30</button>
                                 <button type="button" class="quick-btn" onclick="setTime('clock_in','07:00')">07:00</button>
+                                <button type="button" class="quick-btn" onclick="setTime('clock_in','07:30')">07:30</button>
                                 <button type="button" class="quick-btn" onclick="setTime('clock_in','08:00')">08:00</button>
                                 <button type="button" class="quick-btn active" onclick="setTime('clock_in','08:30')">08:30</button>
                                 <button type="button" class="quick-btn" onclick="setTime('clock_in','17:30')">17:30</button>
@@ -425,8 +458,10 @@
                             <div class="quick-btns">
                                 <button type="button" class="quick-btn" onclick="setTime('clock_out','04:00')">04:00</button>
                                 <button type="button" class="quick-btn" onclick="setTime('clock_out','05:00')">05:00</button>
+                                <button type="button" class="quick-btn" onclick="setTime('clock_out','05:30')">05:30</button>
                                 <button type="button" class="quick-btn" onclick="setTime('clock_out','08:30')">08:30</button>
                                 <button type="button" class="quick-btn" onclick="setTime('clock_out','17:30')">17:30</button>
+                                <button type="button" class="quick-btn" onclick="setTime('clock_out','18:30')">18:30</button>
                                 <button type="button" class="quick-btn active" onclick="setTime('clock_out','19:00')">19:00</button>
                                 <button type="button" class="quick-btn" onclick="setTime('clock_out','21:00')">21:00</button>
                             </div>
@@ -543,6 +578,15 @@
             });
         }
 
+        function setWorkType(value) {
+            const input = document.querySelector('input[name="work_type"]');
+            input.value = value;
+            document.querySelectorAll(".work-type-btn").forEach((btn) => {
+                btn.classList.toggle("active", btn.dataset.workType === value);
+            });
+            toggleTimeInputs(value);
+        }
+
         function submitAttendance(e) {
             e.preventDefault();
             const form = document.getElementById("attendance-form");
@@ -605,7 +649,7 @@
                         successEl.style.display = "none";
                         formCard.style.display = "";
                         form.reset();
-                        toggleTimeInputs("normal");
+                        setWorkType("normal");
                     }, 1400);
                 })
                 .catch((err) => {
@@ -663,8 +707,8 @@
         }
 
         document.addEventListener("DOMContentLoaded", () => {
-            const workType = document.querySelector('select[name="work_type"]').value;
-            toggleTimeInputs(workType);
+            const workType = document.querySelector('input[name="work_type"]').value || "normal";
+            setWorkType(workType);
         });
     </script>
 </body>

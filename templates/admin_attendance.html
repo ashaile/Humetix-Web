@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 
 <head>
@@ -148,6 +148,19 @@
             letter-spacing: -1px;
         }
 
+        .stat-main {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 6px;
+        }
+
+        .stat-unit {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text2);
+            letter-spacing: 0;
+        }
+
         .stat-value.accent {
             color: var(--accent);
         }
@@ -164,6 +177,10 @@
             font-size: 12px;
             color: var(--text2);
             margin-top: 4px;
+        }
+
+        .stat-sub:empty {
+            display: none;
         }
 
         .filter-bar {
@@ -314,8 +331,9 @@
 <body>
     <div class="container">
         <div class="nav-links">
-            <a href="/humetix_master_99" class="btn btn-outline">← 관리자 홈</a>
+            <a href="/humetix_master_99" class="btn btn-outline">🏠 관리자 홈</a>
             <a href="/admin/attendance" class="btn btn-primary">📋 근태관리</a>
+            <a href="/admin/attendance-calendar" class="btn btn-outline">🗓 운영캘린더</a>
             <a href="/admin/payslip" class="btn btn-outline">💰 급여명세서</a>
             <a href="/admin/advance" class="btn btn-outline">🏦 가불관리</a>
             <a href="/admin/employees" class="btn btn-outline">👥 사원명부</a>
@@ -327,38 +345,59 @@
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-label">기록 수</div>
-                <div class="stat-value">{{ stats.total }}</div>
-                <div class="stat-sub">현재 조건</div>
+                <div class="stat-main">
+                    <div class="stat-value">{{ stats.total }}</div>
+                    <div class="stat-unit">건</div>
+                </div>
+                <div class="stat-sub"></div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">주간 근무</div>
-                <div class="stat-value accent">{{ stats.day }}</div>
-                <div class="stat-sub">건</div>
+                <div class="stat-main">
+                    <div class="stat-value accent">{{ stats.day }}</div>
+                    <div class="stat-unit">건</div>
+                </div>
+                <div class="stat-sub"></div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">야간 근무</div>
-                <div class="stat-value night">{{ stats.night }}</div>
-                <div class="stat-sub">건</div>
+                <div class="stat-main">
+                    <div class="stat-value night">{{ stats.night }}</div>
+                    <div class="stat-unit">건</div>
+                </div>
+                <div class="stat-sub"></div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">총 근무</div>
-                <div class="stat-value">{{ stats.total_work }}</div>
-                <div class="stat-sub">시간</div>
+                <div class="stat-main">
+                    <div class="stat-value">{{ stats.total_work }}</div>
+                    <div class="stat-unit">시간</div>
+                </div>
+                <div class="stat-sub"></div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">잔업</div>
-                <div class="stat-value success">{{ stats.total_ot }}</div>
-                <div class="stat-sub">시간</div>
+                <div class="stat-main">
+                    <div class="stat-value success">{{ stats.total_ot }}</div>
+                    <div class="stat-unit">시간</div>
+                </div>
+                <div class="stat-sub"></div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">심야</div>
-                <div class="stat-value night">{{ stats.total_night }}</div>
-                <div class="stat-sub">시간</div>
+                <div class="stat-main">
+                    <div class="stat-value night">{{ stats.total_night }}</div>
+                    <div class="stat-unit">시간</div>
+                </div>
+                <div class="stat-sub"></div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">특근</div>
-                <div class="stat-value" style="color:#d946ef">{{ stats.total_holiday }}</div>
-                <div class="stat-sub">시간</div>
+                <div class="stat-main">
+                    <div class="stat-value" style="color:#d946ef">{{ stats.total_holiday }}</div>
+                    <div class="stat-unit">시간</div>
+                </div>
+                <div class="stat-sub"></div>
             </div>
         </div>
 

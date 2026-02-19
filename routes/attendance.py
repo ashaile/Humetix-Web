@@ -1,5 +1,6 @@
 ﻿import logging
 import re
+from calendar import monthrange
 from datetime import date, datetime
 from io import BytesIO
 
@@ -14,9 +15,9 @@ from flask import (
     session,
     url_for,
 )
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 
-from models import AttendanceRecord, Employee, db
+from models import AttendanceRecord, Employee, OperationCalendarDay, db
 
 logger = logging.getLogger(__name__)
 
@@ -24,10 +25,43 @@ attendance_bp = Blueprint("attendance", __name__)
 
 ALLOWED_WORK_TYPES = {"normal", "night", "annual", "absent", "holiday", "early"}
 TIME_REQUIRED_TYPES = {"normal", "night"}
+CALENDAR_DAY_TYPES = {"workday", "paid_leave", "unpaid_leave"}
+LEAVE_DAY_TYPES = {"paid_leave", "unpaid_leave"}
 
 
 def _parse_date(value: str):
     return datetime.strptime(value, "%Y-%m-%d").date()
+
+
+def _validate_month(value: str) -> bool:
+    if not value or not re.fullmatch(r"\d{4}-\d{2}", value):
+        return False
+    year, month = map(int, value.split("-"))
+    return 2000 <= year <= 2100 and 1 <= month <= 12
+
+
+def _month_bounds(month_text: str):
+    year, month = map(int, month_text.split("-"))
+    last_day = monthrange(year, month)[1]
+    return date(year, month, 1), date(year, month, last_day)
+
+
+def _default_day_type(work_date: date, cfg) -> str:
+    holidays_2026 = cfg.get("PUBLIC_HOLIDAYS_2026", [])
+    if work_date.weekday() == 6:
+        return "paid_leave"
+    if work_date.weekday() == 5:
+        return "unpaid_leave"
+    if work_date.strftime("%Y-%m-%d") in holidays_2026:
+        return "paid_leave"
+    return "workday"
+
+
+def _calendar_override_type(work_date: date):
+    row = OperationCalendarDay.query.filter_by(work_date=work_date).first()
+    if not row:
+        return None
+    return row.day_type
 
 
 def _validate_hhmm(value: str) -> bool:
@@ -53,7 +87,7 @@ def _minutes_in_range(start_min, end_min, range_start_min, range_end_min):
     return max(0, overlap_end - overlap_start)
 
 
-def calc_work_hours(clock_in: str, clock_out: str, cfg, work_date=None):
+def calc_work_hours(clock_in: str, clock_out: str, cfg, work_date=None, calendar_day_type=None):
     in_min = _time_to_minutes(clock_in)
     out_min = _time_to_minutes(clock_out)
 
@@ -66,17 +100,20 @@ def calc_work_hours(clock_in: str, clock_out: str, cfg, work_date=None):
     worked_min = max(0, raw_minutes - break_min)
     total_hours = round(worked_min / 60, 2)
 
-    is_holiday_work = False
-    if work_date:
-        if isinstance(work_date, str):
-            work_date = _parse_date(work_date)
+    if calendar_day_type in CALENDAR_DAY_TYPES:
+        is_holiday_work = calendar_day_type in LEAVE_DAY_TYPES
+    else:
+        is_holiday_work = False
+        if work_date:
+            if isinstance(work_date, str):
+                work_date = _parse_date(work_date)
 
-        if work_date.weekday() >= 5:
-            is_holiday_work = True
+            if work_date.weekday() >= 5:
+                is_holiday_work = True
 
-        holidays_2026 = cfg.get("PUBLIC_HOLIDAYS_2026", [])
-        if work_date.strftime("%Y-%m-%d") in holidays_2026:
-            is_holiday_work = True
+            holidays_2026 = cfg.get("PUBLIC_HOLIDAYS_2026", [])
+            if work_date.strftime("%Y-%m-%d") in holidays_2026:
+                is_holiday_work = True
 
     std_hours = cfg.get("STANDARD_WORK_HOURS", 8.0)
 
@@ -114,6 +151,33 @@ def _get_cfg():
     }
 
 
+def _effective_day_type(work_date: date, cfg):
+    override = _calendar_override_type(work_date)
+    if override in CALENDAR_DAY_TYPES:
+        return override
+    return _default_day_type(work_date, cfg)
+
+
+def _db_not_ready_message():
+    return (
+        "데이터베이스 초기화가 필요합니다. "
+        "프로젝트 폴더에서 python fix_db.py 실행 후 서버를 재시작하세요."
+    )
+
+
+def _db_not_ready_json():
+    return jsonify({"error": _db_not_ready_message()}), 503
+
+
+def _db_not_ready_page():
+    return render_template(
+        "error.html",
+        error_code="503",
+        error_message="데이터베이스 초기화 필요",
+        error_description=_db_not_ready_message(),
+    ), 503
+
+
 @attendance_bp.route("/api/attendance", methods=["POST"])
 def create_attendance():
     data = request.get_json(silent=True)
@@ -130,9 +194,14 @@ def create_attendance():
         return jsonify({"error": "birth_date must be YYMMDD"}), 400
 
     emp_name = str(data["emp_name"]).strip()
-    employee = Employee.query.filter_by(
-        name=emp_name, birth_date=birth_date, is_active=True
-    ).first()
+    try:
+        employee = Employee.query.filter_by(
+            name=emp_name, birth_date=birth_date, is_active=True
+        ).first()
+    except OperationalError as exc:
+        logger.error("Attendance create query failed: %s", exc)
+        return _db_not_ready_json()
+
     if not employee:
         return jsonify({"error": "등록된 재직 직원만 입력할 수 있습니다."}), 403
 
@@ -145,10 +214,15 @@ def create_attendance():
     if work_type not in ALLOWED_WORK_TYPES:
         return jsonify({"error": f"Invalid work_type: {work_type}"}), 400
 
-    exists = AttendanceRecord.query.filter_by(
-        employee_id=employee.id,
-        work_date=work_date,
-    ).first()
+    try:
+        exists = AttendanceRecord.query.filter_by(
+            employee_id=employee.id,
+            work_date=work_date,
+        ).first()
+    except OperationalError as exc:
+        logger.error("Attendance duplicate-check query failed: %s", exc)
+        return _db_not_ready_json()
+
     if exists:
         return jsonify({"error": "같은 날짜의 근태 기록이 이미 존재합니다."}), 409
 
@@ -164,8 +238,18 @@ def create_attendance():
         clock_out = str(data.get("clock_out", "")).strip()
         if not (_validate_hhmm(clock_in) and _validate_hhmm(clock_out)):
             return jsonify({"error": "clock_in/clock_out format must be HH:MM"}), 400
+        cfg = _get_cfg()
+        try:
+            day_type = _effective_day_type(work_date, cfg)
+        except OperationalError as exc:
+            logger.error("Attendance calendar lookup failed: %s", exc)
+            return _db_not_ready_json()
         total_hours, ot_hours, night_hours, holiday_hours = calc_work_hours(
-            clock_in, clock_out, _get_cfg(), work_date=work_date
+            clock_in,
+            clock_out,
+            cfg,
+            work_date=work_date,
+            calendar_day_type=day_type,
         )
 
     record = AttendanceRecord(
@@ -224,19 +308,137 @@ def list_attendance():
         except ValueError:
             return jsonify({"error": "end_date format must be YYYY-MM-DD"}), 400
 
-    records = query.order_by(AttendanceRecord.work_date.asc()).all()
+    try:
+        records = query.order_by(AttendanceRecord.work_date.asc()).all()
+    except OperationalError as exc:
+        logger.error("Attendance list query failed: %s", exc)
+        return _db_not_ready_json()
+
     return jsonify({"records": [r.to_dict() for r in records]})
 
 
 @attendance_bp.route("/attendance")
 def attendance_page():
     today = date.today()
-    today_records = (
-        AttendanceRecord.query.filter(AttendanceRecord.work_date == today)
-        .order_by(AttendanceRecord.emp_name.asc())
-        .all()
-    )
+    try:
+        today_records = (
+            AttendanceRecord.query.filter(AttendanceRecord.work_date == today)
+            .order_by(AttendanceRecord.emp_name.asc())
+            .all()
+        )
+    except OperationalError as exc:
+        logger.error("Attendance page query failed: %s", exc)
+        return _db_not_ready_page()
+
     return render_template("attendance.html", records=today_records, today=today)
+
+
+@attendance_bp.route("/admin/attendance-calendar")
+def admin_attendance_calendar():
+    if not session.get("is_admin"):
+        return redirect(url_for("auth.login"))
+
+    month_text = request.args.get("month", date.today().strftime("%Y-%m"))
+    if not _validate_month(month_text):
+        month_text = date.today().strftime("%Y-%m")
+
+    start_date, end_date = _month_bounds(month_text)
+    try:
+        overrides = (
+            OperationCalendarDay.query.filter(
+                OperationCalendarDay.work_date >= start_date,
+                OperationCalendarDay.work_date <= end_date,
+            )
+            .order_by(OperationCalendarDay.work_date.asc())
+            .all()
+        )
+    except OperationalError as exc:
+        logger.error("Attendance calendar query failed: %s", exc)
+        return _db_not_ready_page()
+
+    override_map = {row.work_date: row for row in overrides}
+
+    cfg = _get_cfg()
+    days = []
+    day = start_date.day
+    while day <= end_date.day:
+        current = date(start_date.year, start_date.month, day)
+        default_type = _default_day_type(current, cfg)
+        override = override_map.get(current)
+        effective_type = override.day_type if override else default_type
+        days.append(
+            {
+                "date": current,
+                "default_type": default_type,
+                "override_type": override.day_type if override else "default",
+                "effective_type": effective_type,
+                "note": override.note if override else "",
+            }
+        )
+        day += 1
+
+    return render_template(
+        "admin_attendance_calendar.html",
+        month=month_text,
+        days=days,
+    )
+
+
+@attendance_bp.route("/admin/attendance-calendar", methods=["POST"])
+def save_attendance_calendar():
+    if not session.get("is_admin"):
+        return redirect(url_for("auth.login"))
+
+    work_date_text = (request.form.get("work_date") or "").strip()
+    day_type = (request.form.get("day_type") or "").strip()
+    note = (request.form.get("note") or "").strip()[:200]
+    month_text = (request.form.get("month") or "").strip()
+
+    if not _validate_month(month_text):
+        month_text = date.today().strftime("%Y-%m")
+
+    try:
+        work_date = _parse_date(work_date_text)
+    except ValueError:
+        return redirect(url_for("attendance.admin_attendance_calendar", month=month_text))
+
+    try:
+        row = OperationCalendarDay.query.filter_by(work_date=work_date).first()
+    except OperationalError as exc:
+        logger.error("Attendance calendar write query failed: %s", exc)
+        return _db_not_ready_page()
+    if day_type == "default":
+        if row:
+            db.session.delete(row)
+            try:
+                db.session.commit()
+            except OperationalError as exc:
+                db.session.rollback()
+                logger.error("Attendance calendar delete commit failed: %s", exc)
+                return _db_not_ready_page()
+        return redirect(url_for("attendance.admin_attendance_calendar", month=month_text))
+
+    if day_type not in CALENDAR_DAY_TYPES:
+        return redirect(url_for("attendance.admin_attendance_calendar", month=month_text))
+
+    if row:
+        row.day_type = day_type
+        row.note = note
+    else:
+        row = OperationCalendarDay(
+            work_date=work_date,
+            day_type=day_type,
+            note=note,
+        )
+        db.session.add(row)
+    try:
+        db.session.commit()
+    except OperationalError as exc:
+        db.session.rollback()
+        logger.error("Attendance calendar save commit failed: %s", exc)
+        return _db_not_ready_page()
+
+    return redirect(url_for("attendance.admin_attendance_calendar", month=month_text))
 
 
 @attendance_bp.route("/admin/attendance")
@@ -262,7 +464,11 @@ def admin_attendance():
     if emp_name:
         query = query.filter(AttendanceRecord.emp_name.contains(emp_name))
 
-    records = query.order_by(AttendanceRecord.work_date.desc()).all()
+    try:
+        records = query.order_by(AttendanceRecord.work_date.desc()).all()
+    except OperationalError as exc:
+        logger.error("Admin attendance query failed: %s", exc)
+        return _db_not_ready_page()
 
     today = date.today()
     stats_source = records
@@ -313,7 +519,11 @@ def attendance_excel():
     if emp_name:
         query = query.filter(AttendanceRecord.emp_name.contains(emp_name))
 
-    records = query.order_by(AttendanceRecord.work_date.asc()).all()
+    try:
+        records = query.order_by(AttendanceRecord.work_date.asc()).all()
+    except OperationalError as exc:
+        logger.error("Attendance excel query failed: %s", exc)
+        return _db_not_ready_page()
 
     wb = Workbook()
     ws = wb.active
@@ -337,6 +547,15 @@ def attendance_excel():
         cell = ws.cell(row=1, column=col, value=header)
         cell.font = bold
 
+    work_type_labels = {
+        "normal": "주간",
+        "night": "야간",
+        "annual": "연차",
+        "absent": "결근",
+        "holiday": "휴무",
+        "early": "조퇴",
+    }
+
     for i, rec in enumerate(records, 2):
         ws.cell(row=i, column=1, value=rec.employee_id)
         ws.cell(row=i, column=2, value=rec.emp_name)
@@ -348,7 +567,7 @@ def attendance_excel():
         )
         ws.cell(row=i, column=5, value=rec.clock_in)
         ws.cell(row=i, column=6, value=rec.clock_out)
-        ws.cell(row=i, column=7, value=rec.work_type)
+        ws.cell(row=i, column=7, value=work_type_labels.get(rec.work_type, rec.work_type))
         ws.cell(row=i, column=8, value=rec.total_work_hours)
         ws.cell(row=i, column=9, value=rec.overtime_hours)
         ws.cell(row=i, column=10, value=rec.night_hours)
@@ -428,11 +647,18 @@ def update_attendance(record_id):
     if record.work_type in TIME_REQUIRED_TYPES:
         if not (_validate_hhmm(record.clock_in or "") and _validate_hhmm(record.clock_out or "")):
             return jsonify({"error": "clock_in/clock_out format must be HH:MM"}), 400
+        cfg = _get_cfg()
+        try:
+            day_type = _effective_day_type(record.work_date, cfg)
+        except OperationalError as exc:
+            logger.error("Attendance calendar lookup failed during update: %s", exc)
+            return _db_not_ready_json()
         total, ot, night, holiday = calc_work_hours(
             record.clock_in,
             record.clock_out,
-            _get_cfg(),
+            cfg,
             work_date=record.work_date,
+            calendar_day_type=day_type,
         )
         record.total_work_hours = total
         record.overtime_hours = ot
