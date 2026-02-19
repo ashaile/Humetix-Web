@@ -4,10 +4,11 @@ from io import BytesIO
 from datetime import datetime
 from openpyxl import load_workbook
 from openpyxl.drawing.image import Image as ExcelImage
-from openpyxl.styles import Font
+from openpyxl.cell.rich_text import CellRichText, TextBlock, InlineFont
 from PIL import Image as PILImage, ImageOps
 from models import db, Application, Inquiry
 from sqlalchemy.orm import joinedload
+from sqlalchemy import or_
 
 import logging
 
@@ -163,8 +164,11 @@ def download_excel():
 
         # Basic info
         if name:
-            set_value(ws, "O4", f"(한글){' ' * 7}{name}")
-            ws["O4"].font = Font(size=24)
+            rt = CellRichText()
+            rt.append(TextBlock(InlineFont(sz=14), "(한글)"))
+            rt.append(TextBlock(InlineFont(sz=14), " " * 7))
+            rt.append(TextBlock(InlineFont(sz=24, b=True), name))
+            ws["O4"].value = rt
         else:
             set_value(ws, "O4", "")
         if app.birth:
@@ -306,6 +310,36 @@ def update_status(app_id):
     app.status = status_val
     db.session.commit()
     return jsonify({"success": True})
+
+@admin_bp.route('/inquiries')
+def inquiries():
+    if not session.get('is_admin'):
+        return redirect(url_for('auth.login'))
+
+    q = request.args.get('q', '').strip()
+    status = request.args.get('status', '').strip()
+
+    query = Inquiry.query
+    if q:
+        like = f"%{q}%"
+        query = query.filter(or_(
+            Inquiry.company.ilike(like),
+            Inquiry.name.ilike(like),
+            Inquiry.phone.ilike(like),
+            Inquiry.email.ilike(like),
+        ))
+    if status:
+        query = query.filter(Inquiry.status == status)
+
+    items = query.order_by(Inquiry.created_at.desc()).all()
+    status_options = ['new', 'in_progress', 'done']
+    return render_template(
+        'admin_inquiries.html',
+        items=items,
+        q=q,
+        status=status,
+        status_options=status_options
+    )
 
 @admin_bp.route('/inquiries/delete', methods=['POST'])
 def delete_inquiries():
