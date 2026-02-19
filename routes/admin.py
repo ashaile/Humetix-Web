@@ -116,70 +116,115 @@ def download_excel():
     ws = wb.active
     ws.title = "\uC9C0\uC6D0\uC11C"
 
-    headers = [
-        "\uC544\uC774\uB514", "\uC811\uC218\uC77C", "\uC131\uBA85", "\uC5F0\uB77D\uCC98", "\uC774\uBA54\uC77C", "\uC8FC\uC18C",
-        "\uC2E0\uCCB4", "\uC2DC\uB825", "\uC0AC\uC774\uC988", "\uADFC\uBB34", "\uC77C\uC815", "\uD76C\uB9DD",
-        "\uC0C1\uD0DC", "\uBA54\uBAA8", "\uC0AC\uC9C4"
-    ]
-    ws.append(headers)
+    col_widths = {
+        "A": 10, "B": 10, "C": 12, "D": 28, "E": 12, "F": 28, "G": 12, "H": 28,
+    }
+    for col, width in col_widths.items():
+        ws.column_dimensions[col].width = width
 
-    header_font = Font(bold=True)
-    for cell in ws[1]:
-        cell.font = header_font
-        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    header_fill = openpyxl.styles.PatternFill("solid", fgColor="1F4E78")
+    header_font = Font(color="FFFFFF", bold=True)
+    label_font = Font(bold=True)
+    border = Border(
+        left=Side(style="thin"), right=Side(style="thin"),
+        top=Side(style="thin"), bottom=Side(style="thin")
+    )
 
-    ws.freeze_panes = "A2"
-    ws.auto_filter.ref = f"A1:{get_column_letter(len(headers))}1"
+    def set_cell(r, c, value, bold=False):
+        cell = ws.cell(row=r, column=c, value=value)
+        if bold:
+            cell.font = label_font
+        cell.alignment = Alignment(vertical="center", wrap_text=True)
+        cell.border = border
+        return cell
 
-    photo_col = get_column_letter(len(headers))
+    def merge_and_set(r1, c1, r2, c2, value, bold=False):
+        ws.merge_cells(start_row=r1, start_column=c1, end_row=r2, end_column=c2)
+        cell = ws.cell(row=r1, column=c1, value=value)
+        if bold:
+            cell.font = label_font
+        cell.alignment = Alignment(vertical="center", wrap_text=True)
+        cell.border = border
+        for r in range(r1, r2 + 1):
+            for c in range(c1, c2 + 1):
+                ws.cell(row=r, column=c).border = border
 
-    for row_idx, app in enumerate(apps, start=2):
+    row = 1
+    for app in apps:
+        timestamp = app.timestamp.strftime('%Y-%m-%d %H:%M:%S') if app.timestamp else ""
+        title = f"[{timestamp}] {app.name or ''}"
+
+        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=8)
+        title_cell = ws.cell(row=row, column=1, value=title)
+        title_cell.fill = header_fill
+        title_cell.font = header_font
+        title_cell.alignment = Alignment(vertical="center")
+        for c in range(1, 9):
+            ws.cell(row=row, column=c).border = border
+        ws.row_dimensions[row].height = 24
+
+        # Photo box
+        ws.merge_cells(start_row=row + 1, start_column=1, end_row=row + 9, end_column=2)
+        photo_cell = ws.cell(row=row + 1, column=1, value="\uC0AC\uC9C4")
+        photo_cell.alignment = Alignment(vertical="center", horizontal="center")
+        for r in range(row + 1, row + 10):
+            for c in range(1, 3):
+                ws.cell(row=r, column=c).border = border
+
+        # Basic info
+        set_cell(row + 1, 3, "\uC774\uB984", bold=True)
+        merge_and_set(row + 1, 4, row + 1, 8, app.name or "")
+        set_cell(row + 2, 3, "\uC0DD\uB144\uC6D4\uC77C", bold=True)
+        merge_and_set(row + 2, 4, row + 2, 8, app.birth.strftime('%Y-%m-%d') if app.birth else "")
+        set_cell(row + 3, 3, "\uC5F0\uB77D\uCC98", bold=True)
+        merge_and_set(row + 3, 4, row + 3, 8, app.phone or "")
+        set_cell(row + 4, 3, "\uC774\uBA54\uC77C", bold=True)
+        merge_and_set(row + 4, 4, row + 4, 8, app.email or "")
+        set_cell(row + 5, 3, "\uC8FC\uC18C", bold=True)
+        merge_and_set(row + 5, 4, row + 5, 8, app.address or "")
+
+        # Body/size
+        set_cell(row + 6, 3, "\uC2E0\uCCB4\uC815\uBCF4", bold=True)
         height_val = f"{app.height}cm" if app.height is not None else "-"
         weight_val = f"{app.weight}kg" if app.weight is not None else "-"
-        body = f"{height_val} / {weight_val}"
+        merge_and_set(row + 6, 4, row + 6, 8, f"{height_val} / {weight_val}")
 
-        size = f"\uC2E0\uBC1C:{app.shoes if app.shoes is not None else '-'} / \uD2F0\uC154\uCE20:{app.tshirt or '-'}"
+        set_cell(row + 7, 3, "\uC0C1\uC138\uC0AC\uC774\uC988", bold=True)
+        vision = app.vision or "-"
+        shoes = f"{app.shoes}" if app.shoes is not None else "-"
+        tshirt = app.tshirt or "-"
+        merge_and_set(row + 7, 4, row + 7, 8, f"\uC2DC\uB825:{vision} / \uC2E0\uBC1C:{shoes} / \uD2F0\uC154\uCE20:{tshirt}")
 
-        work = "\n".join([
-            f"\uD615\uD0DC:{app.shift or '-'}",
-            f"\uBC29\uC2DD:{app.posture or '-'}",
-            f"\uC794\uC5C5:{app.overtime or '-'}",
-            f"\uD2B9\uADFC:{app.holiday or '-'}",
-        ])
+        # Work conditions
+        set_cell(row + 8, 3, "\uADFC\uBB34\uC870\uAC74", bold=True)
+        merge_and_set(
+            row + 8, 4, row + 8, 8,
+            f"\uD615\uD0DC:{app.shift or '-'} / \uBC29\uC2DD:{app.posture or '-'}"
+        )
+        set_cell(row + 9, 3, "\uAC00\uB2A5\uC5EC\uBD80", bold=True)
+        merge_and_set(
+            row + 9, 4, row + 9, 8,
+            f"\uC794\uC5C5:{app.overtime or '-'} / \uD2B9\uADFC:{app.holiday or '-'}"
+        )
 
+        # Schedule / wish / status
+        set_cell(row + 10, 3, "\uD76C\uB9DD\uC77C\uC815", bold=True)
         unknown = "\uBBF8\uC815"
-        schedule = "\n".join([
-            f"\uBA74\uC811:{app.interview_date.strftime('%Y-%m-%d') if app.interview_date else unknown}",
-            f"\uC785\uC0AC:{app.start_date.strftime('%Y-%m-%d') if app.start_date else unknown}",
-        ])
+        schedule = f"\uBA74\uC811:{app.interview_date.strftime('%Y-%m-%d') if app.interview_date else unknown} / \uC785\uC0AC:{app.start_date.strftime('%Y-%m-%d') if app.start_date else unknown}"
+        merge_and_set(row + 10, 4, row + 10, 8, schedule)
 
-        wish = "\n".join([
-            f"\uAC00\uBD88:{app.advance_pay or '-'}",
-            f"\uAE09\uC5EC:{app.insurance_type or '-'}",
-        ])
+        set_cell(row + 11, 3, "\uC0C1\uD0DC", bold=True)
+        merge_and_set(row + 11, 4, row + 11, 8, app.status or "")
 
-        ws.append([
-            app.id,
-            app.timestamp.strftime('%Y-%m-%d %H:%M:%S') if app.timestamp else "",
-            app.name or "",
-            app.phone or "",
-            app.email or "",
-            app.address or "",
-            body,
-            app.vision or "",
-            size,
-            work,
-            schedule,
-            wish,
-            app.status or "",
-            app.memo or "",
-            "",
-        ])
+        # Career section
+        set_cell(row + 12, 3, "\uACBD\uB825\uC0AC\uD56D", bold=True)
+        careers = []
+        for c in app.careers:
+            period = f"{c.start.strftime('%Y-%m-%d') if c.start else ''}~{c.end.strftime('%Y-%m-%d') if c.end else ''}"
+            careers.append(f"{c.company} | {period} | {c.role} | {c.reason}")
+        merge_and_set(row + 12, 4, row + 14, 8, "\n".join(careers) if careers else "-")
 
-        for col_idx in range(1, len(headers) + 1):
-            cell = ws.cell(row=row_idx, column=col_idx)
-            cell.alignment = Alignment(wrap_text=True, vertical="top")
-
+        # Insert photo
         if app.photo:
             photo_path = os.path.join(UPLOAD_DIR, app.photo)
             if os.path.exists(photo_path):
@@ -198,30 +243,17 @@ def download_excel():
                         img.save(img_stream, format='PNG')
                         img_stream.seek(0)
                         excel_img = ExcelImage(img_stream)
-                        ws.add_image(excel_img, f"{photo_col}{row_idx}")
-                        ws.row_dimensions[row_idx].height = max(ws.row_dimensions[row_idx].height or 0, img.height * 0.75)
+                        ws.add_image(excel_img, f"A{row + 1}")
                 except Exception:
                     pass
 
-    col_widths = {
-        "A": 38,  # ID
-        "B": 18,  # 접수일
-        "C": 10,  # 성명
-        "D": 16,  # 연락처
-        "E": 24,  # 이메일
-        "F": 28,  # 주소
-        "G": 16,  # 신체
-        "H": 12,  # 시력
-        "I": 18,  # 사이즈
-        "J": 22,  # 근무
-        "K": 22,  # 일정
-        "L": 18,  # 희망
-        "M": 10,  # 상태
-        "N": 30,  # 메모
-        "O": 12,  # 사진
-    }
-    for col, width in col_widths.items():
-        ws.column_dimensions[col].width = width
+        for r in range(row + 1, row + 15):
+            ws.row_dimensions[r].height = 20
+        ws.row_dimensions[row + 1].height = 80
+        ws.row_dimensions[row + 2].height = 20
+        ws.row_dimensions[row + 12].height = 40
+
+        row += 16
 
     buf = BytesIO()
     wb.save(buf)
