@@ -16,6 +16,9 @@ uploads/
 # Logs
 logs/
 
+# Flask instance folder
+instance/
+
 # Python
 __pycache__/
 *.pyc
