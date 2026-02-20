@@ -73,6 +73,13 @@ h1, h2, h3, h4, .en-font {
         </button>
         <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
             <ul class="navbar-nav align-items-center">
+                {% set current_endpoint = request.endpoint or '' %}
+                {% set remove_urls = [] %}
+                {% if current_endpoint in ['index', 'apply.apply_form'] %}
+                    {% set remove_urls = ['/attendance', '/advance'] %}
+                {% elif current_endpoint in ['attendance.attendance_page', 'advance.advance_page'] %}
+                    {% set remove_urls = ['/#services', '/#contact', '/apply'] %}
+                {% endif %}
                 {% set public_nav = [
                     ('index', '/', '홈'),
                     ('_services', '/#services', '사업영역'),
@@ -81,7 +88,7 @@ h1, h2, h3, h4, .en-font {
                     ('attendance.attendance_page', '/attendance', '근태관리'),
                     ('advance.advance_page', '/advance', '가불신청'),
                 ] %}
-                {% for endpoint, url, label in public_nav %}
+                {% for endpoint, url, label in public_nav if url not in remove_urls %}
                 <li class="nav-item">
                     <a class="nav-link{% if request.endpoint == endpoint %} active-link{% endif %}"
                        href="{{ url }}">{{ label }}</a>
