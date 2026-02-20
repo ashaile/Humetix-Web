@@ -1,489 +1,203 @@
-<!DOCTYPE html>
-<html lang="ko">
+{% extends "base_admin.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HUMETIX - 사원 명부 관리</title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap"
-        rel="stylesheet">
-    <style>
-        :root {
-            --bg: #f8f7f4;
-            --bg2: #fff;
-            --bg3: #f0efec;
-            --text: #1a1a1a;
-            --text2: #6b6b6b;
-            --accent: #e85d26;
-            --accent-bg: #fef3ee;
-            --border: #e8e6e1;
-            --success: #22a867;
-            --success-bg: #edfbf3;
-            --shadow: 0 1px 3px rgba(0, 0, 0, .06);
-            --radius: 12px;
-            --radius-sm: 8px;
-        }
+{% block admin_title %}HUMETIX - 사원 명부 관리{% endblock %}
+{% block page_title %}사원 명부 관리{% endblock %}
+{% block page_desc %}사원을 등록하고 입사일/퇴사일을 관리합니다. 등록된 사원만 근태 입력과 가불 신청이 가능합니다.{% endblock %}
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+{% block page_css %}
+.register-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 24px;
+}
+.register-card h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 16px;
+}
+.form-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+.action-btns {
+    display: flex;
+    gap: 4px;
+}
+@media (max-width: 600px) {
+    .form-row {
+        flex-direction: column;
+    }
+    .form-group {
+        width: 100%;
+    }
+    th, td {
+        padding: 8px 10px;
+        font-size: 12px;
+    }
+}
+{% endblock %}
 
-        body {
-            font-family: 'Noto Sans KR', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-        }
-
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 32px 24px;
-        }
-
-        .page-title {
-            font-size: 26px;
-            font-weight: 800;
-            letter-spacing: -.5px;
-            margin-bottom: 8px;
-        }
-
-        .page-desc {
-            color: var(--text2);
-            font-size: 14px;
-            margin-bottom: 28px;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 28px;
-            flex-wrap: wrap;
-            padding: 16px 20px;
-            background: var(--bg2);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-        }
-
-        .nav-links a {
-            text-decoration: none;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 10px 20px;
-            border-radius: var(--radius-sm);
-            font-size: 14px;
-            font-weight: 600;
-            border: none;
-            cursor: pointer;
-            transition: all .2s;
-            font-family: inherit;
-            white-space: nowrap;
-            text-decoration: none;
-        }
-
-        .btn-primary {
-            background: var(--accent);
-            color: #fff;
-        }
-
-        .btn-primary:hover {
-            background: #d14e1a;
-        }
-
-        .btn-outline {
-            background: var(--bg2);
-            color: var(--text);
-            border: 1px solid var(--border);
-        }
-
-        .btn-outline:hover {
-            background: var(--bg3);
-        }
-
-        .btn-success {
-            background: var(--success);
-            color: #fff;
-        }
-
-        .btn-success:hover {
-            background: #1a9157;
-        }
-
-        .btn-danger {
-            background: #dc2626;
-            color: #fff;
-        }
-
-        .btn-danger:hover {
-            background: #b91c1c;
-        }
-
-        .btn-sm {
-            padding: 7px 14px;
-            font-size: 13px;
-        }
-
-        /* Register card */
-        .register-card {
-            background: var(--bg2);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 24px;
-            margin-bottom: 24px;
-        }
-
-        .register-card h3 {
-            font-size: 16px;
-            font-weight: 700;
-            margin-bottom: 16px;
-        }
-
-        .form-row {
-            display: flex;
-            gap: 12px;
-            align-items: flex-end;
-            flex-wrap: wrap;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .form-label {
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--text2);
-            text-transform: uppercase;
-            letter-spacing: .5px;
-        }
-
-        .form-input {
-            padding: 8px 12px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            font-size: 13px;
-            font-family: inherit;
-            background: var(--bg);
-            outline: none;
-            transition: border-color .2s;
-        }
-
-        .form-input:focus {
-            border-color: var(--accent);
-        }
-
-        /* Table */
-        .table-wrap {
-            background: var(--bg2);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            overflow: hidden;
-        }
-
-        .table-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .table-title {
-            font-weight: 700;
-            font-size: 15px;
-        }
-
-        .table-scroll {
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-        }
-
-        thead {
-            background: var(--bg3);
-        }
-
-        th {
-            padding: 12px 18px;
-            text-align: left;
-            font-weight: 600;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: .5px;
-            color: var(--text2);
-            white-space: nowrap;
-        }
-
-        td {
-            padding: 14px 18px;
-            border-top: 1px solid var(--border);
-            white-space: nowrap;
-        }
-
-        tr:hover td {
-            background: var(--bg3);
-        }
-
-        .emp-name {
-            font-weight: 600;
-        }
-
-        .mono {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 13px;
-        }
-
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        .badge-active {
-            background: #dcfce7;
-            color: #16a34a;
-        }
-
-        .badge-inactive {
-            background: #fee2e2;
-            color: #dc2626;
-        }
-
-        .action-btns {
-            display: flex;
-            gap: 4px;
-        }
-
-        .toast {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            background: #1a1a1a;
-            color: #fff;
-            padding: 14px 20px;
-            border-radius: var(--radius-sm);
-            font-size: 14px;
-            font-weight: 500;
-            z-index: 300;
-            display: none;
-        }
-
-        @media (max-width: 600px) {
-            .form-row {
-                flex-direction: column;
-            }
-
-            .form-group {
-                width: 100%;
-            }
-
-            th,
-            td {
-                padding: 8px 10px;
-                font-size: 12px;
-            }
-        }
-    </style>
-</head>
-
-<body>
-    <div class="container">
-        <div class="nav-links">
-            <a href="/humetix_master_99" class="btn btn-outline">🏠 관리자 홈</a>
-            <a href="/admin/attendance" class="btn btn-outline">📋 근태관리</a>
-            <a href="/admin/attendance-calendar" class="btn btn-outline">🗓 운영캘린더</a>
-            <a href="/admin/payslip" class="btn btn-outline">💰 급여명세서</a>
-            <a href="/admin/advance" class="btn btn-outline">🏦 가불관리</a>
-            <a href="/admin/employees" class="btn btn-primary">👥 사원명부</a>
+{% block content %}
+<!-- 사원 등록 -->
+<div class="register-card">
+    <h3>사원 등록</h3>
+    <div class="form-row">
+        <div class="form-group">
+            <label class="form-label">이름</label>
+            <input type="text" id="emp-name" class="form-input" placeholder="홍길동">
         </div>
-
-        <h1 class="page-title">사원 명부 관리</h1>
-        <p class="page-desc">사원을 등록하고 입사일/퇴사일을 관리합니다. 등록된 사원만 근태 입력과 가불 신청이 가능합니다.</p>
-
-        <!-- 사원 등록 -->
-        <div class="register-card">
-            <h3>➕ 사원 등록</h3>
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">이름</label>
-                    <input type="text" id="emp-name" class="form-input" placeholder="홍길동">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">생년월일 (YYMMDD)</label>
-                    <input type="text" id="emp-birth" class="form-input" placeholder="900101" maxlength="6">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">입사일</label>
-                    <input type="date" id="emp-hire" class="form-input">
-                </div>
-                <div>
-                    <button class="btn btn-primary" onclick="createEmployee()">등록</button>
-                </div>
-            </div>
+        <div class="form-group">
+            <label class="form-label">생년월일 (YYMMDD)</label>
+            <input type="text" id="emp-birth" class="form-input" placeholder="900101" maxlength="6">
         </div>
-
-        <!-- 사원 목록 -->
-        <div class="table-wrap">
-            <div class="table-header">
-                <div class="table-title">등록된 사원 ({{ employees|length }}명)</div>
-            </div>
-            <div class="table-scroll">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>이름</th>
-                            <th>생년월일</th>
-                            <th>입사일</th>
-                            <th>퇴사일</th>
-                            <th>상태</th>
-                            <th>관리</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for emp in employees %}
-                        <tr id="row-{{ emp.id }}">
-                            <td class="emp-name">{{ emp.name }}</td>
-                            <td class="mono">{{ emp.birth_date }}</td>
-                            <td class="mono">{{ emp.hire_date.strftime('%Y-%m-%d') if emp.hire_date else '-' }}</td>
-                            <td class="mono">{{ emp.resign_date.strftime('%Y-%m-%d') if emp.resign_date else '-' }}</td>
-                            <td>
-                                {% if emp.is_active %}
-                                <span class="badge badge-active">재직</span>
-                                {% else %}
-                                <span class="badge badge-inactive">퇴직</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="action-btns">
-                                    {% if emp.is_active %}
-                                    <button class="btn btn-outline btn-sm"
-                                        onclick="markResign({{ emp.id }}, '{{ emp.name }}')">퇴사 처리</button>
-                                    {% else %}
-                                    <button class="btn btn-success btn-sm"
-                                        onclick="reactivate({{ emp.id }})">재활성화</button>
-                                    {% endif %}
-                                    <button class="btn btn-danger btn-sm"
-                                        onclick="deleteEmployee({{ emp.id }}, '{{ emp.name }}')">삭제</button>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                        {% if not employees %}
-                        <tr>
-                            <td colspan="6" style="text-align:center;padding:24px;color:var(--text2);">
-                                등록된 사원이 없습니다. 위 양식으로 사원을 등록해주세요.
-                            </td>
-                        </tr>
-                        {% endif %}
-                    </tbody>
-                </table>
-            </div>
+        <div class="form-group">
+            <label class="form-label">입사일</label>
+            <input type="date" id="emp-hire" class="form-input">
+        </div>
+        <div>
+            <button class="btn btn-primary" onclick="createEmployee()">등록</button>
         </div>
     </div>
+</div>
 
-    <div class="toast" id="toast"></div>
+<!-- 사원 목록 -->
+<div class="table-wrap">
+    <div class="table-header">
+        <div class="table-title">등록된 사원 ({{ employees|length }}명)</div>
+    </div>
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>이름</th>
+                    <th>생년월일</th>
+                    <th>입사일</th>
+                    <th>퇴사일</th>
+                    <th>상태</th>
+                    <th>관리</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for emp in employees %}
+                <tr id="row-{{ emp.id }}">
+                    <td class="emp-name">{{ emp.name }}</td>
+                    <td class="mono">{{ emp.birth_date }}</td>
+                    <td class="mono">{{ emp.hire_date.strftime('%Y-%m-%d') if emp.hire_date else '-' }}</td>
+                    <td class="mono">{{ emp.resign_date.strftime('%Y-%m-%d') if emp.resign_date else '-' }}</td>
+                    <td>
+                        {% if emp.is_active %}
+                        <span class="badge badge-active">재직</span>
+                        {% else %}
+                        <span class="badge badge-inactive">퇴직</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="action-btns">
+                            {% if emp.is_active %}
+                            <button class="btn btn-outline btn-sm"
+                                onclick="markResign({{ emp.id }}, '{{ emp.name }}')">퇴사 처리</button>
+                            {% else %}
+                            <button class="btn btn-success btn-sm"
+                                onclick="reactivate({{ emp.id }})">재활성화</button>
+                            {% endif %}
+                            <button class="btn btn-danger btn-sm"
+                                onclick="deleteEmployee({{ emp.id }}, '{{ emp.name }}')">삭제</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not employees %}
+                <tr>
+                    <td colspan="6" style="text-align:center;padding:24px;color:var(--text2);">
+                        등록된 사원이 없습니다. 위 양식으로 사원을 등록해주세요.
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
 
-    <script>
-        const csrfToken = '{{ csrf_token() }}';
+{% block page_js %}
+const csrfToken = '{{ csrf_token() }}';
 
-        function showToast(msg) {
-            const el = document.getElementById('toast');
-            el.textContent = msg;
-            el.style.display = 'block';
-            setTimeout(() => el.style.display = 'none', 3000);
-        }
+async function createEmployee() {
+    const name = document.getElementById('emp-name').value.trim();
+    const birth_date = document.getElementById('emp-birth').value.trim();
+    const hire_date = document.getElementById('emp-hire').value;
 
-        async function createEmployee() {
-            const name = document.getElementById('emp-name').value.trim();
-            const birth_date = document.getElementById('emp-birth').value.trim();
-            const hire_date = document.getElementById('emp-hire').value;
+    if (!name) { showToast('이름을 입력하세요.'); return; }
+    if (!birth_date || birth_date.length !== 6) { showToast('생년월일 6자리를 입력하세요.'); return; }
 
-            if (!name) { showToast('이름을 입력하세요.'); return; }
-            if (!birth_date || birth_date.length !== 6) { showToast('생년월일 6자리를 입력하세요.'); return; }
+    const body = { name, birth_date };
+    if (hire_date) body.hire_date = hire_date;
 
-            const body = { name, birth_date };
-            if (hire_date) body.hire_date = hire_date;
+    const res = await fetch('/api/employees', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+        body: JSON.stringify(body)
+    });
+    const data = await res.json();
 
-            const res = await fetch('/api/employees', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-                body: JSON.stringify(body)
-            });
-            const data = await res.json();
+    if (data.success) {
+        showToast(name + ' 사원이 등록되었습니다.');
+        setTimeout(() => location.reload(), 500);
+    } else {
+        showToast(data.error || '등록 실패');
+    }
+}
 
-            if (data.success) {
-                showToast(name + ' 사원이 등록되었습니다.');
-                setTimeout(() => location.reload(), 500);
-            } else {
-                showToast(data.error || '등록 실패');
-            }
-        }
+async function markResign(id, name) {
+    const resignDate = prompt(name + ' 사원의 퇴사일을 입력하세요 (YYYY-MM-DD):', new Date().toISOString().slice(0, 10));
+    if (!resignDate) return;
 
-        async function markResign(id, name) {
-            const resignDate = prompt(name + ' 사원의 퇴사일을 입력하세요 (YYYY-MM-DD):', new Date().toISOString().slice(0, 10));
-            if (!resignDate) return;
+    const res = await fetch('/api/employees/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+        body: JSON.stringify({ is_active: false, resign_date: resignDate })
+    });
+    const data = await res.json();
 
-            const res = await fetch('/api/employees/' + id, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-                body: JSON.stringify({ is_active: false, resign_date: resignDate })
-            });
-            const data = await res.json();
+    if (data.success) {
+        showToast(name + ' 사원이 퇴사 처리되었습니다.');
+        setTimeout(() => location.reload(), 500);
+    } else {
+        showToast(data.error || '처리 실패');
+    }
+}
 
-            if (data.success) {
-                showToast(name + ' 사원이 퇴사 처리되었습니다.');
-                setTimeout(() => location.reload(), 500);
-            } else {
-                showToast(data.error || '처리 실패');
-            }
-        }
+async function reactivate(id) {
+    const res = await fetch('/api/employees/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+        body: JSON.stringify({ is_active: true, resign_date: '' })
+    });
+    const data = await res.json();
 
-        async function reactivate(id) {
-            const res = await fetch('/api/employees/' + id, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-                body: JSON.stringify({ is_active: true, resign_date: '' })
-            });
-            const data = await res.json();
+    if (data.success) {
+        showToast('사원이 재활성화되었습니다.');
+        setTimeout(() => location.reload(), 500);
+    } else {
+        showToast(data.error || '처리 실패');
+    }
+}
 
-            if (data.success) {
-                showToast('사원이 재활성화되었습니다.');
-                setTimeout(() => location.reload(), 500);
-            } else {
-                showToast(data.error || '처리 실패');
-            }
-        }
+async function deleteEmployee(id, name) {
+    if (!confirm(name + ' 사원을 명부에서 삭제하시겠습니까?\n(퇴사 처리를 권장합니다)')) return;
 
-        async function deleteEmployee(id, name) {
-            if (!confirm(name + ' 사원을 명부에서 삭제하시겠습니까?\n(퇴사 처리를 권장합니다)')) return;
+    const res = await fetch('/api/employees/' + id, { method: 'DELETE', headers: { 'X-CSRFToken': csrfToken } });
+    const data = await res.json();
 
-            const res = await fetch('/api/employees/' + id, { method: 'DELETE', headers: { 'X-CSRFToken': csrfToken } });
-            const data = await res.json();
-
-            if (data.success) {
-                showToast(name + ' 사원이 삭제되었습니다.');
-                document.getElementById('row-' + id).remove();
-            } else {
-                showToast(data.error || '삭제 실패');
-            }
-        }
-    </script>
-</body>
-
-</html>
+    if (data.success) {
+        showToast(name + ' 사원이 삭제되었습니다.');
+        document.getElementById('row-' + id).remove();
+    } else {
+        showToast(data.error || '삭제 실패');
+    }
+}
+{% endblock %}

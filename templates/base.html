@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Humetix{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    {% block head_extra %}{% endblock %}
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #f8f7f4;
+            --bg2: #fff;
+            --bg3: #f0efec;
+            --text: #1a1a1a;
+            --text2: #6b6b6b;
+            --accent: #e85d26;
+            --accent-bg: #fef3ee;
+            --border: #e8e6e1;
+            --success: #22a867;
+            --success-bg: #edfbf3;
+            --danger: #dc2626;
+            --night: #6366f1;
+            --night-bg: #eef2ff;
+            --shadow: 0 1px 3px rgba(0,0,0,.06);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,.08);
+            --radius: 12px;
+            --radius-sm: 8px;
+        }
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        {% block base_css %}{% endblock %}
+    </style>
+    {% block page_css_block %}
+    <style>{% block page_css %}{% endblock %}</style>
+    {% endblock %}
+</head>
+<body>
+    {% block body_content %}{% endblock %}
+    {% block base_js %}{% endblock %}
+    {% block page_js_block %}
+    <script>{% block page_js %}{% endblock %}</script>
+    {% endblock %}
+</body>
+</html>

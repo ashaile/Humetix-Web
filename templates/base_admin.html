@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}{% block admin_title %}HUMETIX 관리자{% endblock %}{% endblock %}
+
+{% block base_css %}
+/* ── Sidebar ── */
+.admin-layout { display: flex; min-height: 100vh; }
+
+.sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0;
+    width: 250px; background: #1a1f2e; color: #c8cdd8;
+    display: flex; flex-direction: column;
+    z-index: 1000; transition: transform .3s ease;
+}
+.sidebar-brand {
+    padding: 24px 20px 20px;
+    font-size: 22px; font-weight: 800;
+    color: #fff; letter-spacing: -.5px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.sidebar-brand span { color: var(--accent); }
+.sidebar-nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+.sidebar-link {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 20px; margin: 2px 10px;
+    border-radius: 8px; font-size: 14px; font-weight: 500;
+    color: #9ca3b4; text-decoration: none;
+    transition: all .15s ease;
+}
+.sidebar-link:hover { background: rgba(255,255,255,.06); color: #e2e6ee; }
+.sidebar-link.active {
+    background: var(--accent); color: #fff; font-weight: 700;
+}
+.sidebar-link .icon { font-size: 16px; width: 20px; text-align: center; }
+.sidebar-divider {
+    height: 1px; background: rgba(255,255,255,.08);
+    margin: 8px 20px;
+}
+.sidebar-footer {
+    padding: 16px 10px; border-top: 1px solid rgba(255,255,255,.08);
+}
+.sidebar-footer .sidebar-link { color: #7a8194; }
+.sidebar-footer .sidebar-link:hover { color: #e74c3c; background: rgba(231,76,60,.1); }
+
+/* ── Mobile toggle ── */
+.sidebar-toggle {
+    display: none; position: fixed; top: 14px; left: 14px;
+    z-index: 1100; width: 40px; height: 40px;
+    background: var(--accent); color: #fff; border: none;
+    border-radius: 8px; font-size: 20px; cursor: pointer;
+    align-items: center; justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,.15);
+}
+.sidebar-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.4); z-index: 999;
+}
+
+/* ── Main content ── */
+.admin-main {
+    flex: 1; margin-left: 250px;
+    padding: 32px 28px; max-width: 100%;
+}
+.admin-main .page-header { margin-bottom: 24px; }
+.admin-main .page-title {
+    font-size: 26px; font-weight: 800;
+    letter-spacing: -.5px; margin-bottom: 6px;
+}
+.admin-main .page-desc {
+    color: var(--text2); font-size: 14px;
+}
+
+/* ── Shared buttons ── */
+.btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 10px 20px; border-radius: var(--radius-sm);
+    font-size: 14px; font-weight: 600; border: none;
+    cursor: pointer; transition: all .2s;
+    font-family: inherit; white-space: nowrap; text-decoration: none;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #d14e1a; }
+.btn-outline { background: var(--bg2); color: var(--text); border: 1px solid var(--border); }
+.btn-outline:hover { background: var(--bg3); }
+.btn-success { background: var(--success); color: #fff; }
+.btn-success:hover { background: #1a9157; }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger:hover { background: #b91c1c; }
+.btn-sm { padding: 7px 14px; font-size: 13px; }
+
+/* ── Shared tables ── */
+.table-wrap {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden; margin-bottom: 28px;
+}
+.table-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+    flex-wrap: wrap; gap: 12px;
+}
+.table-title { font-weight: 700; font-size: 15px; }
+.table-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.table-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+thead { background: var(--bg3); }
+th {
+    padding: 12px 18px; text-align: left; font-weight: 600;
+    font-size: 12px; text-transform: uppercase;
+    letter-spacing: .5px; color: var(--text2); white-space: nowrap;
+}
+td {
+    padding: 14px 18px; border-top: 1px solid var(--border);
+    white-space: nowrap;
+}
+tr:hover td { background: var(--bg3); }
+.mono { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+.emp-name { font-weight: 600; }
+
+/* ── Shared forms ── */
+.filter-bar {
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap; margin-bottom: 20px;
+}
+.form-input, .form-select {
+    padding: 8px 12px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-size: 13px;
+    font-family: inherit; background: var(--bg);
+    color: var(--text); outline: none; transition: border-color .2s;
+}
+.form-input:focus, .form-select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(232,93,38,.1);
+}
+.form-label {
+    font-size: 11px; font-weight: 600; color: var(--text2);
+    text-transform: uppercase; letter-spacing: .5px;
+}
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+
+/* ── Shared badges ── */
+.badge {
+    display: inline-flex; align-items: center;
+    padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+}
+.badge-active   { background: #dcfce7; color: #16a34a; }
+.badge-inactive { background: #fee2e2; color: var(--danger); }
+.badge-pending  { background: #fef3c7; color: #b45309; }
+.badge-approved { background: var(--success-bg); color: var(--success); }
+.badge-rejected { background: #fef2f2; color: var(--danger); }
+.badge-paid     { background: #e0e7ff; color: var(--night); }
+.badge-cancelled{ background: var(--bg3); color: var(--text2); }
+
+/* ── Messages ── */
+.success-msg {
+    background: var(--success-bg); border: 1px solid #86efac;
+    border-radius: var(--radius-sm); padding: 14px 16px;
+    font-size: 14px; color: #166534; font-weight: 500; margin-bottom: 16px;
+}
+.error-msg {
+    background: #fef2f2; border: 1px solid #fca5a5;
+    border-radius: var(--radius-sm); padding: 14px 16px;
+    font-size: 14px; color: var(--danger); font-weight: 500; margin-bottom: 16px;
+}
+.info-box {
+    background: var(--accent-bg); border: 1px solid var(--accent);
+    border-radius: var(--radius-sm); padding: 12px 16px;
+    font-size: 13px; color: var(--accent); margin-bottom: 16px;
+}
+
+/* ── Toast ── */
+.toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: #1a1a1a; color: #fff;
+    padding: 14px 20px; border-radius: var(--radius-sm);
+    font-size: 14px; font-weight: 500; z-index: 2000;
+    display: none; box-shadow: 0 4px 12px rgba(0,0,0,.2);
+}
+
+/* ── Modal ── */
+.modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.5); z-index: 1500;
+    justify-content: center; align-items: center;
+}
+.modal-overlay.show { display: flex; }
+.modal-card {
+    background: var(--bg2); border-radius: var(--radius);
+    padding: 28px; width: 90%; max-width: 560px;
+    max-height: 90vh; overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+}
+.modal-card h3 {
+    font-size: 18px; font-weight: 700; margin-bottom: 20px;
+}
+
+/* ── Mobile responsive ── */
+@media (max-width: 768px) {
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .sidebar-toggle { display: flex; }
+    .sidebar-overlay.show { display: block; }
+    .admin-main { margin-left: 0; padding: 24px 16px; padding-top: 64px; }
+}
+{% endblock %}
+
+{% block body_content %}
+<!-- Sidebar toggle (mobile) -->
+<button class="sidebar-toggle" id="sidebarToggle" aria-label="메뉴 열기">&#9776;</button>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<div class="admin-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">Hume<span>tix</span></div>
+        <nav class="sidebar-nav">
+            {% set nav_items = [
+                ('admin.master_view', '/humetix_master_99', 'icon', '&#127968;', '관리자 홈'),
+                ('attendance.admin_attendance', '/admin/attendance', 'icon', '&#128203;', '근태관리'),
+                ('attendance.admin_attendance_calendar', '/admin/attendance-calendar', 'icon', '&#128197;', '운영캘린더'),
+                ('payslip.admin_payslip', '/admin/payslip', 'icon', '&#128176;', '급여명세서'),
+                ('advance.admin_advance', '/admin/advance', 'icon', '&#127974;', '가불관리'),
+                ('employee.admin_employees', '/admin/employees', 'icon', '&#128101;', '사원명부'),
+                ('admin.inquiries', '/inquiries', 'icon', '&#128232;', '문의목록'),
+            ] %}
+            {% for endpoint, url, _type, icon_html, label in nav_items %}
+            <a href="{{ url }}" class="sidebar-link{% if request.endpoint == endpoint %} active{% endif %}">
+                <span class="icon">{{ icon_html|safe }}</span> {{ label }}
+            </a>
+            {% endfor %}
+        </nav>
+        <div class="sidebar-footer">
+            <a href="/logout" class="sidebar-link">
+                <span class="icon">&#128275;</span> 로그아웃
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="admin-main">
+        <div class="page-header">
+            <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
+            <p class="page-desc">{% block page_desc %}{% endblock %}</p>
+        </div>
+        {% block content %}{% endblock %}
+    </main>
+</div>
+
+<div class="toast" id="toast"></div>
+{% endblock %}
+
+{% block base_js %}
+<script>
+    /* Sidebar toggle */
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+    sidebarToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('open');
+        sidebarOverlay.classList.toggle('show');
+    });
+    sidebarOverlay.addEventListener('click', () => {
+        sidebar.classList.remove('open');
+        sidebarOverlay.classList.remove('show');
+    });
+
+    /* Toast helper */
+    function showToast(msg, duration) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.style.display = 'block';
+        setTimeout(() => el.style.display = 'none', duration || 3000);
+    }
+</script>
+{% endblock %}

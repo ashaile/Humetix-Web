@@ -1,128 +1,73 @@
-<!DOCTYPE html>
-<html lang="ko">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>관리자 로그인</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #f4f7f6;
-            --surface: #ffffff;
-            --text: #1f2937;
-            --muted: #6b7280;
-            --primary: #003057;
-            --border: #e5e7eb;
-        }
+{% block title %}관리자 로그인{% endblock %}
 
-        [data-theme="dark"] {
-            --bg: #0f1217;
-            --surface: #151a21;
-            --text: #e6e9ef;
-            --muted: #a7b0bd;
-            --primary: #2a5aa7;
-            --border: #2a3340;
-        }
+{% block page_css %}
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+.login-card {
+    background: var(--bg2);
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 400px;
+    border: 1px solid var(--border);
+}
+.btn-login {
+    background-color: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 12px;
+    width: 100%;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    font-size: 15px;
+    font-family: inherit;
+    margin-top: 20px;
+    cursor: pointer;
+    transition: background .2s;
+}
+.btn-login:hover { background-color: #d14e1a; }
+.login-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: inherit;
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color .2s;
+}
+.login-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(232,93,38,.1);
+}
+.login-input::placeholder { color: var(--text2); }
+{% endblock %}
 
-        body {
-            background-color: var(--bg);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            font-family: "Noto Sans KR", sans-serif;
-        }
+{% block body_content %}
+<div class="login-card">
+    <h3 style="font-weight:800;color:var(--accent);margin-bottom:8px;">관리자 로그인</h3>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:24px;">
+        지원서 관리 페이지 접근을 위해<br>관리자 비밀번호를 입력해 주세요.
+    </p>
 
-        .login-card {
-            background: var(--surface);
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 400px;
-            border: 1px solid var(--border);
-        }
-
-        .btn-login {
-            background-color: var(--primary);
-            color: #fff;
-            border: none;
-            padding: 12px;
-            width: 100%;
-            border-radius: 8px;
-            font-weight: bold;
-            margin-top: 20px;
-        }
-
-        .btn-login:hover {
-            background-color: #002040;
-            color: #fff;
-        }
-
-        .form-control {
-            background: transparent;
-            color: var(--text);
-            border-color: var(--border);
-        }
-
-        .form-control::placeholder {
-            color: var(--muted);
-        }
-
-        .theme-toggle {
-            border: 1px solid var(--border);
-            background: transparent;
-            color: var(--text);
-            border-radius: 20px;
-            padding: 6px 14px;
-            font-weight: 700;
-            font-size: 0.85rem;
-        }
-    </style>
-</head>
-
-<body>
-    <div class="login-card">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3 class="fw-bold m-0" style="color:var(--primary);">관리자 로그인</h3>
-            <button type="button" id="themeToggle" class="theme-toggle">다크</button>
+    <form action="/login" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div style="margin-bottom:12px;">
+            <input type="password" name="password" class="login-input" placeholder="비밀번호 입력" required>
         </div>
-        <p class="text-center mb-4" style="font-size: 0.9rem; color: var(--muted);">
-            지원서 관리 페이지 접근을 위해<br>관리자 비밀번호를 입력해 주세요.
-        </p>
-
-        <form action="/login" method="POST">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="mb-3">
-                <input type="password" name="password" class="form-control" placeholder="비밀번호 입력" required
-                    style="padding: 12px;">
-            </div>
-            <button type="submit" class="btn btn-login">로그인</button>
-        </form>
-        <div class="text-center mt-3">
-            <a href="/" style="color: var(--muted); text-decoration: none; font-size: 0.9rem;">홈으로 돌아가기</a>
-        </div>
+        <button type="submit" class="btn-login">로그인</button>
+    </form>
+    <div style="text-align:center;margin-top:16px;">
+        <a href="/" style="color:var(--text2);text-decoration:none;font-size:13px;">홈으로 돌아가기</a>
     </div>
-    <script>
-        const themeToggle = document.getElementById("themeToggle");
-        const rootEl = document.documentElement;
-        const applyTheme = (theme) => {
-            if (theme === "dark") {
-                rootEl.setAttribute("data-theme", "dark");
-                themeToggle.textContent = "라이트";
-            } else {
-                rootEl.removeAttribute("data-theme");
-                themeToggle.textContent = "다크";
-            }
-        };
-        applyTheme(localStorage.getItem("theme") || "light");
-        themeToggle.addEventListener("click", () => {
-            const next = rootEl.getAttribute("data-theme") === "dark" ? "light" : "dark";
-            localStorage.setItem("theme", next);
-            applyTheme(next);
-        });
-    </script>
-</body>
-
-</html>
+</div>
+{% endblock %}

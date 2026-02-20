@@ -1,912 +1,744 @@
-﻿<!DOCTYPE html>
-<html lang="ko">
+{% extends "base_public.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>입사지원 - 주식회사 휴메틱스 (Humetix)</title>
+{% block public_title %}입사지원 - 주식회사 휴메틱스 (Humetix){% endblock %}
 
-    <!-- SEO 메타태그 -->
-    <meta name="description" content="휴메틱스 입사지원서 작성 페이지입니다. 제조, 물류, 사무 분야의 다양한 일자리에 지원하세요.">
-    <meta property="og:title" content="입사지원 - 주식회사 휴메틱스">
-    <meta property="og:description" content="휴메틱스에서 새로운 기회를 시작하세요.">
-    <meta property="og:url" content="https://humetix.com/apply">
+{% block page_css %}
+:root {
+    --primary-color: #0056b3;
+    --danger-color: #d9534f;
+    --bg: #f4f7f9;
+    --surface: #ffffff;
+    --text: #333;
+    --muted: #888;
+    --border: #e0e0e0;
+    --input-bg: #ffffff;
+    --input-text: #333;
+    --shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+}
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}">
+/* Flash 메시지 */
+.flash-container { max-width: 850px; margin: 15px auto 0; }
+.flash-msg { padding: 12px 18px; border-radius: 8px; margin-bottom: 10px; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; }
+.flash-success { background: #d4edda; color: #155724; }
+.flash-danger { background: #f8d7da; color: #721c24; }
+.flash-warning { background: #fff3cd; color: #856404; }
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+/* 메인 폼 카드 */
+.form-card {
+    max-width: 850px;
+    margin: 30px auto;
+    background: var(--surface);
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    padding-top: 40px;
+}
 
-    <style>
-        :root {
-            --primary-color: #0056b3;
-            --danger-color: #d9534f;
-            --bg: #f4f7f9;
-            --surface: #ffffff;
-            --text: #333;
-            --muted: #888;
-            --border: #e0e0e0;
-            --input-bg: #ffffff;
-            --input-text: #333;
-            --shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-            --nav-bg: #ffffff;
-            --nav-text: #444;
-        }
+.form-title {
+    text-align: center;
+    font-weight: 800;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+    font-size: 1.8rem;
+}
 
-        [data-theme="dark"] {
-            --bg: #0f1217;
-            --surface: #151a21;
-            --text: #e6e9ef;
-            --muted: #a7b0bd;
-            --border: #2a3340;
-            --input-bg: #10151c;
-            --input-text: #e6e9ef;
-            --shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-            --nav-bg: #0f1217;
-            --nav-text: #e6e9ef;
-        }
+.form-subtitle {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin-bottom: 30px;
+}
 
-        body {
-            font-family: 'Noto Sans KR', sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            padding: 0;
-            margin: 0;
-        }
+/* 진행 상태 바 */
+.progress-bar-container {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 35px;
+    padding: 0 10px;
+}
 
-        /* 네비게이션바 (랜딩페이지와 통일) */
-        .navbar {
-            background: var(--nav-bg);
-            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.03);
-            padding: 10px 0;
-            transition: all 0.3s ease;
-        }
+.progress-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    position: relative;
+}
 
-        .navbar.scrolled {
-            padding: 5px 0;
-            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
-        }
+.progress-step::before {
+    content: '';
+    position: absolute;
+    top: 15px;
+    left: -50%;
+    width: 100%;
+    height: 3px;
+    background: var(--border);
+    z-index: 0;
+}
 
-        .navbar-brand {
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 900;
-            font-size: 2.5rem;
-            color: var(--primary-color) !important;
-            letter-spacing: -0.5px;
-            transition: font-size 0.3s ease;
-        }
+.progress-step:first-child::before { display: none; }
 
-        .navbar.scrolled .navbar-brand {
-            font-size: 2rem;
-        }
+.progress-step.active::before { background: var(--primary-color); }
 
-        .nav-link {
-            font-weight: 700;
-            color: var(--nav-text) !important;
-            margin-left: 25px;
-            font-size: 1.15rem;
-            transition: 0.3s;
-        }
+.step-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--border);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    z-index: 1;
+    transition: 0.3s;
+}
 
-        .nav-link:hover {
-            color: var(--primary-color) !important;
-        }
+.progress-step.active .step-circle {
+    background: var(--primary-color);
+}
 
-        /* Flash 메시지 */
-        .flash-container { max-width: 850px; margin: 15px auto 0; }
-        .flash-msg { padding: 12px 18px; border-radius: 8px; margin-bottom: 10px; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; }
-        .flash-success { background: #d4edda; color: #155724; }
-        .flash-danger { background: #f8d7da; color: #721c24; }
-        .flash-warning { background: #fff3cd; color: #856404; }
-        [data-theme="dark"] .flash-success { background: #1e3a2a; color: #cfe9d8; }
-        [data-theme="dark"] .flash-danger { background: #3a1f24; color: #f2c9cf; }
-        [data-theme="dark"] .flash-warning { background: #3a2f1a; color: #f2e0b8; }
+.step-label {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 5px;
+    font-weight: 600;
+    text-align: center;
+}
 
-        /* 메인 폼 카드 */
-        .form-card {
-            max-width: 850px;
-            margin: 30px auto;
-            background: var(--surface);
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: var(--shadow);
-        }
+.progress-step.active .step-label { color: var(--primary-color); }
 
-        .form-title {
-            text-align: center;
-            font-weight: 800;
-            color: var(--primary-color);
-            margin-bottom: 10px;
-            font-size: 1.8rem;
-        }
+/* 섹션 */
+.section-title {
+    border-left: 5px solid var(--primary-color);
+    padding-left: 12px;
+    margin: 35px 0 20px 0;
+    font-weight: 700;
+    color: var(--text);
+    font-size: 1.15rem;
+}
 
-        .form-subtitle {
-            text-align: center;
-            color: var(--muted);
-            font-size: 0.95rem;
-            margin-bottom: 30px;
-        }
+/* 경력 박스 */
+.career-box {
+    background: var(--surface);
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    border: 1px solid var(--border);
+    transition: 0.3s;
+}
 
-        /* 진행 상태 바 */
-        .progress-bar-container {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 35px;
-            padding: 0 10px;
-        }
+.career-box:hover { border-color: var(--border); }
 
-        .progress-step {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            flex: 1;
-            position: relative;
-        }
+/* 폼 레이블 */
+.apply-form .form-label {
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-top: 10px;
+}
 
-        .progress-step::before {
-            content: '';
-            position: absolute;
-            top: 15px;
-            left: -50%;
-            width: 100%;
-            height: 3px;
-            background: var(--border);
-            z-index: 0;
-        }
+.apply-form .form-control,
+.apply-form .form-select {
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: var(--input-bg);
+    color: var(--input-text);
+    transition: 0.3s;
+}
+.apply-form .form-control::placeholder,
+.apply-form .form-select::placeholder,
+.apply-form textarea::placeholder {
+    color: var(--muted);
+}
 
-        .progress-step:first-child::before { display: none; }
+.apply-form .form-control:focus,
+.apply-form .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.1);
+}
 
-        .progress-step.active::before { background: var(--primary-color); }
+.apply-form .form-control.is-invalid { border-color: var(--danger-color); }
+.invalid-feedback { font-size: 0.8rem; color: var(--danger-color); }
 
-        .step-circle {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: var(--border);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 0.85rem;
-            z-index: 1;
-            transition: 0.3s;
-        }
+/* 도움말 텍스트 */
+.help-text {
+    font-size: 0.85rem;
+    color: var(--danger-color);
+    margin-bottom: 10px;
+    font-weight: 500;
+}
 
-        .progress-step.active .step-circle {
-            background: var(--primary-color);
-        }
+.help-box {
+    background: #fff3cd;
+    border: 1px solid #ffeeba;
+    border-radius: 8px;
+    padding: 12px 15px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.9rem;
+}
 
-        .step-label {
-            font-size: 0.7rem;
-            color: var(--muted);
-            margin-top: 5px;
-            font-weight: 600;
-            text-align: center;
-        }
+.help-box i { color: #856404; font-size: 1.2rem; flex-shrink: 0; margin-top: 2px; }
 
-        .progress-step.active .step-label { color: var(--primary-color); }
+/* 사진 미리보기 */
+.photo-preview {
+    width: 200px;
+    height: 150px;
+    border: 2px dashed #ddd;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    margin-top: 10px;
+    background: #fafafa;
+    transition: 0.3s;
+}
 
-        /* 섹션 */
-        .section-title {
-            border-left: 5px solid var(--primary-color);
-            padding-left: 12px;
-            margin: 35px 0 20px 0;
-            font-weight: 700;
-            color: var(--text);
-            font-size: 1.15rem;
-        }
+.photo-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.photo-preview.has-image { border-color: var(--primary-color); }
 
-        /* 경력 박스 */
-        .career-box {
-            background: var(--surface);
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            border: 1px solid var(--border);
-            transition: 0.3s;
-        }
+/* 즉시 출근 박스 */
+.asap-box {
+    background: #e7f1ff;
+    padding: 10px 15px;
+    border-radius: 8px;
+    border: 1px solid #cce5ff;
+    display: flex;
+    align-items: center;
+}
 
-        .career-box:hover { border-color: var(--border); }
+.form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
 
-        /* 폼 레이블 */
-        .form-label {
-            font-weight: 600;
-            font-size: 0.95rem;
-            margin-top: 10px;
-        }
+/* 개인정보 동의 */
+.consent-box {
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    border: 1px solid #e0e0e0;
+    padding: 20px;
+    margin-top: 10px;
+}
 
-        .form-control, .form-select {
-            border-radius: 8px;
-            border: 1.5px solid var(--border);
-            background: var(--input-bg);
-            color: var(--input-text);
-            transition: 0.3s;
-        }
-        .form-control::placeholder,
-        .form-select::placeholder,
-        textarea::placeholder {
-            color: var(--muted);
-        }
+.consent-detail {
+    max-height: 150px;
+    overflow-y: auto;
+    font-size: 0.82rem;
+    color: #666;
+    line-height: 1.6;
+    padding: 12px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #eee;
+    margin: 10px 0;
+}
 
-        .form-control:focus, .form-select:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.1);
-        }
+.consent-required {
+    background-color: #f8d7da;
+    border-radius: 8px;
+    border: 1px solid #f5c6cb;
+    padding: 15px;
+}
 
-        .form-control.is-invalid { border-color: var(--danger-color); }
-        .invalid-feedback { font-size: 0.8rem; color: var(--danger-color); }
+/* 제출 버튼 */
+.btn-submit {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 18px;
+    border-radius: 12px;
+    font-weight: 800;
+    width: 100%;
+    margin-top: 25px;
+    font-size: 1.2rem;
+    transition: 0.3s;
+    position: relative;
+}
 
-        /* 도움말 텍스트 */
-        .help-text {
-            font-size: 0.85rem;
-            color: var(--danger-color);
-            margin-bottom: 10px;
-            font-weight: 500;
-        }
+.btn-submit:hover {
+    background: #004494;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 86, 179, 0.3);
+}
 
-        .help-box {
-            background: #fff3cd;
-            border: 1px solid #ffeeba;
-            border-radius: 8px;
-            padding: 12px 15px;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            font-size: 0.9rem;
-        }
+.btn-submit:disabled {
+    background: var(--border);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
 
-        .help-box i { color: #856404; font-size: 1.2rem; flex-shrink: 0; margin-top: 2px; }
-        [data-theme="dark"] .help-box {
-            background: #2b2416;
-            border-color: #3d321b;
-            color: #f2e0b8;
-        }
-        [data-theme="dark"] .help-box i { color: #f2e0b8; }
+.btn-submit .spinner { display: none; }
+.btn-submit.submitting .spinner { display: inline-block; }
+.btn-submit.submitting .btn-text { display: none; }
 
-        /* 사진 미리보기 */
-        .photo-preview {
-            width: 200px;
-            height: 150px;
-            border: 2px dashed #ddd;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            margin-top: 10px;
-            background: #fafafa;
-            transition: 0.3s;
-        }
-        [data-theme="dark"] .photo-preview {
-            border-color: #2f3a4a;
-            background: #10151c;
-        }
+/* 파일 용량 안내 */
+.file-info {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-top: 5px;
+}
 
-        .photo-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
-        .photo-preview.has-image { border-color: var(--primary-color); }
+/* 푸터 */
+.form-footer {
+    text-align: center;
+    padding: 30px 0 40px;
+    color: var(--muted);
+    font-size: 0.85rem;
+}
 
-        /* 즉시 출근 박스 */
-        .asap-box {
-            background: #e7f1ff;
-            padding: 10px 15px;
-            border-radius: 8px;
-            border: 1px solid #cce5ff;
-            display: flex;
-            align-items: center;
-        }
-        [data-theme="dark"] .asap-box {
-            background: #142033;
-            border-color: #233652;
-            color: #d7e4ff;
-        }
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+    .form-card { padding: 20px 15px; margin: 15px 10px; }
+    .form-title { font-size: 1.4rem; }
+    .col-6 { flex: 0 0 100% !important; max-width: 100% !important; }
+    .step-label { font-size: 0.6rem; }
+    .step-circle { width: 26px; height: 26px; font-size: 0.75rem; }
+}
 
-        .form-check-input:checked {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
+@media (max-width: 480px) {
+    .form-card { padding: 15px 12px; }
+    .progress-bar-container { padding: 0; }
+}
+{% endblock %}
 
-        /* 개인정보 동의 */
-        .consent-box {
-            background-color: #f8f9fa;
-            border-radius: 10px;
-            border: 1px solid #e0e0e0;
-            padding: 20px;
-            margin-top: 10px;
-        }
-        [data-theme="dark"] .consent-box {
-            background-color: #151a21;
-            border-color: #2f3a4a;
-        }
+{% block public_content %}
+<!-- 상단 여백 (fixed navbar) -->
+<div style="height: 80px;"></div>
 
-        .consent-detail {
-            max-height: 150px;
-            overflow-y: auto;
-            font-size: 0.82rem;
-            color: #666;
-            line-height: 1.6;
-            padding: 12px;
-            background: white;
-            border-radius: 6px;
-            border: 1px solid #eee;
-            margin: 10px 0;
-        }
-        [data-theme="dark"] .consent-detail {
-            color: #cfd6e4;
-            background: #10151c;
-            border-color: #2f3a4a;
-        }
-
-        .consent-required {
-            background-color: #f8d7da;
-            border-radius: 8px;
-            border: 1px solid #f5c6cb;
-            padding: 15px;
-        }
-        [data-theme="dark"] .consent-required {
-            background-color: #3a1f24;
-            border-color: #5a2a33;
-            color: #f2c9cf;
-        }
-
-        /* 제출 버튼 */
-        .btn-submit {
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 18px;
-            border-radius: 12px;
-            font-weight: 800;
-            width: 100%;
-            margin-top: 25px;
-            font-size: 1.2rem;
-            transition: 0.3s;
-            position: relative;
-        }
-
-        .btn-submit:hover {
-            background: #004494;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0, 86, 179, 0.3);
-        }
-
-        .btn-submit:disabled {
-            background: var(--border);
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .btn-submit .spinner { display: none; }
-        .btn-submit.submitting .spinner { display: inline-block; }
-        .btn-submit.submitting .btn-text { display: none; }
-
-        /* 파일 용량 안내 */
-        .file-info {
-            font-size: 0.8rem;
-            color: var(--muted);
-            margin-top: 5px;
-        }
-
-        /* 푸터 */
-        .form-footer {
-            text-align: center;
-            padding: 30px 0 40px;
-            color: var(--muted);
-            font-size: 0.85rem;
-        }
-
-        /* 모바일 반응형 */
-        @media (max-width: 768px) {
-            .form-card { padding: 20px 15px; margin: 15px 10px; }
-            .form-title { font-size: 1.4rem; }
-            .col-6 { flex: 0 0 100% !important; max-width: 100% !important; }
-            .step-label { font-size: 0.6rem; }
-            .step-circle { width: 26px; height: 26px; font-size: 0.75rem; }
-            .navbar-brand { font-size: 2rem; }
-        }
-
-        @media (max-width: 480px) {
-            .form-card { padding: 15px 12px; }
-            .progress-bar-container { padding: 0; }
-        }
-    </style>
-</head>
-
-<body>
-    <!-- 네비게이션 바 (랜딩페이지와 통일) -->
-    <nav class="navbar navbar-expand-lg fixed-top" role="navigation" aria-label="메인 네비게이션">
-        <div class="container">
-            <a class="navbar-brand" href="/" aria-label="휴메틱스 홈">Humetix</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="메뉴 열기">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-                <ul class="navbar-nav align-items-center">
-                    <li class="nav-item"><a class="nav-link" href="/">홈</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/#services">사업영역</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/#contact">견적문의</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="/apply" style="color: var(--primary-color) !important;">입사지원</a></li>
-                    <li class="nav-item ms-2">
-                        <button type="button" id="themeToggle" class="theme-toggle">다크</button>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-
-    <!-- 상단 여백 (fixed navbar) -->
-    <div style="height: 80px;"></div>
-
-    <!-- Flash 메시지 -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-    <div class="flash-container">
-        {% for category, message in messages %}
-        <div class="flash-msg flash-{{ category }}">
-            <i class="bi bi-{% if category == 'success' %}check-circle-fill{% elif category == 'danger' %}exclamation-triangle-fill{% else %}info-circle-fill{% endif %}"></i>
-            {{ message }}
-        </div>
-        {% endfor %}
+<!-- Flash 메시지 -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="flash-container">
+    {% for category, message in messages %}
+    <div class="flash-msg flash-{{ category }}">
+        <i class="bi bi-{% if category == 'success' %}check-circle-fill{% elif category == 'danger' %}exclamation-triangle-fill{% else %}info-circle-fill{% endif %}"></i>
+        {{ message }}
     </div>
-    {% endif %}
-    {% endwith %}
+    {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
 
-    <div class="form-card">
-        <h2 class="form-title">입사지원서</h2>
-        <p class="form-subtitle">아래 양식을 작성하여 지원해주세요. <span style="color: var(--danger-color);">*</span> 표시는 필수항목입니다.</p>
+<div class="form-card apply-form">
+    <h2 class="form-title">입사지원서</h2>
+    <p class="form-subtitle">아래 양식을 작성하여 지원해주세요. <span style="color: var(--danger-color);">*</span> 표시는 필수항목입니다.</p>
 
-        <!-- 진행 상태 바 -->
-        <div class="progress-bar-container" id="progressBar">
-            <div class="progress-step active" data-section="1">
-                <div class="step-circle">1</div>
-                <span class="step-label">신분증</span>
+    <!-- 진행 상태 바 -->
+    <div class="progress-bar-container" id="progressBar">
+        <div class="progress-step active" data-section="1">
+            <div class="step-circle">1</div>
+            <span class="step-label">신분증</span>
+        </div>
+        <div class="progress-step" data-section="2">
+            <div class="step-circle">2</div>
+            <span class="step-label">인적사항</span>
+        </div>
+        <div class="progress-step" data-section="3">
+            <div class="step-circle">3</div>
+            <span class="step-label">경력</span>
+        </div>
+        <div class="progress-step" data-section="4">
+            <div class="step-circle">4</div>
+            <span class="step-label">신체정보</span>
+        </div>
+        <div class="progress-step" data-section="5">
+            <div class="step-circle">5</div>
+            <span class="step-label">근무조건</span>
+        </div>
+        <div class="progress-step" data-section="6">
+            <div class="step-circle">6</div>
+            <span class="step-label">기타</span>
+        </div>
+    </div>
+
+    <form action="/submit" method="POST" enctype="multipart/form-data" id="applyForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <!-- 1. 신분증 확인 -->
+        <div class="form-section" data-section="1">
+            <div class="section-title">1. 신분증 확인 <span style="color: var(--danger-color);">*</span></div>
+            <div class="help-box">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div>
+                    <strong>주민등록번호 뒷자리는 반드시 가려주세요!</strong><br>
+                    얼굴 사진과 생년월일이 보여야 합니다.
+                </div>
             </div>
-            <div class="progress-step" data-section="2">
-                <div class="step-circle">2</div>
-                <span class="step-label">인적사항</span>
-            </div>
-            <div class="progress-step" data-section="3">
-                <div class="step-circle">3</div>
-                <span class="step-label">경력</span>
-            </div>
-            <div class="progress-step" data-section="4">
-                <div class="step-circle">4</div>
-                <span class="step-label">신체정보</span>
-            </div>
-            <div class="progress-step" data-section="5">
-                <div class="step-circle">5</div>
-                <span class="step-label">근무조건</span>
-            </div>
-            <div class="progress-step" data-section="6">
-                <div class="step-circle">6</div>
-                <span class="step-label">기타</span>
+            <div class="mb-3">
+                <label for="id_card" class="form-label">신분증 사진 첨부</label>
+                <input type="file" name="id_card" id="id_card" class="form-control" accept="image/*" capture="environment" required aria-describedby="fileHelp">
+                <div class="file-info" id="fileHelp">최대 8MB · JPG, PNG, HEIC 형식 지원</div>
+                <div class="photo-preview" id="idPreview">
+                    <span style="color: #bbb; font-size: 0.85rem;"><i class="bi bi-image"></i> 미리보기</span>
+                </div>
             </div>
         </div>
 
-        <form action="/submit" method="POST" enctype="multipart/form-data" id="applyForm">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-            <!-- 1. 신분증 확인 -->
-            <div class="form-section" data-section="1">
-                <div class="section-title">1. 신분증 확인 <span style="color: var(--danger-color);">*</span></div>
-                <div class="help-box">
-                    <i class="bi bi-exclamation-triangle-fill"></i>
-                    <div>
-                        <strong>주민등록번호 뒷자리는 반드시 가려주세요!</strong><br>
-                        얼굴 사진과 생년월일이 보여야 합니다.
-                    </div>
+        <!-- 2. 인적 사항 -->
+        <div class="form-section" data-section="2">
+            <div class="section-title">2. 인적 사항</div>
+            <div class="row g-3">
+                <div class="col-6">
+                    <label for="name" class="form-label">성함 <span style="color: var(--danger-color);">*</span></label>
+                    <input type="text" name="name" id="name" class="form-control" placeholder="성함 입력" required>
                 </div>
-                <div class="mb-3">
-                    <label for="id_card" class="form-label">신분증 사진 첨부</label>
-                    <input type="file" name="id_card" id="id_card" class="form-control" accept="image/*" capture="environment" required aria-describedby="fileHelp">
-                    <div class="file-info" id="fileHelp">최대 8MB · JPG, PNG, HEIC 형식 지원</div>
-                    <div class="photo-preview" id="idPreview">
-                        <span style="color: #bbb; font-size: 0.85rem;"><i class="bi bi-image"></i> 미리보기</span>
+                <div class="col-6">
+                    <label for="birth" class="form-label">생년월일 <span style="color: var(--danger-color);">*</span></label>
+                    <input type="date" name="birth" id="birth" class="form-control" required>
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <label class="form-label">성별 <span style="color: var(--danger-color);">*</span></label>
+                <div class="d-flex gap-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="gender" id="gender_m" value="남" required>
+                        <label class="form-check-label" for="gender_m">남자</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="gender" id="gender_f" value="여" required>
+                        <label class="form-check-label" for="gender_f">여자</label>
                     </div>
                 </div>
             </div>
 
-            <!-- 2. 인적 사항 -->
-            <div class="form-section" data-section="2">
-                <div class="section-title">2. 인적 사항</div>
+            <div class="row g-3 mt-1">
+                <div class="col-6">
+                    <label for="phone" class="form-label">핸드폰 번호 <span style="color: var(--danger-color);">*</span></label>
+                    <input type="tel" name="phone" id="phone" class="form-control" placeholder="010-0000-0000" required oninput="autoHyphen(this)" maxlength="13">
+                    <div class="invalid-feedback">올바른 전화번호를 입력하세요</div>
+                </div>
+                <div class="col-6">
+                    <label for="email" class="form-label">이메일 <span style="color: var(--danger-color);">*</span></label>
+                    <input type="email" name="email" id="email" class="form-control" placeholder="example@email.com" required>
+                    <div class="invalid-feedback">올바른 이메일 주소를 입력하세요</div>
+                </div>
+            </div>
+
+            <label for="address" class="form-label mt-3">실거주지 주소 <span style="color: var(--danger-color);">*</span></label>
+            <div class="input-group">
+                <input type="text" class="form-control" name="address" id="address" required placeholder="주소 검색 버튼을 눌러주세요" readonly style="background-color: var(--input-bg); color: var(--input-text);">
+                <button class="btn btn-secondary" type="button" onclick="openAddressSearch()" aria-label="주소 검색"><i class="bi bi-search"></i> 주소 검색</button>
+            </div>
+        </div>
+
+        <!-- 3. 경력사항 -->
+        <div class="form-section" data-section="3">
+            <div class="section-title">3. 경력사항 <span style="color: var(--danger-color);">*</span></div>
+            <div class="career-box">
+                <h6 class="fw-bold text-secondary">● 경력 1 (최근 경력)</h6>
+                <div class="row g-3 mb-2">
+                    <div class="col-12"><label for="company1" class="form-label">회사명</label><input type="text" name="company1" id="company1" class="form-control" required></div>
+                </div>
+                <div class="row g-3 mb-2">
+                    <div class="col-6"><label for="exp_start1" class="form-label">입사일</label><input type="date" name="exp_start1" id="exp_start1" class="form-control" required></div>
+                    <div class="col-6"><label for="exp_end1" class="form-label">퇴사일</label><input type="date" name="exp_end1" id="exp_end1" class="form-control" required></div>
+                </div>
                 <div class="row g-3">
-                    <div class="col-6">
-                        <label for="name" class="form-label">성함 <span style="color: var(--danger-color);">*</span></label>
-                        <input type="text" name="name" id="name" class="form-control" placeholder="성함 입력" required>
-                    </div>
-                    <div class="col-6">
-                        <label for="birth" class="form-label">생년월일 <span style="color: var(--danger-color);">*</span></label>
-                        <input type="date" name="birth" id="birth" class="form-control" required>
+                    <div class="col-6"><label for="job_role1" class="form-label">담당업무</label><input type="text" name="job_role1" id="job_role1" class="form-control" required></div>
+                    <div class="col-6"><label for="reason1" class="form-label">퇴사사유</label><input type="text" name="reason1" id="reason1" class="form-control" required></div>
+                </div>
+            </div>
+            <div class="career-box">
+                <h6 class="fw-bold text-secondary">● 경력 2</h6>
+                <div class="row g-3 mb-2">
+                    <div class="col-12"><label for="company2" class="form-label">회사명</label><input type="text" name="company2" id="company2" class="form-control"></div>
+                </div>
+                <div class="row g-3 mb-2">
+                    <div class="col-6"><label for="exp_start2" class="form-label">입사일</label><input type="date" name="exp_start2" id="exp_start2" class="form-control"></div>
+                    <div class="col-6"><label for="exp_end2" class="form-label">퇴사일</label><input type="date" name="exp_end2" id="exp_end2" class="form-control"></div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-6"><label for="job_role2" class="form-label">담당업무</label><input type="text" name="job_role2" id="job_role2" class="form-control"></div>
+                    <div class="col-6"><label for="reason2" class="form-label">퇴사사유</label><input type="text" name="reason2" id="reason2" class="form-control"></div>
+                </div>
+            </div>
+            <div class="career-box">
+                <h6 class="fw-bold text-secondary">● 경력 3</h6>
+                <div class="row g-3 mb-2">
+                    <div class="col-12"><label for="company3" class="form-label">회사명</label><input type="text" name="company3" id="company3" class="form-control"></div>
+                </div>
+                <div class="row g-3 mb-2">
+                    <div class="col-6"><label for="exp_start3" class="form-label">입사일</label><input type="date" name="exp_start3" id="exp_start3" class="form-control"></div>
+                    <div class="col-6"><label for="exp_end3" class="form-label">퇴사일</label><input type="date" name="exp_end3" id="exp_end3" class="form-control"></div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-6"><label for="job_role3" class="form-label">담당업무</label><input type="text" name="job_role3" id="job_role3" class="form-control"></div>
+                    <div class="col-6"><label for="reason3" class="form-label">퇴사사유</label><input type="text" name="reason3" id="reason3" class="form-control"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. 신체 정보 -->
+        <div class="form-section" data-section="4">
+            <div class="section-title">4. 신체 정보 및 사이즈</div>
+            <label class="form-label">시력 (더 좋은 시력 기준) <span style="color: var(--danger-color);">*</span></label>
+            <div class="row g-3 mb-3">
+                <div class="col-6">
+                    <select name="vision_type" id="vision_type" class="form-select" aria-label="시력 유형">
+                        <option value="나안">나안 시력</option>
+                        <option value="교정">교정 시력</option>
+                    </select>
+                </div>
+                <div class="col-6"><input type="text" name="vision_value" id="vision_value" class="form-control" placeholder="예: 1.0" required aria-label="시력 수치"></div>
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-6"><label for="shoes" class="form-label">신발 사이즈 <span style="color: var(--danger-color);">*</span></label><input type="text" name="shoes" id="shoes" class="form-control" placeholder="예: 270" required></div>
+                <div class="col-6"><label for="tshirt" class="form-label">티셔츠 사이즈 <span style="color: var(--danger-color);">*</span></label><input type="text" name="tshirt" id="tshirt" class="form-control" placeholder="예: L" required></div>
+            </div>
+            <div class="row g-3">
+                <div class="col-6"><label for="height" class="form-label">키(cm) <span style="color: var(--danger-color);">*</span></label><input type="number" name="height" id="height" class="form-control" placeholder="예: 175" required></div>
+                <div class="col-6"><label for="weight" class="form-label">몸무게(kg) <span style="color: var(--danger-color);">*</span></label><input type="number" name="weight" id="weight" class="form-control" placeholder="예: 70" required></div>
+            </div>
+        </div>
+
+        <!-- 5. 희망 근무 조건 -->
+        <div class="form-section" data-section="5">
+            <div class="section-title">5. 희망 근무 조건</div>
+            <div class="row g-3 mb-3">
+                <div class="col-6">
+                    <label for="shift" class="form-label">근무형태</label>
+                    <select name="shift" id="shift" class="form-select">
+                        <option value="주간">주간</option>
+                        <option value="2교대">2교대</option>
+                    </select>
+                </div>
+                <div class="col-6">
+                    <label for="posture" class="form-label">근무방식</label>
+                    <select name="posture" id="posture" class="form-select">
+                        <option value="무관">무관</option>
+                        <option value="좌식">좌식</option>
+                        <option value="입식">입식</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-6">
+                    <label for="overtime" class="form-label">잔업가능여부</label>
+                    <select name="overtime" id="overtime" class="form-select">
+                        <option value="가능">가능</option>
+                        <option value="불가능">불가능</option>
+                    </select>
+                </div>
+                <div class="col-6">
+                    <label for="holiday" class="form-label">특근가능여부</label>
+                    <select name="holiday" id="holiday" class="form-select">
+                        <option value="가능">가능</option>
+                        <option value="불가능">불가능</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-12 mb-2">
+                    <label for="interview_date" class="form-label">면접 가능일자 <span style="color: var(--danger-color);">*</span></label>
+                    <input type="date" name="interview_date" id="interview_date" class="form-control" required>
+                </div>
+                <div class="col-12">
+                    <label for="start_date" class="form-label">입사 희망일자 <span style="color: var(--danger-color);">*</span></label>
+                    <input type="date" name="start_date" id="start_date" class="form-control" required>
+                    <div class="asap-box mt-2">
+                        <input class="form-check-input mt-0" type="checkbox" id="asap_check" onchange="toggleDate()">
+                        <span class="ms-2 fw-bold" style="font-size:0.95rem; color: var(--primary-color);">즉시 출근 가능 (오늘 날짜 자동 입력)</span>
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <div class="mt-3">
-                    <label class="form-label">성별 <span style="color: var(--danger-color);">*</span></label>
+        <!-- 6. 기타 희망사항 -->
+        <div class="form-section" data-section="6">
+            <div class="section-title">6. 기타 희망사항</div>
+            <div class="row g-3 mb-3">
+                <div class="col-12">
+                    <label class="form-label">가불 희망여부</label>
                     <div class="d-flex gap-4">
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="gender" id="gender_m" value="남" required>
-                            <label class="form-check-label" for="gender_m">남자</label>
+                            <input class="form-check-input" type="radio" name="advance_pay" id="advance_no" value="비희망" checked>
+                            <label class="form-check-label" for="advance_no">비희망</label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="gender" id="gender_f" value="여" required>
-                            <label class="form-check-label" for="gender_f">여자</label>
+                            <input class="form-check-input" type="radio" name="advance_pay" id="advance_yes" value="희망">
+                            <label class="form-check-label" for="advance_yes">희망</label>
                         </div>
                     </div>
                 </div>
-
-                <div class="row g-3 mt-1">
-                    <div class="col-6">
-                        <label for="phone" class="form-label">핸드폰 번호 <span style="color: var(--danger-color);">*</span></label>
-                        <input type="tel" name="phone" id="phone" class="form-control" placeholder="010-0000-0000" required oninput="autoHyphen(this)" maxlength="13">
-                        <div class="invalid-feedback">올바른 전화번호를 입력하세요</div>
-                    </div>
-                    <div class="col-6">
-                        <label for="email" class="form-label">이메일 <span style="color: var(--danger-color);">*</span></label>
-                        <input type="email" name="email" id="email" class="form-control" placeholder="example@email.com" required>
-                        <div class="invalid-feedback">올바른 이메일 주소를 입력하세요</div>
-                    </div>
-                </div>
-
-                <label for="address" class="form-label mt-3">실거주지 주소 <span style="color: var(--danger-color);">*</span></label>
-                <div class="input-group">
-                    <input type="text" class="form-control" name="address" id="address" required placeholder="주소 검색 버튼을 눌러주세요" readonly style="background-color: var(--input-bg); color: var(--input-text);">
-                    <button class="btn btn-secondary" type="button" onclick="openAddressSearch()" aria-label="주소 검색"><i class="bi bi-search"></i> 주소 검색</button>
-                </div>
-            </div>
-
-            <!-- 3. 경력사항 -->
-            <div class="form-section" data-section="3">
-                <div class="section-title">3. 경력사항 <span style="color: var(--danger-color);">*</span></div>
-                <div class="career-box">
-                    <h6 class="fw-bold text-secondary">● 경력 1 (최근 경력)</h6>
-                    <div class="row g-3 mb-2">
-                        <div class="col-12"><label for="company1" class="form-label">회사명</label><input type="text" name="company1" id="company1" class="form-control" required></div>
-                    </div>
-                    <div class="row g-3 mb-2">
-                        <div class="col-6"><label for="exp_start1" class="form-label">입사일</label><input type="date" name="exp_start1" id="exp_start1" class="form-control" required></div>
-                        <div class="col-6"><label for="exp_end1" class="form-label">퇴사일</label><input type="date" name="exp_end1" id="exp_end1" class="form-control" required></div>
-                    </div>
-                    <div class="row g-3">
-                        <div class="col-6"><label for="job_role1" class="form-label">담당업무</label><input type="text" name="job_role1" id="job_role1" class="form-control" required></div>
-                        <div class="col-6"><label for="reason1" class="form-label">퇴사사유</label><input type="text" name="reason1" id="reason1" class="form-control" required></div>
-                    </div>
-                </div>
-                <div class="career-box">
-                    <h6 class="fw-bold text-secondary">● 경력 2</h6>
-                    <div class="row g-3 mb-2">
-                        <div class="col-12"><label for="company2" class="form-label">회사명</label><input type="text" name="company2" id="company2" class="form-control"></div>
-                    </div>
-                    <div class="row g-3 mb-2">
-                        <div class="col-6"><label for="exp_start2" class="form-label">입사일</label><input type="date" name="exp_start2" id="exp_start2" class="form-control"></div>
-                        <div class="col-6"><label for="exp_end2" class="form-label">퇴사일</label><input type="date" name="exp_end2" id="exp_end2" class="form-control"></div>
-                    </div>
-                    <div class="row g-3">
-                        <div class="col-6"><label for="job_role2" class="form-label">담당업무</label><input type="text" name="job_role2" id="job_role2" class="form-control"></div>
-                        <div class="col-6"><label for="reason2" class="form-label">퇴사사유</label><input type="text" name="reason2" id="reason2" class="form-control"></div>
-                    </div>
-                </div>
-                <div class="career-box">
-                    <h6 class="fw-bold text-secondary">● 경력 3</h6>
-                    <div class="row g-3 mb-2">
-                        <div class="col-12"><label for="company3" class="form-label">회사명</label><input type="text" name="company3" id="company3" class="form-control"></div>
-                    </div>
-                    <div class="row g-3 mb-2">
-                        <div class="col-6"><label for="exp_start3" class="form-label">입사일</label><input type="date" name="exp_start3" id="exp_start3" class="form-control"></div>
-                        <div class="col-6"><label for="exp_end3" class="form-label">퇴사일</label><input type="date" name="exp_end3" id="exp_end3" class="form-control"></div>
-                    </div>
-                    <div class="row g-3">
-                        <div class="col-6"><label for="job_role3" class="form-label">담당업무</label><input type="text" name="job_role3" id="job_role3" class="form-control"></div>
-                        <div class="col-6"><label for="reason3" class="form-label">퇴사사유</label><input type="text" name="reason3" id="reason3" class="form-control"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 4. 신체 정보 -->
-            <div class="form-section" data-section="4">
-                <div class="section-title">4. 신체 정보 및 사이즈</div>
-                <label class="form-label">시력 (더 좋은 시력 기준) <span style="color: var(--danger-color);">*</span></label>
-                <div class="row g-3 mb-3">
-                    <div class="col-6">
-                        <select name="vision_type" id="vision_type" class="form-select" aria-label="시력 유형">
-                            <option value="나안">나안 시력</option>
-                            <option value="교정">교정 시력</option>
-                        </select>
-                    </div>
-                    <div class="col-6"><input type="text" name="vision_value" id="vision_value" class="form-control" placeholder="예: 1.0" required aria-label="시력 수치"></div>
-                </div>
-                <div class="row g-3 mb-3">
-                    <div class="col-6"><label for="shoes" class="form-label">신발 사이즈 <span style="color: var(--danger-color);">*</span></label><input type="text" name="shoes" id="shoes" class="form-control" placeholder="예: 270" required></div>
-                    <div class="col-6"><label for="tshirt" class="form-label">티셔츠 사이즈 <span style="color: var(--danger-color);">*</span></label><input type="text" name="tshirt" id="tshirt" class="form-control" placeholder="예: L" required></div>
-                </div>
-                <div class="row g-3">
-                    <div class="col-6"><label for="height" class="form-label">키(cm) <span style="color: var(--danger-color);">*</span></label><input type="number" name="height" id="height" class="form-control" placeholder="예: 175" required></div>
-                    <div class="col-6"><label for="weight" class="form-label">몸무게(kg) <span style="color: var(--danger-color);">*</span></label><input type="number" name="weight" id="weight" class="form-control" placeholder="예: 70" required></div>
-                </div>
-            </div>
-
-            <!-- 5. 희망 근무 조건 -->
-            <div class="form-section" data-section="5">
-                <div class="section-title">5. 희망 근무 조건</div>
-                <div class="row g-3 mb-3">
-                    <div class="col-6">
-                        <label for="shift" class="form-label">근무형태</label>
-                        <select name="shift" id="shift" class="form-select">
-                            <option value="주간">주간</option>
-                            <option value="2교대">2교대</option>
-                        </select>
-                    </div>
-                    <div class="col-6">
-                        <label for="posture" class="form-label">근무방식</label>
-                        <select name="posture" id="posture" class="form-select">
-                            <option value="무관">무관</option>
-                            <option value="좌식">좌식</option>
-                            <option value="입식">입식</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="row g-3 mb-3">
-                    <div class="col-6">
-                        <label for="overtime" class="form-label">잔업가능여부</label>
-                        <select name="overtime" id="overtime" class="form-select">
-                            <option value="가능">가능</option>
-                            <option value="불가능">불가능</option>
-                        </select>
-                    </div>
-                    <div class="col-6">
-                        <label for="holiday" class="form-label">특근가능여부</label>
-                        <select name="holiday" id="holiday" class="form-select">
-                            <option value="가능">가능</option>
-                            <option value="불가능">불가능</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="row g-3">
-                    <div class="col-12 mb-2">
-                        <label for="interview_date" class="form-label">면접 가능일자 <span style="color: var(--danger-color);">*</span></label>
-                        <input type="date" name="interview_date" id="interview_date" class="form-control" required>
-                    </div>
-                    <div class="col-12">
-                        <label for="start_date" class="form-label">입사 희망일자 <span style="color: var(--danger-color);">*</span></label>
-                        <input type="date" name="start_date" id="start_date" class="form-control" required>
-                        <div class="asap-box mt-2">
-                            <input class="form-check-input mt-0" type="checkbox" id="asap_check" onchange="toggleDate()">
-                            <span class="ms-2 fw-bold" style="font-size:0.95rem; color: var(--primary-color);">즉시 출근 가능 (오늘 날짜 자동 입력)</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 6. 기타 희망사항 -->
-            <div class="form-section" data-section="6">
-                <div class="section-title">6. 기타 희망사항</div>
-                <div class="row g-3 mb-3">
-                    <div class="col-12">
-                        <label class="form-label">가불 희망여부</label>
-                        <div class="d-flex gap-4">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="advance_pay" id="advance_no" value="비희망" checked>
-                                <label class="form-check-label" for="advance_no">비희망</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="advance_pay" id="advance_yes" value="희망">
-                                <label class="form-check-label" for="advance_yes">희망</label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-12 mt-3">
-                        <label class="form-label">급여 형태 희망사항</label>
-                        <div class="d-flex gap-4">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="insurance_type" id="insurance_33" value="3.3%" checked>
-                                <label class="form-check-label" for="insurance_33">3.3%</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="insurance_type" id="insurance_4" value="4대보험">
-                                <label class="form-check-label" for="insurance_4">4대보험 가입</label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 개인정보 수집 동의 (법적 요구사항 충족) -->
-                <div class="consent-box mt-4">
-                    <h6 class="fw-bold mb-2"><i class="bi bi-shield-lock-fill text-primary me-1"></i> 개인정보 수집·이용 동의</h6>
-                    <div class="consent-detail">
-                        <strong>1. 수집 항목:</strong> 성명, 생년월일, 성별, 연락처, 이메일, 주소, 신분증 사진, 경력사항, 신체정보, 희망근무조건<br><br>
-                        <strong>2. 수집 목적:</strong> 입사지원서 접수, 본인 확인, 채용 전형 진행, 합격 여부 통보<br><br>
-                        <strong>3. 보유 기간:</strong> 채용 절차 종료 후 1년 (합격자의 경우 근로관계 종료 시까지)<br><br>
-                        <strong>4. 동의 거부 권리:</strong> 귀하는 개인정보 수집·이용에 대한 동의를 거부할 수 있으며, 거부 시 입사지원이 제한됩니다.<br><br>
-                        자세한 내용은 <a href="/privacy" target="_blank" style="color: var(--primary-color);">개인정보처리방침</a>을 참고해주세요.
-                    </div>
-
-                    <div class="consent-required mt-3">
+                <div class="col-12 mt-3">
+                    <label class="form-label">급여 형태 희망사항</label>
+                    <div class="d-flex gap-4">
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="agree" name="agree" required>
-                            <label class="form-check-label fw-bold" for="agree" style="font-size: 0.95rem; color: #721c24;">
-                                [필수] 개인정보 수집·이용에 동의하며, 허위 기재 시 입사가 취소될 수 있음을 확인합니다.
-                            </label>
+                            <input class="form-check-input" type="radio" name="insurance_type" id="insurance_33" value="3.3%" checked>
+                            <label class="form-check-label" for="insurance_33">3.3%</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="insurance_type" id="insurance_4" value="4대보험">
+                            <label class="form-check-label" for="insurance_4">4대보험 가입</label>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <button type="submit" class="btn-submit shadow" id="submitBtn">
-                <span class="btn-text">지원서 제출하기</span>
-                <span class="spinner"><span class="spinner-border spinner-border-sm me-2" role="status"></span>제출 중...</span>
-            </button>
-        </form>
-    </div>
+            <!-- 개인정보 수집 동의 (법적 요구사항 충족) -->
+            <div class="consent-box mt-4">
+                <h6 class="fw-bold mb-2"><i class="bi bi-shield-lock-fill text-primary me-1"></i> 개인정보 수집·이용 동의</h6>
+                <div class="consent-detail">
+                    <strong>1. 수집 항목:</strong> 성명, 생년월일, 성별, 연락처, 이메일, 주소, 신분증 사진, 경력사항, 신체정보, 희망근무조건<br><br>
+                    <strong>2. 수집 목적:</strong> 입사지원서 접수, 본인 확인, 채용 전형 진행, 합격 여부 통보<br><br>
+                    <strong>3. 보유 기간:</strong> 채용 절차 종료 후 1년 (합격자의 경우 근로관계 종료 시까지)<br><br>
+                    <strong>4. 동의 거부 권리:</strong> 귀하는 개인정보 수집·이용에 대한 동의를 거부할 수 있으며, 거부 시 입사지원이 제한됩니다.<br><br>
+                    자세한 내용은 <a href="/privacy" target="_blank" style="color: var(--primary-color);">개인정보처리방침</a>을 참고해주세요.
+                </div>
 
-    <div class="form-footer">
-        <p>&copy; 2026 Humetix Inc. | <a href="/privacy" style="color: var(--muted);">개인정보처리방침</a></p>
-    </div>
+                <div class="consent-required mt-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="agree" name="agree" required>
+                        <label class="form-check-label fw-bold" for="agree" style="font-size: 0.95rem; color: #721c24;">
+                            [필수] 개인정보 수집·이용에 동의하며, 허위 기재 시 입사가 취소될 수 있음을 확인합니다.
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
-    <script>
-        // 테마 토글
-        const themeToggle = document.getElementById('themeToggle');
-        const rootEl = document.documentElement;
-        const applyTheme = (theme) => {
-            if (theme === 'dark') {
-                rootEl.setAttribute('data-theme', 'dark');
-                themeToggle.textContent = '라이트';
-            } else {
-                rootEl.removeAttribute('data-theme');
-                themeToggle.textContent = '다크';
-            }
-        };
-        applyTheme(localStorage.getItem('theme') || 'light');
-        themeToggle.addEventListener('click', () => {
-            const next = rootEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-            localStorage.setItem('theme', next);
-            applyTheme(next);
-        });
+        <button type="submit" class="btn-submit shadow" id="submitBtn">
+            <span class="btn-text">지원서 제출하기</span>
+            <span class="spinner"><span class="spinner-border spinner-border-sm me-2" role="status"></span>제출 중...</span>
+        </button>
+    </form>
+</div>
 
-        // 네비게이션 스크롤 효과
-        window.addEventListener('scroll', () => {
-            const navbar = document.querySelector('.navbar');
-            if (window.scrollY > 50) { navbar.classList.add('scrolled'); }
-            else { navbar.classList.remove('scrolled'); }
-        });
+<div class="form-footer">
+    <p>&copy; 2026 Humetix Inc. | <a href="/privacy" style="color: var(--muted);">개인정보처리방침</a></p>
+</div>
+{% endblock %}
 
-        // 진행 상태 바 업데이트
-        const sections = document.querySelectorAll('.form-section');
-        const progressSteps = document.querySelectorAll('.progress-step');
+{% block page_js_block %}
+<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+<script>
+// 진행 상태 바 업데이트
+const sections = document.querySelectorAll('.form-section');
+const progressSteps = document.querySelectorAll('.progress-step');
 
-        const sectionObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const sectionNum = entry.target.getAttribute('data-section');
-                    progressSteps.forEach(step => {
-                        const stepNum = step.getAttribute('data-section');
-                        if (parseInt(stepNum) <= parseInt(sectionNum)) {
-                            step.classList.add('active');
-                        } else {
-                            step.classList.remove('active');
-                        }
-                    });
+const sectionObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const sectionNum = entry.target.getAttribute('data-section');
+            progressSteps.forEach(step => {
+                const stepNum = step.getAttribute('data-section');
+                if (parseInt(stepNum) <= parseInt(sectionNum)) {
+                    step.classList.add('active');
+                } else {
+                    step.classList.remove('active');
                 }
             });
-        }, { threshold: 0.3, rootMargin: '-80px 0px 0px 0px' });
+        }
+    });
+}, { threshold: 0.3, rootMargin: '-80px 0px 0px 0px' });
 
-        sections.forEach(section => sectionObserver.observe(section));
+sections.forEach(section => sectionObserver.observe(section));
 
-        // 사진 미리보기
-        document.getElementById('id_card').addEventListener('change', function(e) {
-            const preview = document.getElementById('idPreview');
-            const file = e.target.files[0];
+// 사진 미리보기
+document.getElementById('id_card').addEventListener('change', function(e) {
+    const preview = document.getElementById('idPreview');
+    const file = e.target.files[0];
 
-            if (file) {
-                // 파일 크기 체크 (8MB)
-                if (file.size > 8 * 1024 * 1024) {
-                    alert('파일 크기가 8MB를 초과합니다. 더 작은 파일을 선택해주세요.');
-                    this.value = '';
-                    return;
-                }
-
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    preview.innerHTML = `<img src="${e.target.result}" alt="신분증 미리보기">`;
-                    preview.classList.add('has-image');
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-        // 실시간 입력 검증
-        document.getElementById('email').addEventListener('blur', function() {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (this.value && !emailRegex.test(this.value)) {
-                this.classList.add('is-invalid');
-            } else {
-                this.classList.remove('is-invalid');
-            }
-        });
-
-        document.getElementById('phone').addEventListener('blur', function() {
-            const phoneRegex = /^01[016789]-\d{3,4}-\d{4}$/;
-            if (this.value && !phoneRegex.test(this.value)) {
-                this.classList.add('is-invalid');
-            } else {
-                this.classList.remove('is-invalid');
-            }
-        });
-
-        // 폼 유효성 검사 + 더블클릭 방지
-        document.getElementById('applyForm').addEventListener('submit', function(e) {
-            const address = document.getElementById('address').value.trim();
-            if (!address) {
-                e.preventDefault();
-                alert('주소를 입력해주세요.');
-                return;
-            }
-
-            // 유효성 문제 있는 필드 체크
-            const invalidFields = this.querySelectorAll('.is-invalid');
-            if (invalidFields.length > 0) {
-                e.preventDefault();
-                invalidFields[0].focus();
-                alert('입력값을 확인해주세요.');
-                return;
-            }
-
-            // 더블클릭 방지
-            const btn = document.getElementById('submitBtn');
-            btn.disabled = true;
-            btn.classList.add('submitting');
-        });
-
-        // 즉시 출근 토글
-        function toggleDate() {
-            const checkbox = document.getElementById('asap_check');
-            const dateInput = document.getElementById('start_date');
-            if (checkbox.checked) {
-                const today = new Date();
-                const year = today.getFullYear();
-                const month = String(today.getMonth() + 1).padStart(2, '0');
-                const day = String(today.getDate()).padStart(2, '0');
-                dateInput.value = `${year}-${month}-${day}`;
-            } else {
-                dateInput.value = '';
-            }
+    if (file) {
+        // 파일 크기 체크 (8MB)
+        if (file.size > 8 * 1024 * 1024) {
+            alert('파일 크기가 8MB를 초과합니다. 더 작은 파일을 선택해주세요.');
+            this.value = '';
+            return;
         }
 
-        // 주소 검색
-        function openAddressSearch() {
-            new daum.Postcode({
-                oncomplete: function(data) {
-                    var addr = data.userSelectedType === 'R' ? data.roadAddress : data.jibunAddress;
-                    document.getElementById("address").value = addr + " ";
-                    document.getElementById("address").readOnly = false;
-                    document.getElementById("address").focus();
-                }
-            }).open();
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.innerHTML = `<img src="${e.target.result}" alt="신분증 미리보기">`;
+            preview.classList.add('has-image');
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+// 실시간 입력 검증
+document.getElementById('email').addEventListener('blur', function() {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (this.value && !emailRegex.test(this.value)) {
+        this.classList.add('is-invalid');
+    } else {
+        this.classList.remove('is-invalid');
+    }
+});
+
+document.getElementById('phone').addEventListener('blur', function() {
+    const phoneRegex = /^01[016789]-\d{3,4}-\d{4}$/;
+    if (this.value && !phoneRegex.test(this.value)) {
+        this.classList.add('is-invalid');
+    } else {
+        this.classList.remove('is-invalid');
+    }
+});
+
+// 폼 유효성 검사 + 더블클릭 방지
+document.getElementById('applyForm').addEventListener('submit', function(e) {
+    const address = document.getElementById('address').value.trim();
+    if (!address) {
+        e.preventDefault();
+        alert('주소를 입력해주세요.');
+        return;
+    }
+
+    // 유효성 문제 있는 필드 체크
+    const invalidFields = this.querySelectorAll('.is-invalid');
+    if (invalidFields.length > 0) {
+        e.preventDefault();
+        invalidFields[0].focus();
+        alert('입력값을 확인해주세요.');
+        return;
+    }
+
+    // 더블클릭 방지
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.classList.add('submitting');
+});
+
+// 즉시 출근 토글
+function toggleDate() {
+    const checkbox = document.getElementById('asap_check');
+    const dateInput = document.getElementById('start_date');
+    if (checkbox.checked) {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        dateInput.value = `${year}-${month}-${day}`;
+    } else {
+        dateInput.value = '';
+    }
+}
+
+// 주소 검색
+function openAddressSearch() {
+    new daum.Postcode({
+        oncomplete: function(data) {
+            var addr = data.userSelectedType === 'R' ? data.roadAddress : data.jibunAddress;
+            document.getElementById("address").value = addr + " ";
+            document.getElementById("address").readOnly = false;
+            document.getElementById("address").focus();
         }
+    }).open();
+}
 
-        // 전화번호 자동 하이픈
-        function autoHyphen(target) {
-            target.value = target.value
-                .replace(/[^0-9]/g, '')
-                .replace(/^(\d{0,3})(\d{0,4})(\d{0,4})$/g, "$1-$2-$3").replace(/(\-{1,2})$/g, "");
-        }
-    </script>
-</body>
-
-</html>
-        .theme-toggle {
-            border: 1px solid var(--border);
-            background: transparent;
-            color: var(--nav-text);
-            border-radius: 20px;
-            padding: 6px 14px;
-            font-weight: 700;
-            font-size: 0.85rem;
-        }
-
-
+// 전화번호 자동 하이픈
+function autoHyphen(target) {
+    target.value = target.value
+        .replace(/[^0-9]/g, '')
+        .replace(/^(\d{0,3})(\d{0,4})(\d{0,4})$/g, "$1-$2-$3").replace(/(\-{1,2})$/g, "");
+}
+</script>
+{% endblock %}

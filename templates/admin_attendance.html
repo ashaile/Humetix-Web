@@ -1,627 +1,266 @@
-﻿<!DOCTYPE html>
-<html lang="ko">
+{% extends "base_admin.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HUMETIX - 관리자 근태관리</title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
-        rel="stylesheet">
-    <style>
-        :root {
-            --bg: #f8f7f4;
-            --bg2: #fff;
-            --bg3: #f0efec;
-            --text: #1a1a1a;
-            --text2: #6b6b6b;
-            --accent: #e85d26;
-            --accent-bg: #fef3ee;
-            --border: #e8e6e1;
-            --success: #22a867;
-            --night: #6366f1;
-            --night-bg: #eef2ff;
-            --shadow-lg: 0 10px 25px rgba(0, 0, 0, .08);
-            --radius: 12px;
-            --radius-sm: 8px;
-        }
+{% block admin_title %}HUMETIX - 관리자 근태관리{% endblock %}
+{% block page_title %}근태 관리 (관리자){% endblock %}
+{% block page_desc %}아래 통계는 현재 조회 조건의 기록 기준입니다.{% endblock %}
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+{% block page_css %}
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px; margin-bottom: 24px;
+}
+.stat-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px;
+    transition: transform .2s, box-shadow .2s;
+}
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.stat-label {
+    font-size: 12px; color: var(--text2); font-weight: 500;
+    text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px;
+}
+.stat-value {
+    font-size: 28px; font-weight: 800;
+    font-family: "JetBrains Mono", monospace; letter-spacing: -1px;
+}
+.stat-main { display: inline-flex; align-items: baseline; gap: 6px; }
+.stat-unit { font-size: 16px; font-weight: 700; color: var(--text2); letter-spacing: 0; }
+.stat-value.accent { color: var(--accent); }
+.stat-value.success { color: var(--success); }
+.stat-value.night { color: var(--night); }
+.stat-sub { font-size: 12px; color: var(--text2); margin-top: 4px; }
+.stat-sub:empty { display: none; }
+.badge-day { background: var(--accent-bg); color: var(--accent); }
+.badge-night { background: var(--night-bg); color: var(--night); }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-label-block { display: block; font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 4px; }
+@media (max-width: 768px) {
+    .form-grid { grid-template-columns: 1fr; }
+}
+{% endblock %}
 
-        body {
-            font-family: "Noto Sans KR", sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-        }
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">기록 수</div>
+        <div class="stat-main"><div class="stat-value">{{ stats.total }}</div><div class="stat-unit">건</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">주간 근무</div>
+        <div class="stat-main"><div class="stat-value accent">{{ stats.day }}</div><div class="stat-unit">건</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">야간 근무</div>
+        <div class="stat-main"><div class="stat-value night">{{ stats.night }}</div><div class="stat-unit">건</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">총 근무</div>
+        <div class="stat-main"><div class="stat-value">{{ stats.total_work }}</div><div class="stat-unit">시간</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">잔업</div>
+        <div class="stat-main"><div class="stat-value success">{{ stats.total_ot }}</div><div class="stat-unit">시간</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">심야</div>
+        <div class="stat-main"><div class="stat-value night">{{ stats.total_night }}</div><div class="stat-unit">시간</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">특근</div>
+        <div class="stat-main"><div class="stat-value" style="color:#d946ef">{{ stats.total_holiday }}</div><div class="stat-unit">시간</div></div>
+    </div>
+</div>
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 32px 24px;
-        }
+<form method="get" action="/admin/attendance" class="filter-bar">
+    <input type="date" name="start_date" class="form-input" value="{{ start_date }}">
+    <span style="color:var(--text2)">~</span>
+    <input type="date" name="end_date" class="form-input" value="{{ end_date }}">
+    <input type="text" name="emp_name" class="form-input" value="{{ emp_name }}" placeholder="이름" style="width:160px">
+    <button type="submit" class="btn btn-primary btn-sm">조회</button>
+</form>
 
-        .page-title {
-            font-size: 26px;
-            font-weight: 800;
-            margin-bottom: 8px;
-        }
-
-        .page-desc {
-            color: var(--text2);
-            font-size: 14px;
-            margin-bottom: 24px;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
-            padding: 16px 20px;
-            background: var(--bg2);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-        }
-
-        .nav-links a {
-            text-decoration: none;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 10px 20px;
-            border-radius: var(--radius-sm);
-            font-size: 14px;
-            font-weight: 600;
-            border: none;
-            cursor: pointer;
-            transition: all .2s;
-            font-family: inherit;
-            white-space: nowrap;
-            text-decoration: none;
-        }
-
-        .btn-primary {
-            background: var(--accent);
-            color: #fff;
-        }
-
-        .btn-primary:hover {
-            background: #d14e1a;
-        }
-
-        .btn-outline {
-            background: var(--bg2);
-            color: var(--text);
-            border: 1px solid var(--border);
-        }
-
-        .btn-outline:hover {
-            background: var(--bg3);
-        }
-
-        .btn-sm {
-            padding: 7px 14px;
-            font-size: 13px;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 14px;
-            margin-bottom: 24px;
-        }
-
-        .stat-card {
-            background: var(--bg2);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 18px;
-            transition: transform .2s, box-shadow .2s;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .stat-label {
-            font-size: 12px;
-            color: var(--text2);
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: .5px;
-            margin-bottom: 8px;
-        }
-
-        .stat-value {
-            font-size: 28px;
-            font-weight: 800;
-            font-family: "JetBrains Mono", monospace;
-            letter-spacing: -1px;
-        }
-
-        .stat-main {
-            display: inline-flex;
-            align-items: baseline;
-            gap: 6px;
-        }
-
-        .stat-unit {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--text2);
-            letter-spacing: 0;
-        }
-
-        .stat-value.accent {
-            color: var(--accent);
-        }
-
-        .stat-value.success {
-            color: var(--success);
-        }
-
-        .stat-value.night {
-            color: var(--night);
-        }
-
-        .stat-sub {
-            font-size: 12px;
-            color: var(--text2);
-            margin-top: 4px;
-        }
-
-        .stat-sub:empty {
-            display: none;
-        }
-
-        .filter-bar {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 16px;
-        }
-
-        .form-input {
-            padding: 8px 12px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            font-size: 13px;
-            font-family: inherit;
-            background: var(--bg);
-        }
-
-        .table-wrap {
-            background: var(--bg2);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            overflow: hidden;
-        }
-
-        .table-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border);
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-
-        .table-title {
-            font-weight: 700;
-            font-size: 15px;
-        }
-
-        .table-actions {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .table-scroll {
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-        }
-
-        thead {
-            background: var(--bg3);
-        }
-
-        th {
-            padding: 12px 18px;
-            text-align: left;
-            font-weight: 600;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: .5px;
-            color: var(--text2);
-            white-space: nowrap;
-        }
-
-        td {
-            padding: 14px 18px;
-            border-top: 1px solid var(--border);
-            white-space: nowrap;
-        }
-
-        tr:hover td {
-            background: var(--bg3);
-        }
-
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        .badge-day {
-            background: var(--accent-bg);
-            color: var(--accent);
-        }
-
-        .badge-night {
-            background: var(--night-bg);
-            color: var(--night);
-        }
-
-        .mono {
-            font-family: "JetBrains Mono", monospace;
-            font-size: 13px;
-        }
-
-        .emp-name {
-            font-weight: 600;
-        }
-
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.4);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-
-        .modal-card {
-            background: #fff;
-            padding: 24px;
-            border-radius: 12px;
-            width: 100%;
-            max-width: 460px;
-            box-shadow: var(--shadow-lg);
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                padding: 16px;
-            }
-
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
-</head>
-
-<body>
-    <div class="container">
-        <div class="nav-links">
-            <a href="/humetix_master_99" class="btn btn-outline">🏠 관리자 홈</a>
-            <a href="/admin/attendance" class="btn btn-primary">📋 근태관리</a>
-            <a href="/admin/attendance-calendar" class="btn btn-outline">🗓 운영캘린더</a>
-            <a href="/admin/payslip" class="btn btn-outline">💰 급여명세서</a>
-            <a href="/admin/advance" class="btn btn-outline">🏦 가불관리</a>
-            <a href="/admin/employees" class="btn btn-outline">👥 사원명부</a>
+<div class="table-wrap">
+    <div class="table-header">
+        <div class="table-title">근태 기록 ({{ records|length }}건)</div>
+        <div class="table-actions">
+            <a href="/admin/attendance/excel?start_date={{ start_date }}&end_date={{ end_date }}&emp_name={{ emp_name }}"
+                class="btn btn-outline btn-sm">엑셀 다운로드</a>
         </div>
-
-        <h1 class="page-title">근태 관리 (관리자)</h1>
-        <p class="page-desc">아래 통계는 현재 조회 조건의 기록 기준입니다.</p>
-
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-label">기록 수</div>
-                <div class="stat-main">
-                    <div class="stat-value">{{ stats.total }}</div>
-                    <div class="stat-unit">건</div>
-                </div>
-                <div class="stat-sub"></div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">주간 근무</div>
-                <div class="stat-main">
-                    <div class="stat-value accent">{{ stats.day }}</div>
-                    <div class="stat-unit">건</div>
-                </div>
-                <div class="stat-sub"></div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">야간 근무</div>
-                <div class="stat-main">
-                    <div class="stat-value night">{{ stats.night }}</div>
-                    <div class="stat-unit">건</div>
-                </div>
-                <div class="stat-sub"></div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">총 근무</div>
-                <div class="stat-main">
-                    <div class="stat-value">{{ stats.total_work }}</div>
-                    <div class="stat-unit">시간</div>
-                </div>
-                <div class="stat-sub"></div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">잔업</div>
-                <div class="stat-main">
-                    <div class="stat-value success">{{ stats.total_ot }}</div>
-                    <div class="stat-unit">시간</div>
-                </div>
-                <div class="stat-sub"></div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">심야</div>
-                <div class="stat-main">
-                    <div class="stat-value night">{{ stats.total_night }}</div>
-                    <div class="stat-unit">시간</div>
-                </div>
-                <div class="stat-sub"></div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">특근</div>
-                <div class="stat-main">
-                    <div class="stat-value" style="color:#d946ef">{{ stats.total_holiday }}</div>
-                    <div class="stat-unit">시간</div>
-                </div>
-                <div class="stat-sub"></div>
-            </div>
-        </div>
-
-        <form method="get" action="/admin/attendance" class="filter-bar">
-            <input type="date" name="start_date" class="form-input" value="{{ start_date }}">
-            <span style="color:var(--text2)">~</span>
-            <input type="date" name="end_date" class="form-input" value="{{ end_date }}">
-            <input type="text" name="emp_name" class="form-input" value="{{ emp_name }}" placeholder="이름"
-                style="width:160px">
-            <button type="submit" class="btn btn-primary btn-sm">조회</button>
-        </form>
-
-        <div class="table-wrap">
-            <div class="table-header">
-                <div class="table-title">근태 기록 ({{ records|length }}건)</div>
-                <div class="table-actions">
-                    <a href="/admin/attendance/excel?start_date={{ start_date }}&end_date={{ end_date }}&emp_name={{ emp_name }}"
-                        class="btn btn-outline btn-sm">엑셀 다운로드</a>
-                </div>
-            </div>
-            <div class="table-scroll">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>이름</th>
-                            <th>부서</th>
-                            <th>날짜</th>
-                            <th>생년월일</th>
-                            <th>출근</th>
-                            <th>퇴근</th>
-                            <th>구분</th>
-                            <th>총근무(h)</th>
-                            <th>잔업(h)</th>
-                            <th>심야(h)</th>
-                            <th>특근(h)</th>
-                            <th style="text-align:center;">관리</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for r in records %}
-                        <tr id="row-{{ r.id }}">
-                            <td class="emp-name">{{ r.emp_name }}</td>
-                            <td>{{ r.dept }}</td>
-                            <td class="mono">{{ r.work_date.strftime('%Y-%m-%d') if r.work_date else '' }}</td>
-                            <td class="mono">{{ r.birth_date }}</td>
-                            <td class="mono">{{ r.clock_in or '' }}</td>
-                            <td class="mono">{{ r.clock_out or '' }}</td>
-                            <td>
-                                {% if r.work_type == 'night' %}
-                                <span class="badge badge-night">야간</span>
-                                {% elif r.work_type == 'normal' %}
-                                <span class="badge badge-day">주간</span>
-                                {% elif r.work_type == 'annual' %}
-                                <span class="badge badge-day">연차</span>
-                                {% elif r.work_type == 'absent' %}
-                                <span class="badge badge-day">결근</span>
-                                {% elif r.work_type == 'holiday' %}
-                                <span class="badge badge-day">휴무</span>
-                                {% elif r.work_type == 'early' %}
-                                <span class="badge badge-day">조퇴</span>
-                                {% else %}
-                                <span class="badge badge-day">{{ r.work_type }}</span>
-                                {% endif %}
-                            </td>
-                            <td class="mono">{{ r.total_work_hours }}</td>
-                            <td class="mono">{{ r.overtime_hours }}</td>
-                            <td class="mono">{{ r.night_hours }}</td>
-                            <td class="mono" style="color:#d946ef;font-weight:600">{{ r.holiday_work_hours or 0 }}</td>
-                            <td style="text-align:center;">
-                                <button type="button" class="btn btn-outline btn-sm"
-                                    onclick='openEditModal({{ r.to_dict()|tojson }})'
-                                    style="padding:4px 8px;">수정</button>
-                                <button type="button" class="btn btn-outline btn-sm" onclick="deleteRecord({{ r.id }})"
-                                    style="padding:4px 8px;color:#dc3545;border-color:#dc3545;">삭제</button>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                        {% if not records %}
-                        <tr>
-                            <td colspan="12" style="text-align:center;padding:24px;color:var(--text2);">기록이 없습니다.</td>
-                        </tr>
+    </div>
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>이름</th><th>부서</th><th>날짜</th><th>생년월일</th>
+                    <th>출근</th><th>퇴근</th><th>구분</th>
+                    <th>총근무(h)</th><th>잔업(h)</th><th>심야(h)</th><th>특근(h)</th>
+                    <th style="text-align:center;">관리</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in records %}
+                <tr id="row-{{ r.id }}">
+                    <td class="emp-name">{{ r.emp_name }}</td>
+                    <td>{{ r.dept }}</td>
+                    <td class="mono">{{ r.work_date.strftime('%Y-%m-%d') if r.work_date else '' }}</td>
+                    <td class="mono">{{ r.birth_date }}</td>
+                    <td class="mono">{{ r.clock_in or '' }}</td>
+                    <td class="mono">{{ r.clock_out or '' }}</td>
+                    <td>
+                        {% if r.work_type == 'night' %}
+                        <span class="badge badge-night">야간</span>
+                        {% elif r.work_type == 'normal' %}
+                        <span class="badge badge-day">주간</span>
+                        {% elif r.work_type == 'annual' %}
+                        <span class="badge badge-day">연차</span>
+                        {% elif r.work_type == 'absent' %}
+                        <span class="badge badge-day">결근</span>
+                        {% elif r.work_type == 'holiday' %}
+                        <span class="badge badge-day">휴무</span>
+                        {% elif r.work_type == 'early' %}
+                        <span class="badge badge-day">조퇴</span>
+                        {% else %}
+                        <span class="badge badge-day">{{ r.work_type }}</span>
                         {% endif %}
-                    </tbody>
-                </table>
+                    </td>
+                    <td class="mono">{{ r.total_work_hours }}</td>
+                    <td class="mono">{{ r.overtime_hours }}</td>
+                    <td class="mono">{{ r.night_hours }}</td>
+                    <td class="mono" style="color:#d946ef;font-weight:600">{{ r.holiday_work_hours or 0 }}</td>
+                    <td style="text-align:center;">
+                        <button type="button" class="btn btn-outline btn-sm"
+                            onclick='openEditModal({{ r.to_dict()|tojson }})'
+                            style="padding:4px 8px;">수정</button>
+                        <button type="button" class="btn btn-outline btn-sm" onclick="deleteRecord({{ r.id }})"
+                            style="padding:4px 8px;color:#dc3545;border-color:#dc3545;">삭제</button>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not records %}
+                <tr>
+                    <td colspan="12" style="text-align:center;padding:24px;color:var(--text2);">기록이 없습니다.</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="editModal" class="modal-overlay">
+    <div class="modal-card">
+        <h3>근태 수정</h3>
+        <form id="editForm" onsubmit="return submitEdit(event)">
+            <input type="hidden" name="id">
+            <div class="form-grid">
+                <div>
+                    <label class="form-label-block">이름</label>
+                    <input type="text" name="emp_name" class="form-input" required style="width:100%">
+                </div>
+                <div>
+                    <label class="form-label-block">생년월일</label>
+                    <input type="text" name="birth_date" class="form-input" placeholder="YYMMDD" style="width:100%">
+                </div>
             </div>
-        </div>
+            <div class="form-group" style="margin-top:10px;">
+                <label class="form-label-block">부서</label>
+                <input type="text" name="dept" class="form-input" style="width:100%">
+            </div>
+            <div class="form-group" style="margin-top:10px;">
+                <label class="form-label-block">날짜</label>
+                <input type="date" name="work_date" class="form-input" required style="width:100%">
+            </div>
+            <div class="form-grid" style="margin-top:10px;">
+                <div>
+                    <label class="form-label-block">출근</label>
+                    <input type="time" name="clock_in" class="form-input" style="width:100%">
+                </div>
+                <div>
+                    <label class="form-label-block">퇴근</label>
+                    <input type="time" name="clock_out" class="form-input" style="width:100%">
+                </div>
+            </div>
+            <div class="form-group" style="margin-top:10px;">
+                <label class="form-label-block">근무 유형</label>
+                <select name="work_type" class="form-input" style="width:100%">
+                    <option value="normal">주간 근무</option>
+                    <option value="night">야간 근무</option>
+                    <option value="annual">연차</option>
+                    <option value="absent">결근</option>
+                    <option value="holiday">휴무</option>
+                    <option value="early">조퇴</option>
+                </select>
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+                <button type="button" class="btn btn-outline" onclick="closeEditModal()">취소</button>
+                <button type="submit" class="btn btn-primary">저장</button>
+            </div>
+        </form>
     </div>
+</div>
+{% endblock %}
 
-    <div id="editModal" class="modal-overlay">
-        <div class="modal-card">
-            <h3 style="margin-bottom:14px;">근태 수정</h3>
-            <form id="editForm" onsubmit="return submitEdit(event)">
-                <input type="hidden" name="id">
-                <div class="form-grid">
-                    <div>
-                        <label class="form-label">이름</label>
-                        <input type="text" name="emp_name" class="form-input" required>
-                    </div>
-                    <div>
-                        <label class="form-label">생년월일</label>
-                        <input type="text" name="birth_date" class="form-input" placeholder="YYMMDD">
-                    </div>
-                </div>
+{% block page_js %}
+const csrfToken = "{{ csrf_token() }}";
 
-                <div class="form-group" style="margin-top:10px;">
-                    <label class="form-label">부서</label>
-                    <input type="text" name="dept" class="form-input">
-                </div>
+function openEditModal(data) {
+    const form = document.getElementById("editForm");
+    form.id.value = data.id || "";
+    form.emp_name.value = data.emp_name || "";
+    form.birth_date.value = data.birth_date || "";
+    form.dept.value = data.dept || "";
+    form.work_date.value = data.work_date || "";
+    form.clock_in.value = data.clock_in || "";
+    form.clock_out.value = data.clock_out || "";
+    form.work_type.value = data.work_type || "normal";
+    document.getElementById("editModal").style.display = "flex";
+}
 
-                <div class="form-group">
-                    <label class="form-label">날짜</label>
-                    <input type="date" name="work_date" class="form-input" required>
-                </div>
+function closeEditModal() {
+    document.getElementById("editModal").style.display = "none";
+}
 
-                <div class="form-grid">
-                    <div>
-                        <label class="form-label">출근</label>
-                        <input type="time" name="clock_in" class="form-input">
-                    </div>
-                    <div>
-                        <label class="form-label">퇴근</label>
-                        <input type="time" name="clock_out" class="form-input">
-                    </div>
-                </div>
+function submitEdit(e) {
+    e.preventDefault();
+    const form = document.getElementById("editForm");
+    const id = form.id.value;
+    const payload = {
+        emp_name: form.emp_name.value,
+        birth_date: form.birth_date.value,
+        dept: form.dept.value,
+        work_date: form.work_date.value,
+        clock_in: form.clock_in.value,
+        clock_out: form.clock_out.value,
+        work_type: form.work_type.value,
+    };
+    fetch(`/api/attendance/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
+        credentials: "same-origin",
+        body: JSON.stringify(payload),
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (!res.success) throw new Error(res.error || "수정 실패");
+        location.reload();
+    })
+    .catch(err => alert(err.message || "서버 연결 실패"));
+    return false;
+}
 
-                <div class="form-group" style="margin-top:10px;">
-                    <label class="form-label">근무 유형</label>
-                    <select name="work_type" class="form-input">
-                        <option value="normal">주간 근무</option>
-                        <option value="night">야간 근무</option>
-                        <option value="annual">연차</option>
-                        <option value="absent">결근</option>
-                        <option value="holiday">휴무</option>
-                        <option value="early">조퇴</option>
-                    </select>
-                </div>
-
-                <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
-                    <button type="button" class="btn btn-outline" onclick="closeEditModal()">취소</button>
-                    <button type="submit" class="btn btn-primary">저장</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        const csrfToken = "{{ csrf_token() }}";
-
-        function openEditModal(data) {
-            const form = document.getElementById("editForm");
-            form.id.value = data.id || "";
-            form.emp_name.value = data.emp_name || "";
-            form.birth_date.value = data.birth_date || "";
-            form.dept.value = data.dept || "";
-            form.work_date.value = data.work_date || "";
-            form.clock_in.value = data.clock_in || "";
-            form.clock_out.value = data.clock_out || "";
-            form.work_type.value = data.work_type || "normal";
-            document.getElementById("editModal").style.display = "flex";
-        }
-
-        function closeEditModal() {
-            document.getElementById("editModal").style.display = "none";
-        }
-
-        function submitEdit(e) {
-            e.preventDefault();
-            const form = document.getElementById("editForm");
-            const id = form.id.value;
-            const payload = {
-                emp_name: form.emp_name.value,
-                birth_date: form.birth_date.value,
-                dept: form.dept.value,
-                work_date: form.work_date.value,
-                clock_in: form.clock_in.value,
-                clock_out: form.clock_out.value,
-                work_type: form.work_type.value,
-            };
-
-            fetch(`/api/attendance/${id}`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": csrfToken,
-                },
-                credentials: "same-origin",
-                body: JSON.stringify(payload),
-            })
-                .then((r) => r.json())
-                .then((res) => {
-                    if (!res.success) {
-                        throw new Error(res.error || "수정 실패");
-                    }
-                    location.reload();
-                })
-                .catch((err) => {
-                    alert(err.message || "서버 연결 실패");
-                });
-
-            return false;
-        }
-
-        function deleteRecord(id) {
-            if (!confirm("이 기록을 삭제하시겠습니까?")) return;
-            fetch(`/api/attendance/${id}`, {
-                method: "DELETE",
-                headers: {
-                    "X-CSRFToken": csrfToken,
-                },
-                credentials: "same-origin",
-            })
-                .then((r) => r.json())
-                .then((res) => {
-                    if (!res.success) {
-                        throw new Error(res.error || "삭제 실패");
-                    }
-                    const row = document.getElementById(`row-${id}`);
-                    if (row) row.remove();
-                })
-                .catch((err) => {
-                    alert(err.message || "서버 연결 실패");
-                });
-        }
-    </script>
-</body>
-
-</html>
+function deleteRecord(id) {
+    if (!confirm("이 기록을 삭제하시겠습니까?")) return;
+    fetch(`/api/attendance/${id}`, {
+        method: "DELETE",
+        headers: { "X-CSRFToken": csrfToken },
+        credentials: "same-origin",
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (!res.success) throw new Error(res.error || "삭제 실패");
+        const row = document.getElementById(`row-${id}`);
+        if (row) row.remove();
+    })
+    .catch(err => alert(err.message || "서버 연결 실패"));
+}
+{% endblock %}
