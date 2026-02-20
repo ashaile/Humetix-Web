@@ -88,7 +88,7 @@ def update_employee(emp_id):
     if not session.get("is_admin"):
         return jsonify({"error": "권한이 없습니다."}), 401
 
-    employee = Employee.query.get(emp_id)
+    employee = db.session.get(Employee, emp_id)
     if not employee:
         return jsonify({"error": "직원을 찾을 수 없습니다."}), 404
 
@@ -153,7 +153,7 @@ def delete_employee(emp_id):
     if not session.get("is_admin"):
         return jsonify({"error": "권한이 없습니다."}), 401
 
-    employee = Employee.query.get(emp_id)
+    employee = db.session.get(Employee, emp_id)
     if not employee:
         return jsonify({"error": "직원을 찾을 수 없습니다."}), 404
 

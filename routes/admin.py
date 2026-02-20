@@ -1,19 +1,32 @@
-import os
 import hmac
-from flask import Blueprint, render_template, request, redirect, url_for, session, send_file, send_from_directory, jsonify
-from io import BytesIO
-from datetime import datetime
-from openpyxl import load_workbook
-from openpyxl.drawing.image import Image as ExcelImage
-from openpyxl.styles import Font, Border, Side
-from PIL import Image as PILImage, ImageOps
-from models import db, Application, Inquiry
-from sqlalchemy.orm import joinedload
-from sqlalchemy import or_
-
 import logging
+import os
+import re
+from datetime import datetime
+from io import BytesIO
 
-# Logger 설정
+from flask import (
+    Blueprint,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    send_file,
+    send_from_directory,
+    session,
+    url_for,
+)
+from openpyxl import Workbook, load_workbook
+from openpyxl.drawing.image import Image as ExcelImage
+from openpyxl.styles import Border, Font, Side
+from openpyxl.utils import get_column_letter
+from PIL import Image as PILImage, ImageOps
+from sqlalchemy import or_
+from sqlalchemy.orm import joinedload
+
+from models import Application, Inquiry, db
+
+# Logger ?ㅼ젙
 logger = logging.getLogger(__name__)
 
 admin_bp = Blueprint('admin', __name__)
@@ -21,6 +34,83 @@ admin_bp = Blueprint('admin', __name__)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UPLOAD_DIR = os.path.join(BASE_DIR, 'uploads')
 ENV_FILE_PATH = os.path.join(BASE_DIR, ".env")
+
+EXCEL_COLUMNS = [
+    ("name", "이름"),
+    ("phone", "연락처"),
+    ("email", "이메일"),
+    ("address", "희망지역/주소"),
+    ("status", "상태"),
+    ("submitted_at", "접수일"),
+    ("gender", "성별"),
+    ("birth", "생년월일"),
+    ("shift", "근무형태"),
+    ("posture", "근무방식"),
+    ("overtime", "잔업"),
+    ("holiday", "특근"),
+    ("advance_pay", "가불여부"),
+    ("insurance_type", "급여형태"),
+    ("interview_date", "면접일"),
+    ("start_date", "출근가능일"),
+    ("memo", "관리자메모"),
+]
+EXCEL_COLUMN_LABELS = dict(EXCEL_COLUMNS)
+EXCEL_COLUMN_KEYS = {key for key, _ in EXCEL_COLUMNS}
+DEFAULT_EXCEL_COLUMNS = ["name", "phone", "email", "address", "status", "submitted_at"]
+
+
+def _to_date_text(value):
+    if not value:
+        return ""
+    if isinstance(value, datetime):
+        return value.strftime("%Y-%m-%d %H:%M:%S")
+    return value.strftime("%Y-%m-%d")
+
+
+def _status_text(status):
+    return {
+        "new": "신규",
+        "review": "검토",
+        "interview": "면접",
+        "offer": "오퍼",
+        "hired": "합격",
+        "rejected": "불합격",
+    }.get(status or "", status or "")
+
+
+def _excel_row_values(app):
+    return {
+        "name": app.name or "",
+        "phone": app.phone or "",
+        "email": app.email or "",
+        "address": app.address or "",
+        "status": _status_text(app.status),
+        "submitted_at": _to_date_text(app.timestamp),
+        "gender": app.gender or "",
+        "birth": _to_date_text(app.birth),
+        "shift": app.shift or "",
+        "posture": app.posture or "",
+        "overtime": app.overtime or "",
+        "holiday": app.holiday or "",
+        "advance_pay": app.advance_pay or "",
+        "insurance_type": app.insurance_type or "",
+        "interview_date": _to_date_text(app.interview_date),
+        "start_date": _to_date_text(app.start_date),
+        "memo": app.memo or "",
+    }
+
+
+def _parse_excel_columns(raw_columns):
+    if raw_columns is None:
+        return None
+
+    keys = []
+    for token in str(raw_columns).split(","):
+        key = token.strip()
+        if key and key in EXCEL_COLUMN_KEYS and key not in keys:
+            keys.append(key)
+
+    return keys or list(DEFAULT_EXCEL_COLUMNS)
 
 
 def _update_env_value(env_path: str, key: str, value: str) -> None:
@@ -154,8 +244,8 @@ def change_admin_password():
         return jsonify({"success": False, "message": "서버 설정 오류가 발생했습니다."}), 500
     if not current_password or not hmac.compare_digest(current_password, existing_password):
         return jsonify({"success": False, "message": "현재 비밀번호가 올바르지 않습니다."}), 400
-    if len(new_password) < 4:
-        return jsonify({"success": False, "message": "새 비밀번호는 4자 이상이어야 합니다."}), 400
+    if len(new_password) < 8:
+        return jsonify({"success": False, "message": "새 비밀번호는 8자 이상이어야 합니다."}), 400
     if "\n" in new_password or "\r" in new_password:
         return jsonify({"success": False, "message": "새 비밀번호 형식이 올바르지 않습니다."}), 400
     if not hmac.compare_digest(new_password, confirm_password):
@@ -182,6 +272,41 @@ def download_excel():
     query, _, _, _, _ = build_filtered_query(request.args)
     apps = query.order_by(Application.timestamp.desc()).all()
 
+    selected_columns = _parse_excel_columns(request.args.get("excel_columns"))
+
+    if selected_columns is not None:
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "지원자목록"
+
+        headers = [EXCEL_COLUMN_LABELS[key] for key in selected_columns]
+        ws.append(headers)
+        for app in apps:
+            values = _excel_row_values(app)
+            ws.append([values.get(key, "") for key in selected_columns])
+
+        header_font = Font(bold=True)
+        for cell in ws[1]:
+            cell.font = header_font
+
+        ws.freeze_panes = "A2"
+        sampled_row_count = min(ws.max_row, 200)
+        for idx, key in enumerate(selected_columns, start=1):
+            max_len = len(EXCEL_COLUMN_LABELS[key])
+            for row_num in range(2, sampled_row_count + 1):
+                cell_value = ws.cell(row=row_num, column=idx).value
+                max_len = max(max_len, len(str(cell_value or "")))
+            ws.column_dimensions[get_column_letter(idx)].width = min(max(12, max_len + 2), 40)
+
+        buf = BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+        return send_file(
+            buf,
+            as_attachment=True,
+            download_name="humetix_applications.xlsx",
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
     template_path = os.path.join(BASE_DIR, "templates", "excel", "입사지원서.xlsx")
     wb = load_workbook(template_path)
     template_ws = wb.active
@@ -197,7 +322,6 @@ def download_excel():
     def parse_vision_value(vision_text):
         if not vision_text:
             return ""
-        import re
         m = re.search(r"(\d+(?:[\.,]\d+)?)", str(vision_text))
         if not m:
             cleaned = re.sub(r"[^0-9\.,]", "", str(vision_text))
@@ -213,10 +337,10 @@ def download_excel():
         if not vision_text:
             return ""
         text = str(vision_text)
-        if "교정" in text:
-            return "교정"
-        if "나안" in text:
-            return "나안"
+        if "援먯젙" in text:
+            return "援먯젙"
+        if "?섏븞" in text:
+            return "?섏븞"
         return ""
 
     for app in apps:
@@ -242,7 +366,7 @@ def download_excel():
                     break
             ws.merge_cells("O4:Q4")
             ws.merge_cells("R4:AB4")
-            set_value(ws, "O4", "(한글)")
+            set_value(ws, "O4", "(?쒓?)")
             ws["O4"].font = Font(size=14)
             set_value(ws, "R4", name)
             ws["R4"].font = Font(size=24, bold=True)
@@ -259,7 +383,7 @@ def download_excel():
         if app.birth:
             today = datetime.now().date()
             age = today.year - app.birth.year - ((today.month, today.day) < (app.birth.month, app.birth.day))
-            birth_display = app.birth.strftime("%y년%m월%d일") + f" ({age}세)"
+            birth_display = f"{app.birth.strftime('%Y-%m-%d')} ({age})"
         else:
             birth_display = ""
         set_value(ws, "AG4", birth_display)
@@ -300,7 +424,7 @@ def download_excel():
         set_value(ws, "Z23", vision_val)
         vision_type = parse_vision_type(app.vision)
         if vision_type:
-            set_value(ws, "R22", f"시 력 ( 나안 , 교정 )-{vision_type}")
+            set_value(ws, "R22", f"????( ?섏븞 , 援먯젙 )-{vision_type}")
         set_value(ws, "AC23", f"{app.height}cm" if app.height is not None else "")
         set_value(ws, "AG23", f"{app.weight}kg" if app.weight is not None else "")
         set_value(ws, "AK23", f"{app.shoes}mm" if app.shoes is not None else "")
@@ -367,11 +491,11 @@ def download_excel():
 @admin_bp.route('/update_memo/<app_id>', methods=['POST'])
 def update_memo(app_id):
     if not session.get('is_admin'):
-        return jsonify({"success": False, "message": "\uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4."}), 401
+        return jsonify({"success": False, "message": "권한이 없습니다."}), 401
 
-    app = Application.query.get(app_id)
+    app = db.session.get(Application, app_id)
     if not app:
-        return jsonify({"success": False, "message": "\uC9C0\uC6D0\uC11C\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4."}), 404
+        return jsonify({"success": False, "message": "지원서를 찾을 수 없습니다."}), 404
 
     app.memo = request.form.get('memo', '')
     try:
@@ -379,22 +503,22 @@ def update_memo(app_id):
         return jsonify({"success": True})
     except Exception:
         db.session.rollback()
-        return jsonify({"success": False, "message": "저장 중 오류가 발생했습니다."}), 500
+        return jsonify({"success": False, "message": "서버 오류가 발생했습니다."}), 500
 
 
 @admin_bp.route('/update_status/<app_id>', methods=['POST'])
 def update_status(app_id):
     if not session.get('is_admin'):
-        return jsonify({"success": False, "message": "\uAD8C\uD55C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4."}), 401
+        return jsonify({"success": False, "message": "권한이 없습니다."}), 401
 
-    app = Application.query.get(app_id)
+    app = db.session.get(Application, app_id)
     if not app:
-        return jsonify({"success": False, "message": "\uC9C0\uC6D0\uC11C\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4."}), 404
+        return jsonify({"success": False, "message": "지원서를 찾을 수 없습니다."}), 404
 
     status_val = request.form.get('status', '')
     allowed = {'new', 'review', 'interview', 'offer', 'hired', 'rejected'}
     if status_val not in allowed:
-        return jsonify({"success": False, "message": "\uC720\uD6A8\uD558\uC9C0 \uC54A\uC740 \uC0C1\uD0DC\uC785\uB2C8\uB2E4."}), 400
+        return jsonify({"success": False, "message": "유효하지 않은 상태입니다."}), 400
 
     app.status = status_val
     try:
@@ -402,7 +526,7 @@ def update_status(app_id):
         return jsonify({"success": True})
     except Exception:
         db.session.rollback()
-        return jsonify({"success": False, "message": "상태 저장 중 오류가 발생했습니다."}), 500
+        return jsonify({"success": False, "message": "상태 저장 오류가 발생했습니다."}), 500
 
 @admin_bp.route('/inquiries')
 def inquiries():
@@ -443,11 +567,15 @@ def delete_inquiries():
     if not selected_ids:
         return redirect(url_for('admin.inquiries'))
 
-    for inquiry_id in selected_ids:
-        item = Inquiry.query.get(inquiry_id)
-        if item:
-            db.session.delete(item)
-    db.session.commit()
+    try:
+        for inquiry_id in selected_ids:
+            item = db.session.get(Inquiry, inquiry_id)
+            if item:
+                db.session.delete(item)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error deleting inquiries: {e}")
 
     return redirect(url_for('admin.inquiries'))
 
@@ -457,7 +585,7 @@ def update_inquiry(inquiry_id):
     if not session.get('is_admin'):
         return redirect(url_for('auth.login'))
 
-    item = Inquiry.query.get(inquiry_id)
+    item = db.session.get(Inquiry, inquiry_id)
     if not item:
         return redirect(url_for('admin.inquiries'))
 
@@ -491,6 +619,9 @@ def delete_selected():
     return redirect(url_for('admin.master_view'))
 @admin_bp.route('/view_photo/<filename>')
 def view_photo(filename):
+    # 경로 탈출 방지: 파일명에 디렉토리 구분자가 포함되면 거부
+    if filename != os.path.basename(filename):
+        return "Not Found", 404
     file_path = os.path.join(UPLOAD_DIR, filename)
     if not os.path.exists(file_path):
         return "Not Found", 404
@@ -518,7 +649,7 @@ def clear_data():
     if not session.get('is_admin'):
         return redirect(url_for('auth.login'))
     
-    # 모든 지원서 삭제 (ORM 캐스케이드 적용) + 사진 정리
+    # 모든 지원서 삭제 (ORM 캐스케이드 적용) + 파일 정리
     apps = Application.query.all()
     referenced_photos = set()
     for app in apps:
@@ -531,7 +662,7 @@ def clear_data():
         db.session.delete(app)
     db.session.commit()
     
-    # 남아있는 업로드 파일 정리 (DB에 없는 파일)
+    # 남아있는 파일 정리 (DB에 없는 파일)
     for f in os.listdir(UPLOAD_DIR):
         if f not in referenced_photos:
             try:
@@ -540,3 +671,4 @@ def clear_data():
                 logger.error(f"Error deleting leftover file {f}: {e}")
         
     return redirect(url_for('admin.master_view'))
+

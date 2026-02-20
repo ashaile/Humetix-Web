@@ -10,27 +10,27 @@
     background: var(--bg3);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 18px;
-    margin-bottom: 22px;
+    padding: 16px;
+    margin-bottom: 18px;
 }
 .search-row {
     display: grid;
     grid-template-columns: minmax(280px, 1fr);
-    gap: 12px;
+    gap: 10px;
     align-items: end;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
 }
 .search-field { width: 100%; }
 .filters-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 12px;
+    gap: 10px;
 }
 .filter-actions {
-    margin-top: 18px;
+    margin-top: 14px;
     display: flex;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
     flex-wrap: wrap;
 }
 .filter-group-title {
@@ -46,8 +46,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 14px;
+    gap: 8px;
+    margin-bottom: 12px;
     flex-wrap: wrap;
 }
 .total-count {
@@ -62,6 +62,16 @@
     border: 1px dashed var(--border);
     border-radius: var(--radius-sm);
     background: var(--bg3);
+}
+
+/* ── Applicant grid (container query) ── */
+.applicant-grid-wrap {
+    container-type: inline-size;
+}
+.applicant-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
 }
 
 /* ── Form controls (local overrides) ── */
@@ -80,27 +90,18 @@
     outline: none;
     box-shadow: 0 0 0 3px rgba(232,93,38,.1);
 }
-.security-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 10px;
-    align-items: end;
-}
-.security-help {
-    margin-top: 10px;
-    color: var(--text2);
-    font-size: 0.85rem;
-}
 
 /* ── Card / applicant ── */
 .card {
     background: var(--bg2);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    margin-bottom: 15px;
+    margin-bottom: 0;
     box-shadow: var(--shadow);
     position: relative;
+    container-type: inline-size;
 }
+.applicant-grid > .card { min-width: 0; }
 .card-header {
     background: var(--bg3);
     padding: 12px 20px;
@@ -111,9 +112,10 @@
     justify-content: space-between;
 }
 .card-body {
-    padding: 20px;
+    padding: 18px;
     display: flex;
-    gap: 20px;
+    gap: 18px;
+    align-items: flex-start;
 }
 
 .applicant-photo {
@@ -134,7 +136,7 @@
     object-fit: cover;
 }
 
-.applicant-info { flex: 1; }
+.applicant-info { flex: 1; min-width: 0; }
 .info-columns {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -285,6 +287,109 @@
 .status-badge.hired     { background: #dcfce7; color: #16a34a; }
 .status-badge.rejected  { background: #fee2e2; color: var(--danger); }
 
+/* ── Excel column modal ── */
+.excel-modal-card {
+    max-width: 640px;
+}
+.excel-modal-help {
+    color: var(--text2);
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+}
+.excel-modal-actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.excel-column-list {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    max-height: 360px;
+    overflow-y: auto;
+    padding: 8px;
+}
+.excel-column-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: center;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    background: var(--bg2);
+}
+.excel-column-row + .excel-column-row {
+    margin-top: 8px;
+}
+.excel-column-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text);
+    font-size: 0.95rem;
+}
+.excel-column-order {
+    display: flex;
+    gap: 6px;
+}
+.excel-order-btn {
+    width: 30px;
+    height: 30px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg2);
+    color: var(--text);
+    cursor: pointer;
+}
+.excel-order-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.excel-selected-count {
+    margin-top: 10px;
+    color: var(--text2);
+    font-size: 0.85rem;
+}
+.excel-modal-footer {
+    margin-top: 14px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+/* ── 2-column layout (container query) ── */
+@container (min-width: 1200px) {
+    .applicant-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+    }
+}
+
+/* ── Card body collapses when card is narrow ── */
+@container (max-width: 760px) {
+    .card-body {
+        flex-direction: column;
+        gap: 14px;
+    }
+    .applicant-photo {
+        width: 132px;
+        height: 176px;
+    }
+    .info-columns {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── Fallback for browsers without container query support ── */
+@supports not (container-type: inline-size) {
+    @media (min-width: 1520px) {
+        .applicant-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+}
+
 /* ── Responsive ── */
 @media (max-width: 1100px) {
     .info-columns .left-group,
@@ -308,30 +413,6 @@
 {% set status_labels = {'new':'신규','review':'검토','interview':'면접','offer':'오퍼','hired':'합격','rejected':'불합격'} %}
 
 <div class="filter-section">
-    <div class="filter-group-title" style="margin-bottom: 12px;">관리자 비밀번호 변경</div>
-    <form id="passwordChangeForm" onsubmit="event.preventDefault(); changeAdminPassword();">
-        <div class="security-grid">
-            <div>
-                <label class="filter-group-title">현재 비밀번호</label>
-                <input type="password" id="currentPassword" class="form-control" required>
-            </div>
-            <div>
-                <label class="filter-group-title">새 비밀번호</label>
-                <input type="password" id="newPassword" class="form-control" minlength="4" required>
-            </div>
-            <div>
-                <label class="filter-group-title">새 비밀번호 확인</label>
-                <input type="password" id="confirmPassword" class="form-control" minlength="4" required>
-            </div>
-            <div>
-                <button type="submit" class="btn btn-primary" id="changePasswordBtn">비밀번호 변경</button>
-            </div>
-        </div>
-    </form>
-    <p class="security-help">저장 즉시 로그인 비밀번호에 반영됩니다.</p>
-</div>
-
-<div class="filter-section">
     <form id="searchForm" action="{{ url_for('admin.master_view') }}" method="get">
         <div class="search-row">
             <div class="search-field">
@@ -346,8 +427,8 @@
                 <label class="filter-group-title">성별</label>
                 <select name="gender" class="form-select">
                     <option value="">전체</option>
-                    <option value="남" {% if filters.gender=='남' %}selected{% endif %}>남자</option>
-                    <option value="여" {% if filters.gender=='여' %}selected{% endif %}>여자</option>
+                    <option value="남자" {% if filters.gender=='남자' %}selected{% endif %}>남자</option>
+                    <option value="여자" {% if filters.gender=='여자' %}selected{% endif %}>여자</option>
                 </select>
             </div>
             <div>
@@ -388,8 +469,7 @@
                 <select name="status" class="form-select">
                     <option value="">전체</option>
                     {% for val in status_options %}
-                    <option value="{{ val }}" {% if filters.status==val %}selected{% endif %}>{{
-                        status_labels[val] }}</option>
+                    <option value="{{ val }}" {% if filters.status==val %}selected{% endif %}>{{ status_labels[val] }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -405,18 +485,16 @@
                 <label class="filter-group-title">급여 형태</label>
                 <select name="insurance_type" class="form-select">
                     <option value="">전체</option>
-                    <option value="3.3%" {% if filters.insurance_type=='3.3%' %}selected{% endif %}>3.3%
-                    </option>
-                    <option value="4대보험" {% if filters.insurance_type=='4대보험' %}selected{% endif %}>4대보험
-                    </option>
+                    <option value="3.3%" {% if filters.insurance_type=='3.3%' %}selected{% endif %}>3.3%</option>
+                    <option value="4대보험" {% if filters.insurance_type=='4대보험' %}selected{% endif %}>4대보험</option>
                 </select>
             </div>
             <div>
-                <label class="filter-group-title">접수기간(시작)</label>
+                <label class="filter-group-title">접수기간 (시작)</label>
                 <input type="date" name="start_date" class="form-control" value="{{ start_date or '' }}">
             </div>
             <div>
-                <label class="filter-group-title">접수기간(종료)</label>
+                <label class="filter-group-title">접수기간 (종료)</label>
                 <input type="date" name="end_date" class="form-control" value="{{ end_date or '' }}">
             </div>
         </div>
@@ -433,7 +511,7 @@
         총 <span style="color: var(--accent);">{{ pagination.total }}</span>명 지원
     </h3>
     <div style="display: flex; gap: 8px; align-items: center;">
-        <a href="/download_excel{{ '?' + query_string if query_string else '' }}" class="btn btn-success btn-sm">엑셀 다운로드</a>
+        <button type="button" class="btn btn-success btn-sm" id="openExcelColumnModalBtn">엑셀 내보내기</button>
         <button onclick="if(confirm('선택한 항목을 삭제하시겠습니까?')) document.getElementById('deleteForm').submit();"
             class="btn btn-danger btn-sm">선택 삭제</button>
     </div>
@@ -448,18 +526,19 @@
     </div>
     {% endif %}
 
+    <div class="applicant-grid-wrap">
+    <div class="applicant-grid">
     {% for entry in data %}
     <div class="card">
         <div class="card-header">
             <div style="display: flex; align-items: center;">
                 <input type="checkbox" name="selected_ids" value="{{ entry.id }}"
                     style="transform: scale(1.2); margin-right: 12px;">
-                <span style="font-weight: 700; font-size: 1.1rem; margin-right: 8px;">{{ entry.info.name
-                    }}</span>
+                <span style="font-weight: 700; font-size: 1.1rem; margin-right: 8px;">{{ entry.info.name }}</span>
 
-                {% if entry.info.gender == '남' %}
+                {% if entry.info.gender == '남자' %}
                 <span class="badge" style="background-color: #007bff;">남</span>
-                {% elif entry.info.gender == '여' %}
+                {% elif entry.info.gender == '여자' %}
                 <span class="badge" style="background-color: #dc3545;">여</span>
                 {% endif %}
 
@@ -500,15 +579,11 @@
                         <div class="info-block-title">신체/사이즈</div>
                         <div class="info-grid">
                             <div class="info-label">신체</div>
-                            <div class="info-value">{{ entry.body.height or '-' }}cm / {{ entry.body.weight or
-                                '-' }}kg
-                            </div>
+                            <div class="info-value">{{ entry.body.height or '-' }}cm / {{ entry.body.weight or '-' }}kg</div>
                             <div class="info-label">시력</div>
                             <div class="info-value">{{ entry.body.vision or '-' }}</div>
                             <div class="info-label">사이즈</div>
-                            <div class="info-value">신발: {{ entry.body.shoes or '-' }} / 티셔츠: {{
-                                entry.body.tshirt or '-'
-                                }}</div>
+                            <div class="info-value">신발: {{ entry.body.shoes or '-' }} / 티셔츠: {{ entry.body.tshirt or '-' }}</div>
                         </div>
                     </div>
                     <div class="right-group">
@@ -517,12 +592,9 @@
                             <div class="info-label">근무</div>
                             <div class="info-value">
                                 <span class="info-multiline">형태: {{ entry.work_condition.shift or '-' }}</span>
-                                <span class="info-multiline">방식: {{ entry.work_condition.posture or '-'
-                                    }}</span>
-                                <span class="info-multiline">잔업: {{ entry.work_condition.overtime or '-'
-                                    }}</span>
-                                <span class="info-multiline">특근: {{ entry.work_condition.holiday or '-'
-                                    }}</span>
+                                <span class="info-multiline">방식: {{ entry.work_condition.posture or '-' }}</span>
+                                <span class="info-multiline">잔업: {{ entry.work_condition.overtime or '-' }}</span>
+                                <span class="info-multiline">특근: {{ entry.work_condition.holiday or '-' }}</span>
                             </div>
                             <div class="info-label">희망</div>
                             <div class="info-value">
@@ -535,8 +607,7 @@
                         <div class="info-grid">
                             <div class="info-label">일정</div>
                             <div class="info-value">
-                                <span class="highlight">면접: {{ entry.work_condition.interview_date or '미정'
-                                    }}</span>
+                                <span class="highlight">면접: {{ entry.work_condition.interview_date or '미정' }}</span>
                                 /
                                 <span class="highlight">입사: {{ entry.work_condition.start_date or '미정' }}</span>
                             </div>
@@ -545,8 +616,7 @@
                                 <select id="status-{{ entry.id }}" class="form-select"
                                     style="width: 160px; height: 32px;">
                                     {% for val in status_options %}
-                                    <option value="{{ val }}" {% if entry.status==val %}selected{% endif %}>{{
-                                        status_labels[val] }}</option>
+                                    <option value="{{ val }}" {% if entry.status==val %}selected{% endif %}>{{ status_labels[val] }}</option>
                                     {% endfor %}
                                 </select>
                                 <button type="button" id="btn-status-{{ entry.id }}" class="btn btn-sm"
@@ -598,7 +668,30 @@
         </div>
     </div>
     {% endfor %}
+    </div>
+    </div>
 </form>
+
+<!-- 엑셀 컬럼 선택 모달 -->
+<div class="modal-overlay" id="excelColumnModal">
+    <div class="modal-card excel-modal-card">
+        <h3>엑셀 내보내기 컬럼 선택</h3>
+        <p class="excel-modal-help">선택한 컬럼만 포함해 다운로드합니다. 순서는 위/아래 버튼으로 조정할 수 있습니다.</p>
+
+        <div class="excel-modal-actions">
+            <button type="button" class="btn btn-outline btn-sm" id="selectAllExcelColumnsBtn">전체 선택</button>
+            <button type="button" class="btn btn-outline btn-sm" id="clearAllExcelColumnsBtn">전체 해제</button>
+        </div>
+
+        <div class="excel-column-list" id="excelColumnList"></div>
+        <p class="excel-selected-count" id="excelSelectedCount"></p>
+
+        <div class="excel-modal-footer">
+            <button type="button" class="btn btn-outline btn-sm" id="closeExcelColumnModalBtn">취소</button>
+            <button type="button" class="btn btn-success btn-sm" id="downloadSelectedExcelBtn">다운로드</button>
+        </div>
+    </div>
+</div>
 
 {% if pagination.total > 0 %}
 <div class="pagination">
@@ -626,7 +719,30 @@
 {% endblock %}
 
 {% block page_js %}
-const csrfToken = '{{ csrf_token() }}';
+const csrfToken = window.csrfToken || '{{ csrf_token() }}';
+const currentQueryString = {{ query_string|tojson }};
+const excelColumnStorageKey = 'humetix_admin_excel_columns_v1';
+const excelColumnDefinitions = [
+    { key: 'name',           label: '이름' },
+    { key: 'phone',          label: '연락처' },
+    { key: 'email',          label: '이메일' },
+    { key: 'address',        label: '희망지역/주소' },
+    { key: 'status',         label: '상태' },
+    { key: 'submitted_at',   label: '접수일' },
+    { key: 'gender',         label: '성별' },
+    { key: 'birth',          label: '생년월일' },
+    { key: 'shift',          label: '근무형태' },
+    { key: 'posture',        label: '근무방식' },
+    { key: 'overtime',       label: '잔업' },
+    { key: 'holiday',        label: '특근' },
+    { key: 'advance_pay',    label: '가불여부' },
+    { key: 'insurance_type', label: '급여형태' },
+    { key: 'interview_date', label: '면접일' },
+    { key: 'start_date',     label: '출근가능일' },
+    { key: 'memo',           label: '관리자메모' }
+];
+const defaultExcelColumnKeys = ['name', 'phone', 'email', 'address', 'status', 'submitted_at'];
+let excelColumnsState = [];
 
 function toggleAll(source) {
     document.getElementsByName('selected_ids').forEach(checkbox => {
@@ -647,50 +763,151 @@ function goPage(page) {
     form.submit();
 }
 
-async function changeAdminPassword() {
-    const currentPassword = document.getElementById('currentPassword').value;
-    const newPassword = document.getElementById('newPassword').value;
-    const confirmPassword = document.getElementById('confirmPassword').value;
-    const form = document.getElementById('passwordChangeForm');
-    const btn = document.getElementById('changePasswordBtn');
-    const originalText = btn.innerText;
+function normalizeExcelColumnState(savedState) {
+    const knownKeys = new Set(excelColumnDefinitions.map((c) => c.key));
+    const savedOrder    = Array.isArray(savedState?.order)    ? savedState.order    : [];
+    const savedSelected = Array.isArray(savedState?.selected) ? savedState.selected : [];
 
-    btn.innerText = "저장중..";
-    btn.disabled = true;
+    const orderedKeys = [];
+    savedOrder.forEach((key) => {
+        if (knownKeys.has(key) && !orderedKeys.includes(key)) orderedKeys.push(key);
+    });
+    excelColumnDefinitions.forEach((c) => {
+        if (!orderedKeys.includes(c.key)) orderedKeys.push(c.key);
+    });
 
-    const formData = new FormData();
-    formData.append('current_password', currentPassword);
-    formData.append('new_password', newPassword);
-    formData.append('confirm_password', confirmPassword);
-    formData.append('csrf_token', csrfToken);
+    const selectedSet = new Set(
+        (savedSelected.length ? savedSelected : defaultExcelColumnKeys).filter((k) => knownKeys.has(k))
+    );
 
+    return orderedKeys.map((key) => {
+        const base = excelColumnDefinitions.find((c) => c.key === key);
+        return { key: base.key, label: base.label, selected: selectedSet.has(key) };
+    });
+}
+
+function loadExcelColumnState() {
     try {
-        const response = await fetch('/admin/change-password', {
-            method: 'POST',
-            body: formData
-        });
-        const result = await response.json();
-        if (result.success) {
-            showToast(result.message || '비밀번호가 변경되었습니다.');
-            form.reset();
-        } else {
-            showToast(result.message || '비밀번호 변경에 실패했습니다.');
-        }
-    } catch (error) {
-        console.error(error);
-        showToast('비밀번호 변경 중 오류가 발생했습니다.');
-    } finally {
-        btn.innerText = originalText;
-        btn.disabled = false;
+        const raw = localStorage.getItem(excelColumnStorageKey);
+        return normalizeExcelColumnState(raw ? JSON.parse(raw) : null);
+    } catch (e) {
+        return normalizeExcelColumnState(null);
     }
 }
 
+function saveExcelColumnState() {
+    try {
+        localStorage.setItem(excelColumnStorageKey, JSON.stringify({
+            order:    excelColumnsState.map((c) => c.key),
+            selected: excelColumnsState.filter((c) => c.selected).map((c) => c.key)
+        }));
+    } catch (e) { /* localStorage 불가 환경 무시 */ }
+}
+
+function renderExcelColumnList() {
+    const list = document.getElementById('excelColumnList');
+    if (!list) return;
+    list.innerHTML = '';
+    excelColumnsState.forEach((col, idx) => {
+        const row = document.createElement('div');
+        row.className = 'excel-column-row';
+        row.innerHTML = `
+            <label class="excel-column-label">
+                <input type="checkbox" data-role="toggle" data-key="${col.key}" ${col.selected ? 'checked' : ''}>
+                <span>${col.label}</span>
+            </label>
+            <div class="excel-column-order">
+                <button type="button" class="excel-order-btn" data-role="move-up"   data-index="${idx}" ${idx === 0 ? 'disabled' : ''}>↑</button>
+                <button type="button" class="excel-order-btn" data-role="move-down" data-index="${idx}" ${idx === excelColumnsState.length - 1 ? 'disabled' : ''}>↓</button>
+            </div>`;
+        list.appendChild(row);
+    });
+    const count = excelColumnsState.filter((c) => c.selected).length;
+    const el = document.getElementById('excelSelectedCount');
+    if (el) el.textContent = `선택된 컬럼: ${count}개`;
+}
+
+function moveExcelColumn(from, to) {
+    if (to < 0 || to >= excelColumnsState.length) return;
+    const [moved] = excelColumnsState.splice(from, 1);
+    excelColumnsState.splice(to, 0, moved);
+    saveExcelColumnState();
+    renderExcelColumnList();
+}
+
+function openExcelColumnModal() {
+    excelColumnsState = loadExcelColumnState();
+    renderExcelColumnList();
+    document.getElementById('excelColumnModal').classList.add('show');
+}
+
+function closeExcelColumnModal() {
+    document.getElementById('excelColumnModal').classList.remove('show');
+}
+
+function downloadSelectedExcelColumns() {
+    const selectedKeys = excelColumnsState.filter((c) => c.selected).map((c) => c.key);
+    if (!selectedKeys.length) {
+        showToast('최소 1개 컬럼을 선택해 주세요.');
+        return;
+    }
+    saveExcelColumnState();
+    const params = new URLSearchParams(currentQueryString || '');
+    params.delete('page');
+    params.set('excel_columns', selectedKeys.join(','));
+    window.location.href = `/download_excel?${params.toString()}`;
+    closeExcelColumnModal();
+}
+
+/* 엑셀 모달 이벤트 */
+const excelColumnModal        = document.getElementById('excelColumnModal');
+const excelColumnList         = document.getElementById('excelColumnList');
+
+document.getElementById('openExcelColumnModalBtn').addEventListener('click', openExcelColumnModal);
+document.getElementById('closeExcelColumnModalBtn').addEventListener('click', closeExcelColumnModal);
+document.getElementById('downloadSelectedExcelBtn').addEventListener('click', downloadSelectedExcelColumns);
+
+document.getElementById('selectAllExcelColumnsBtn').addEventListener('click', () => {
+    excelColumnsState = excelColumnsState.map((c) => ({ ...c, selected: true }));
+    saveExcelColumnState();
+    renderExcelColumnList();
+});
+document.getElementById('clearAllExcelColumnsBtn').addEventListener('click', () => {
+    excelColumnsState = excelColumnsState.map((c) => ({ ...c, selected: false }));
+    saveExcelColumnState();
+    renderExcelColumnList();
+});
+
+excelColumnModal.addEventListener('click', (e) => {
+    if (e.target === excelColumnModal) closeExcelColumnModal();
+});
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && excelColumnModal.classList.contains('show')) closeExcelColumnModal();
+});
+
+excelColumnList.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-role]');
+    if (!btn) return;
+    const idx = Number(btn.dataset.index);
+    if (btn.dataset.role === 'move-up')   moveExcelColumn(idx, idx - 1);
+    if (btn.dataset.role === 'move-down') moveExcelColumn(idx, idx + 1);
+});
+excelColumnList.addEventListener('change', (e) => {
+    const cb = e.target.closest('input[data-role="toggle"]');
+    if (!cb) return;
+    excelColumnsState = excelColumnsState.map((c) =>
+        c.key === cb.dataset.key ? { ...c, selected: cb.checked } : c
+    );
+    saveExcelColumnState();
+    renderExcelColumnList();
+});
+
+/* 메모 저장 */
 async function saveMemo(appId) {
     const memoText = document.getElementById(`memo-${appId}`).value;
     const btn = document.getElementById(`btn-memo-${appId}`);
     const originalText = btn.innerText;
-
-    btn.innerText = "저장...";
+    btn.innerText = '저장중..';
     btn.disabled = true;
 
     const formData = new FormData();
@@ -698,38 +915,31 @@ async function saveMemo(appId) {
     formData.append('csrf_token', csrfToken);
 
     try {
-        const response = await fetch(`/update_memo/${appId}`, {
-            method: 'POST', body: formData
-        });
-        const result = await response.json();
+        const res = await fetch(`/update_memo/${appId}`, { method: 'POST', body: formData });
+        const result = await res.json();
         if (result.success) {
             showToast('메모가 저장되었습니다.');
-            btn.innerText = "완료";
-            btn.style.background = "var(--success)";
-            setTimeout(() => {
-                btn.innerText = originalText;
-                btn.style.background = "";
-                btn.disabled = false;
-            }, 1500);
+            btn.innerText = '완료';
+            btn.style.background = 'var(--success)';
+            setTimeout(() => { btn.innerText = originalText; btn.style.background = ''; btn.disabled = false; }, 1500);
         } else {
             showToast('실패: ' + result.message);
             btn.disabled = false;
             btn.innerText = originalText;
         }
-    } catch (error) {
-        console.error(error);
+    } catch (e) {
         showToast('오류가 발생했습니다.');
         btn.disabled = false;
         btn.innerText = originalText;
     }
 }
 
+/* 상태 저장 */
 async function saveStatus(appId) {
     const statusVal = document.getElementById(`status-${appId}`).value;
     const btn = document.getElementById(`btn-status-${appId}`);
     const originalText = btn.innerText;
-
-    btn.innerText = "저장...";
+    btn.innerText = '저장중..';
     btn.disabled = true;
 
     const formData = new FormData();
@@ -737,26 +947,19 @@ async function saveStatus(appId) {
     formData.append('csrf_token', csrfToken);
 
     try {
-        const response = await fetch(`/update_status/${appId}`, {
-            method: 'POST', body: formData
-        });
-        const result = await response.json();
+        const res = await fetch(`/update_status/${appId}`, { method: 'POST', body: formData });
+        const result = await res.json();
         if (result.success) {
             showToast('상태가 변경되었습니다.');
-            btn.innerText = "완료";
-            btn.style.background = "var(--success)";
-            setTimeout(() => {
-                btn.innerText = originalText;
-                btn.style.background = "";
-                btn.disabled = false;
-            }, 1500);
+            btn.innerText = '완료';
+            btn.style.background = 'var(--success)';
+            setTimeout(() => { btn.innerText = originalText; btn.style.background = ''; btn.disabled = false; }, 1500);
         } else {
             showToast('실패: ' + result.message);
             btn.disabled = false;
             btn.innerText = originalText;
         }
-    } catch (error) {
-        console.error(error);
+    } catch (e) {
         showToast('오류가 발생했습니다.');
         btn.disabled = false;
         btn.innerText = originalText;

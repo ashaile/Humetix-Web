@@ -589,7 +589,7 @@ def update_attendance(record_id):
     if not session.get("is_admin"):
         return jsonify({"error": "Unauthorized"}), 403
 
-    record = AttendanceRecord.query.get_or_404(record_id)
+    record = db.get_or_404(AttendanceRecord, record_id)
     data = request.get_json(silent=True)
     if not data:
         return jsonify({"error": "JSON body required"}), 400
@@ -598,7 +598,7 @@ def update_attendance(record_id):
         employee_id = str(data.get("employee_id", "")).strip()
         if not employee_id.isdigit():
             return jsonify({"error": "employee_id must be integer"}), 400
-        employee = Employee.query.get(int(employee_id))
+        employee = db.session.get(Employee, int(employee_id))
         if not employee:
             return jsonify({"error": "employee not found"}), 404
         record.employee_id = employee.id
@@ -689,7 +689,7 @@ def delete_attendance(record_id):
     if not session.get("is_admin"):
         return jsonify({"error": "Unauthorized"}), 403
 
-    record = AttendanceRecord.query.get_or_404(record_id)
+    record = db.get_or_404(AttendanceRecord, record_id)
     try:
         db.session.delete(record)
         db.session.commit()

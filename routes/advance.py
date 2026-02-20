@@ -1,4 +1,4 @@
-﻿import logging
+import logging
 import re
 from datetime import datetime
 
@@ -15,19 +15,11 @@ from flask import (
 from sqlalchemy.exc import IntegrityError
 
 from models import AdvanceRequest, Employee, db
+from routes.utils import validate_month as _validate_month
 
 logger = logging.getLogger(__name__)
 
 advance_bp = Blueprint("advance", __name__)
-
-MONTH_PATTERN = re.compile(r"^\d{4}-\d{2}$")
-
-
-def _validate_month(month: str) -> bool:
-    if not MONTH_PATTERN.fullmatch(month or ""):
-        return False
-    year, mon = month.split("-")
-    return 1 <= int(mon) <= 12 and int(year) >= 2000
 
 
 @advance_bp.route("/advance", methods=["GET", "POST"])
@@ -159,7 +151,7 @@ def approve_advance(adv_id):
         return jsonify({"error": "권한이 없습니다."}), 401
 
     try:
-        adv = AdvanceRequest.query.get(adv_id)
+        adv = db.session.get(AdvanceRequest, adv_id)
         if not adv:
             return jsonify({"error": "가불 요청을 찾을 수 없습니다."}), 404
         if adv.status != "pending":
@@ -185,7 +177,7 @@ def reject_advance(adv_id):
         return jsonify({"error": "권한이 없습니다."}), 401
 
     try:
-        adv = AdvanceRequest.query.get(adv_id)
+        adv = db.session.get(AdvanceRequest, adv_id)
         if not adv:
             return jsonify({"error": "가불 요청을 찾을 수 없습니다."}), 404
         if adv.status != "pending":

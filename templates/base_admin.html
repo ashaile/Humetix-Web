@@ -32,6 +32,13 @@
     background: var(--accent); color: #fff; font-weight: 700;
 }
 .sidebar-link .icon { font-size: 16px; width: 20px; text-align: center; }
+.sidebar-action-link {
+    width: calc(100% - 20px);
+    border: 0;
+    background: transparent;
+    text-align: left;
+    font-family: inherit;
+}
 .sidebar-divider {
     height: 1px; background: rgba(255,255,255,.08);
     margin: 8px 20px;
@@ -193,6 +200,20 @@ tr:hover td { background: var(--bg3); }
 .modal-card h3 {
     font-size: 18px; font-weight: 700; margin-bottom: 20px;
 }
+.password-modal-form {
+    display: grid;
+    gap: 12px;
+}
+.password-modal-group {
+    display: grid;
+    gap: 6px;
+}
+.password-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 8px;
+}
 
 /* ── Mobile responsive ── */
 @media (max-width: 768px) {
@@ -228,6 +249,9 @@ tr:hover td { background: var(--bg3); }
                 <span class="icon">{{ icon_html|safe }}</span> {{ label }}
             </a>
             {% endfor %}
+            <button type="button" class="sidebar-link sidebar-action-link" id="openPasswordModalBtn">
+                <span class="icon">&#128274;</span> 비밀번호 변경
+            </button>
         </nav>
         <div class="sidebar-footer">
             <a href="/logout" class="sidebar-link">
@@ -246,11 +270,37 @@ tr:hover td { background: var(--bg3); }
     </main>
 </div>
 
+<div class="modal-overlay" id="passwordModal">
+    <div class="modal-card">
+        <h3>관리자 비밀번호 변경</h3>
+        <form id="passwordChangeModalForm" class="password-modal-form">
+            <div class="password-modal-group">
+                <label for="modalCurrentPassword">현재 비밀번호</label>
+                <input type="password" id="modalCurrentPassword" class="form-input" required>
+            </div>
+            <div class="password-modal-group">
+                <label for="modalNewPassword">새 비밀번호</label>
+                <input type="password" id="modalNewPassword" class="form-input" minlength="8" required>
+            </div>
+            <div class="password-modal-group">
+                <label for="modalConfirmPassword">새 비밀번호 확인</label>
+                <input type="password" id="modalConfirmPassword" class="form-input" minlength="8" required>
+            </div>
+            <div class="password-modal-actions">
+                <button type="button" class="btn btn-outline btn-sm" id="cancelPasswordModalBtn">취소</button>
+                <button type="submit" class="btn btn-primary btn-sm" id="changePasswordModalBtn">변경</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="toast" id="toast"></div>
 {% endblock %}
 
 {% block base_js %}
 <script>
+    window.csrfToken = '{{ csrf_token() }}';
+
     /* Sidebar toggle */
     const sidebar = document.getElementById('sidebar');
     const sidebarToggle = document.getElementById('sidebarToggle');
@@ -272,5 +322,71 @@ tr:hover td { background: var(--bg3); }
         el.style.display = 'block';
         setTimeout(() => el.style.display = 'none', duration || 3000);
     }
+
+    /* Password change modal */
+    const passwordModal = document.getElementById('passwordModal');
+    const passwordForm = document.getElementById('passwordChangeModalForm');
+    const openPasswordModalBtn = document.getElementById('openPasswordModalBtn');
+    const cancelPasswordModalBtn = document.getElementById('cancelPasswordModalBtn');
+    const changePasswordModalBtn = document.getElementById('changePasswordModalBtn');
+
+    function closePasswordModal() {
+        passwordModal.classList.remove('show');
+    }
+
+    openPasswordModalBtn.addEventListener('click', () => {
+        passwordForm.reset();
+        passwordModal.classList.add('show');
+    });
+
+    cancelPasswordModalBtn.addEventListener('click', closePasswordModal);
+
+    passwordModal.addEventListener('click', (event) => {
+        if (event.target === passwordModal) {
+            closePasswordModal();
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && passwordModal.classList.contains('show')) {
+            closePasswordModal();
+        }
+    });
+
+    passwordForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const formData = new FormData();
+        formData.append('current_password', document.getElementById('modalCurrentPassword').value);
+        formData.append('new_password', document.getElementById('modalNewPassword').value);
+        formData.append('confirm_password', document.getElementById('modalConfirmPassword').value);
+        formData.append('csrf_token', window.csrfToken || '');
+
+        const originalText = changePasswordModalBtn.innerText;
+        changePasswordModalBtn.disabled = true;
+        changePasswordModalBtn.innerText = '처리중...';
+
+        try {
+            const response = await fetch('/admin/change-password', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                showToast(result.message || '비밀번호가 변경되었습니다.');
+                passwordForm.reset();
+                closePasswordModal();
+            } else {
+                showToast(result.message || '비밀번호 변경에 실패했습니다.');
+            }
+        } catch (error) {
+            console.error(error);
+            showToast('비밀번호 변경 중 오류가 발생했습니다.');
+        } finally {
+            changePasswordModalBtn.disabled = false;
+            changePasswordModalBtn.innerText = originalText;
+        }
+    });
 </script>
 {% endblock %}

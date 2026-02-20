@@ -1,8 +1,13 @@
-﻿import os
+﻿import logging
+import os
 import uuid
-from flask import Blueprint, render_template, request
 from datetime import datetime
-from models import db, Application, Career, Inquiry
+
+from flask import Blueprint, render_template, request
+
+from models import Application, Career, Inquiry, db
+
+logger = logging.getLogger(__name__)
 
 apply_bp = Blueprint('apply', __name__)
 
@@ -151,15 +156,11 @@ def submit():
             return "<h1>지원서 접수 완료!</h1><script>setTimeout(function(){location.href='/';}, 2000);</script>"
 
         except ValueError as ve:
-            import logging
-            logger = logging.getLogger(__name__)
             logger.error(f"Form validation error: {str(ve)}")
             return "<script>alert('입력 형식이 올바르지 않습니다. 다시 확인해주세요.'); history.back();</script>"
 
     except Exception as e:
         db.session.rollback()
-        import logging
-        logger = logging.getLogger(__name__)
         logger.error(f"Application submission error: {str(e)}", exc_info=True)
 
         return render_template(
@@ -181,14 +182,19 @@ def contact_submit():
     if not company or not name or not phone:
         return "<script>alert('필수 항목을 입력해주세요.'); history.back();</script>"
 
-    inquiry = Inquiry(
-        company=company,
-        name=name,
-        phone=phone,
-        email=email,
-        message=message
-    )
-    db.session.add(inquiry)
-    db.session.commit()
+    try:
+        inquiry = Inquiry(
+            company=company,
+            name=name,
+            phone=phone,
+            email=email,
+            message=message
+        )
+        db.session.add(inquiry)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Contact submit error: {str(e)}", exc_info=True)
+        return "<script>alert('문의 접수 중 오류가 발생했습니다. 다시 시도해주세요.'); history.back();</script>"
 
     return "<script>alert('문의가 접수되었습니다. 빠른 시일 내에 연락드리겠습니다.'); location.href='/'</script>"

@@ -1,5 +1,4 @@
 ﻿import logging
-import re
 from datetime import datetime
 from io import BytesIO
 
@@ -17,20 +16,13 @@ from flask import (
 from sqlalchemy import func
 
 from models import AdvanceRequest, AttendanceRecord, Payslip, db
+from routes.utils import validate_month as _validate_month
 
 logger = logging.getLogger(__name__)
 
 payslip_bp = Blueprint("payslip", __name__)
 
-MONTH_PATTERN = re.compile(r"^\d{4}-\d{2}$")
 ALLOWED_SALARY_MODES = {"standard", "actual"}
-
-
-def _validate_month(month: str) -> bool:
-    if not MONTH_PATTERN.fullmatch(month or ""):
-        return False
-    year, mon = month.split("-")
-    return int(year) >= 2000 and 1 <= int(mon) <= 12
 
 
 def _month_range(month: str):
@@ -210,7 +202,7 @@ def delete_payslip(payslip_id: int):
     if not session.get("is_admin"):
         return jsonify({"error": "권한이 없습니다."}), 401
 
-    payslip = Payslip.query.get(payslip_id)
+    payslip = db.session.get(Payslip, payslip_id)
     if not payslip:
         return jsonify({"error": "급여명세서를 찾을 수 없습니다."}), 404
 
