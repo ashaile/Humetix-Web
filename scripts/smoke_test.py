@@ -152,8 +152,12 @@ def run_admin_checks(client: HttpClient, admin_password: str) -> list[Result]:
         return results
 
     post_data = {"password": admin_password, "csrf_token": csrf_token}
+    post_headers = {
+        "Referer": f"{client.base_url}/login",
+        "Origin": client.base_url,
+    }
     login_status, login_final_url, login_body, login_err = client.request(
-        "/login", method="POST", data=post_data
+        "/login", method="POST", data=post_data, headers=post_headers
     )
     if login_err:
         results.append(
