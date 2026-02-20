@@ -80,6 +80,17 @@
     outline: none;
     box-shadow: 0 0 0 3px rgba(232,93,38,.1);
 }
+.security-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    align-items: end;
+}
+.security-help {
+    margin-top: 10px;
+    color: var(--text2);
+    font-size: 0.85rem;
+}
 
 /* ── Card / applicant ── */
 .card {
@@ -295,6 +306,30 @@
 
 {% block content %}
 {% set status_labels = {'new':'신규','review':'검토','interview':'면접','offer':'오퍼','hired':'합격','rejected':'불합격'} %}
+
+<div class="filter-section">
+    <div class="filter-group-title" style="margin-bottom: 12px;">관리자 비밀번호 변경</div>
+    <form id="passwordChangeForm" onsubmit="event.preventDefault(); changeAdminPassword();">
+        <div class="security-grid">
+            <div>
+                <label class="filter-group-title">현재 비밀번호</label>
+                <input type="password" id="currentPassword" class="form-control" required>
+            </div>
+            <div>
+                <label class="filter-group-title">새 비밀번호</label>
+                <input type="password" id="newPassword" class="form-control" minlength="4" required>
+            </div>
+            <div>
+                <label class="filter-group-title">새 비밀번호 확인</label>
+                <input type="password" id="confirmPassword" class="form-control" minlength="4" required>
+            </div>
+            <div>
+                <button type="submit" class="btn btn-primary" id="changePasswordBtn">비밀번호 변경</button>
+            </div>
+        </div>
+    </form>
+    <p class="security-help">저장 즉시 로그인 비밀번호에 반영됩니다.</p>
+</div>
 
 <div class="filter-section">
     <form id="searchForm" action="{{ url_for('admin.master_view') }}" method="get">
@@ -610,6 +645,44 @@ function goPage(page) {
     }
     pageInput.value = page;
     form.submit();
+}
+
+async function changeAdminPassword() {
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const form = document.getElementById('passwordChangeForm');
+    const btn = document.getElementById('changePasswordBtn');
+    const originalText = btn.innerText;
+
+    btn.innerText = "저장중..";
+    btn.disabled = true;
+
+    const formData = new FormData();
+    formData.append('current_password', currentPassword);
+    formData.append('new_password', newPassword);
+    formData.append('confirm_password', confirmPassword);
+    formData.append('csrf_token', csrfToken);
+
+    try {
+        const response = await fetch('/admin/change-password', {
+            method: 'POST',
+            body: formData
+        });
+        const result = await response.json();
+        if (result.success) {
+            showToast(result.message || '비밀번호가 변경되었습니다.');
+            form.reset();
+        } else {
+            showToast(result.message || '비밀번호 변경에 실패했습니다.');
+        }
+    } catch (error) {
+        console.error(error);
+        showToast('비밀번호 변경 중 오류가 발생했습니다.');
+    } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
 }
 
 async function saveMemo(appId) {

@@ -4,6 +4,7 @@ import os
 import time
 from datetime import datetime, timedelta
 
+from dotenv import dotenv_values
 from flask import Blueprint, current_app, redirect, render_template, request, session, url_for
 
 from models import AdminLoginAttempt, db
@@ -11,10 +12,15 @@ from models import AdminLoginAttempt, db
 logger = logging.getLogger(__name__)
 
 auth_bp = Blueprint("auth", __name__)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ENV_FILE_PATH = os.path.join(BASE_DIR, ".env")
 
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
-if not ADMIN_PASSWORD:
-    raise RuntimeError("ADMIN_PASSWORD environment variable is not set")
+
+def _get_admin_password() -> str:
+    file_password = dotenv_values(ENV_FILE_PATH).get("ADMIN_PASSWORD")
+    if file_password:
+        return str(file_password)
+    return os.environ.get("ADMIN_PASSWORD", "")
 
 
 def _client_ip() -> str:
@@ -42,6 +48,11 @@ def login():
         ip = _client_ip()
         max_attempts = int(current_app.config.get("LOGIN_MAX_ATTEMPTS", 5))
         block_seconds = int(current_app.config.get("LOGIN_BLOCK_SECONDS", 300))
+        admin_password = _get_admin_password()
+
+        if not admin_password:
+            logger.error("ADMIN_PASSWORD environment variable is not set")
+            return "<script>alert('서버 설정 오류: 관리자 비밀번호가 설정되지 않았습니다.'); history.back();</script>"
 
         if _recent_attempt_count(ip, block_seconds) >= max_attempts:
             logger.warning("Login blocked for IP %s due to too many failed attempts", ip)
@@ -50,7 +61,7 @@ def login():
             )
 
         password = request.form.get("password")
-        if password and hmac.compare_digest(password, ADMIN_PASSWORD):
+        if password and hmac.compare_digest(password, admin_password):
             try:
                 _clear_attempts(ip)
                 db.session.commit()

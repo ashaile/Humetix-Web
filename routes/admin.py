@@ -1,4 +1,5 @@
 import os
+import hmac
 from flask import Blueprint, render_template, request, redirect, url_for, session, send_file, send_from_directory, jsonify
 from io import BytesIO
 from datetime import datetime
@@ -19,6 +20,35 @@ admin_bp = Blueprint('admin', __name__)
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UPLOAD_DIR = os.path.join(BASE_DIR, 'uploads')
+ENV_FILE_PATH = os.path.join(BASE_DIR, ".env")
+
+
+def _update_env_value(env_path: str, key: str, value: str) -> None:
+    lines = []
+    found = False
+
+    if os.path.exists(env_path):
+        with open(env_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+
+    for idx, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            continue
+        if line.startswith(f"{key}="):
+            lines[idx] = f"{key}={value}\n"
+            found = True
+            break
+
+    if not found:
+        if lines and not lines[-1].endswith("\n"):
+            lines[-1] += "\n"
+        lines.append(f"{key}={value}\n")
+
+    tmp_path = f"{env_path}.tmp"
+    with open(tmp_path, "w", encoding="utf-8", newline="\n") as f:
+        f.writelines(lines)
+    os.replace(tmp_path, env_path)
 
 def build_filtered_query(args):
     search_type = args.get('type', 'name')
@@ -107,6 +137,41 @@ def master_view():
         status_options=status_options,
         query_string=request.query_string.decode()
     )
+
+
+@admin_bp.route('/admin/change-password', methods=['POST'])
+def change_admin_password():
+    if not session.get('is_admin'):
+        return jsonify({"success": False, "message": "권한이 없습니다."}), 401
+
+    current_password = request.form.get('current_password', '')
+    new_password = request.form.get('new_password', '')
+    confirm_password = request.form.get('confirm_password', '')
+    existing_password = os.environ.get("ADMIN_PASSWORD", "")
+
+    if not existing_password:
+        logger.error("ADMIN_PASSWORD environment variable is not set")
+        return jsonify({"success": False, "message": "서버 설정 오류가 발생했습니다."}), 500
+    if not current_password or not hmac.compare_digest(current_password, existing_password):
+        return jsonify({"success": False, "message": "현재 비밀번호가 올바르지 않습니다."}), 400
+    if len(new_password) < 4:
+        return jsonify({"success": False, "message": "새 비밀번호는 4자 이상이어야 합니다."}), 400
+    if "\n" in new_password or "\r" in new_password:
+        return jsonify({"success": False, "message": "새 비밀번호 형식이 올바르지 않습니다."}), 400
+    if not hmac.compare_digest(new_password, confirm_password):
+        return jsonify({"success": False, "message": "새 비밀번호 확인이 일치하지 않습니다."}), 400
+    if hmac.compare_digest(new_password, existing_password):
+        return jsonify({"success": False, "message": "기존과 다른 비밀번호를 입력해 주세요."}), 400
+
+    try:
+        _update_env_value(ENV_FILE_PATH, "ADMIN_PASSWORD", new_password)
+        os.environ["ADMIN_PASSWORD"] = new_password
+        logger.info("Admin password updated from admin page")
+    except Exception:
+        logger.exception("Failed to update ADMIN_PASSWORD")
+        return jsonify({"success": False, "message": "비밀번호 저장 중 오류가 발생했습니다."}), 500
+
+    return jsonify({"success": True, "message": "관리자 비밀번호가 변경되었습니다."})
 
 
 @admin_bp.route('/download_excel')
