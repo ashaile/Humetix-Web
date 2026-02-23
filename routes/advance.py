@@ -6,16 +6,14 @@ from flask import (
     Blueprint,
     current_app,
     jsonify,
-    redirect,
     render_template,
     request,
     session,
-    url_for,
 )
 from sqlalchemy.exc import IntegrityError
 
 from models import AdvanceRequest, Employee, db
-from routes.utils import validate_month as _validate_month
+from routes.utils import require_admin, validate_month as _validate_month
 
 logger = logging.getLogger(__name__)
 
@@ -128,10 +126,8 @@ def advance_page():
 
 
 @advance_bp.route("/admin/advance")
+@require_admin
 def admin_advance():
-    if not session.get("is_admin"):
-        return redirect(url_for("auth.login"))
-
     month = request.args.get("month", "")
     status = request.args.get("status", "")
 
@@ -146,10 +142,8 @@ def admin_advance():
 
 
 @advance_bp.route("/admin/advance/<int:adv_id>/approve", methods=["POST"])
+@require_admin
 def approve_advance(adv_id):
-    if not session.get("is_admin"):
-        return jsonify({"error": "권한이 없습니다."}), 401
-
     try:
         adv = db.session.get(AdvanceRequest, adv_id)
         if not adv:
@@ -172,10 +166,8 @@ def approve_advance(adv_id):
 
 
 @advance_bp.route("/admin/advance/<int:adv_id>/reject", methods=["POST"])
+@require_admin
 def reject_advance(adv_id):
-    if not session.get("is_admin"):
-        return jsonify({"error": "권한이 없습니다."}), 401
-
     try:
         adv = db.session.get(AdvanceRequest, adv_id)
         if not adv:

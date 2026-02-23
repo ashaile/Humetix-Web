@@ -2,10 +2,11 @@
 import re
 from datetime import datetime
 
-from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
+from flask import Blueprint, jsonify, render_template, request
 from sqlalchemy.exc import IntegrityError
 
 from models import AdvanceRequest, AttendanceRecord, Employee, Payslip, db
+from routes.utils import require_admin
 
 logger = logging.getLogger(__name__)
 
@@ -23,19 +24,15 @@ def _parse_bool(value):
 
 
 @employee_bp.route("/admin/employees")
+@require_admin
 def admin_employees():
-    if not session.get("is_admin"):
-        return redirect(url_for("auth.login"))
-
     employees = Employee.query.order_by(Employee.name).all()
     return render_template("admin_employee.html", employees=employees)
 
 
 @employee_bp.route("/api/employees", methods=["POST"])
+@require_admin
 def create_employee():
-    if not session.get("is_admin"):
-        return jsonify({"error": "권한이 없습니다."}), 401
-
     data = request.get_json(silent=True)
     if not data:
         return jsonify({"error": "JSON body required"}), 400
@@ -84,10 +81,8 @@ def create_employee():
 
 
 @employee_bp.route("/api/employees/<int:emp_id>", methods=["PUT"])
+@require_admin
 def update_employee(emp_id):
-    if not session.get("is_admin"):
-        return jsonify({"error": "권한이 없습니다."}), 401
-
     employee = db.session.get(Employee, emp_id)
     if not employee:
         return jsonify({"error": "직원을 찾을 수 없습니다."}), 404
@@ -149,10 +144,8 @@ def update_employee(emp_id):
 
 
 @employee_bp.route("/api/employees/<int:emp_id>", methods=["DELETE"])
+@require_admin
 def delete_employee(emp_id):
-    if not session.get("is_admin"):
-        return jsonify({"error": "권한이 없습니다."}), 401
-
     employee = db.session.get(Employee, emp_id)
     if not employee:
         return jsonify({"error": "직원을 찾을 수 없습니다."}), 404

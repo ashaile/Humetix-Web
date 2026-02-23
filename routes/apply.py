@@ -6,13 +6,11 @@ from datetime import datetime
 from flask import Blueprint, render_template, request
 
 from models import Application, Career, Inquiry, db
+from routes.utils import UPLOAD_DIR
 
 logger = logging.getLogger(__name__)
 
 apply_bp = Blueprint('apply', __name__)
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-UPLOAD_DIR = os.path.join(BASE_DIR, 'uploads')
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'heic', 'heif', 'webp'}
 ALLOWED_MIME_TYPES = {
     'image/jpeg',

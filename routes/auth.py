@@ -8,12 +8,11 @@ from dotenv import dotenv_values
 from flask import Blueprint, current_app, redirect, render_template, request, session, url_for
 
 from models import AdminLoginAttempt, db
+from routes.utils import ENV_FILE_PATH
 
 logger = logging.getLogger(__name__)
 
 auth_bp = Blueprint("auth", __name__)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ENV_FILE_PATH = os.path.join(BASE_DIR, ".env")
 
 
 def _get_admin_password() -> str:

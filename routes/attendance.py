@@ -6,31 +6,33 @@ from io import BytesIO
 
 from flask import (
     Blueprint,
-    current_app,
     jsonify,
     redirect,
     render_template,
     request,
     send_file,
-    session,
     url_for,
 )
 from sqlalchemy.exc import IntegrityError, OperationalError
 
 from models import AttendanceRecord, Employee, OperationCalendarDay, db
+from routes.utils import require_admin
+from services.attendance_service import (
+    ALLOWED_WORK_TYPES,
+    CALENDAR_DAY_TYPES,
+    LEAVE_DAY_TYPES,
+    TIME_REQUIRED_TYPES,
+    _default_day_type,
+    _effective_day_type,
+    _get_cfg,
+    _parse_date,
+    _validate_hhmm,
+    calc_work_hours,
+)
 
 logger = logging.getLogger(__name__)
 
 attendance_bp = Blueprint("attendance", __name__)
-
-ALLOWED_WORK_TYPES = {"normal", "night", "annual", "absent", "holiday", "early"}
-TIME_REQUIRED_TYPES = {"normal", "night"}
-CALENDAR_DAY_TYPES = {"workday", "paid_leave", "unpaid_leave"}
-LEAVE_DAY_TYPES = {"paid_leave", "unpaid_leave"}
-
-
-def _parse_date(value: str):
-    return datetime.strptime(value, "%Y-%m-%d").date()
 
 
 def _validate_month(value: str) -> bool:
@@ -44,124 +46,6 @@ def _month_bounds(month_text: str):
     year, month = map(int, month_text.split("-"))
     last_day = monthrange(year, month)[1]
     return date(year, month, 1), date(year, month, last_day)
-
-
-def _default_day_type(work_date: date, cfg) -> str:
-    holidays_2026 = cfg.get("PUBLIC_HOLIDAYS_2026", [])
-    if work_date.weekday() == 6:
-        return "paid_leave"
-    if work_date.weekday() == 5:
-        return "unpaid_leave"
-    if work_date.strftime("%Y-%m-%d") in holidays_2026:
-        return "paid_leave"
-    return "workday"
-
-
-def _calendar_override_type(work_date: date):
-    row = OperationCalendarDay.query.filter_by(work_date=work_date).first()
-    if not row:
-        return None
-    return row.day_type
-
-
-def _validate_hhmm(value: str) -> bool:
-    if not value or not re.fullmatch(r"\d{2}:\d{2}", value):
-        return False
-    hh, mm = value.split(":")
-    return 0 <= int(hh) <= 23 and 0 <= int(mm) <= 59
-
-
-def _time_to_minutes(hhmm: str) -> int:
-    h, m = map(int, hhmm.split(":"))
-    return h * 60 + m
-
-
-def _minutes_in_range(start_min, end_min, range_start_min, range_end_min):
-    if range_start_min >= range_end_min:
-        part1 = _minutes_in_range(start_min, end_min, range_start_min, 24 * 60)
-        part2 = _minutes_in_range(start_min, end_min, 0, range_end_min)
-        return part1 + part2
-
-    overlap_start = max(start_min, range_start_min)
-    overlap_end = min(end_min, range_end_min)
-    return max(0, overlap_end - overlap_start)
-
-
-def calc_work_hours(clock_in: str, clock_out: str, cfg, work_date=None, calendar_day_type=None):
-    in_min = _time_to_minutes(clock_in)
-    out_min = _time_to_minutes(clock_out)
-
-    if out_min <= in_min:
-        raw_minutes = (24 * 60 - in_min) + out_min
-    else:
-        raw_minutes = out_min - in_min
-
-    break_min = int(cfg.get("BREAK_HOURS", 1.0) * 60)
-    worked_min = max(0, raw_minutes - break_min)
-    total_hours = round(worked_min / 60, 2)
-
-    if calendar_day_type in CALENDAR_DAY_TYPES:
-        is_holiday_work = calendar_day_type in LEAVE_DAY_TYPES
-    else:
-        is_holiday_work = False
-        if work_date:
-            if isinstance(work_date, str):
-                work_date = _parse_date(work_date)
-
-            if work_date.weekday() >= 5:
-                is_holiday_work = True
-
-            holidays_2026 = cfg.get("PUBLIC_HOLIDAYS_2026", [])
-            if work_date.strftime("%Y-%m-%d") in holidays_2026:
-                is_holiday_work = True
-
-    std_hours = cfg.get("STANDARD_WORK_HOURS", 8.0)
-
-    if is_holiday_work:
-        ot_hours = 0.0
-        holiday_work_hours = total_hours
-    else:
-        ot_hours = round(max(0, total_hours - std_hours), 2)
-        holiday_work_hours = 0.0
-
-    night_start = cfg.get("NIGHT_START", 22) * 60
-    night_end = cfg.get("NIGHT_END", 6) * 60
-
-    if out_min <= in_min:
-        night_min1 = _minutes_in_range(in_min, 24 * 60, night_start, 24 * 60)
-        night_min2 = _minutes_in_range(0, out_min, 0, night_end)
-        night_total = night_min1 + night_min2
-    else:
-        night_total = _minutes_in_range(in_min, out_min, night_start, night_end)
-
-    # 한국 노동법 기준 휴게시간 처리:
-    # - 주간 휴게(12:30~13:30): 야간 구간(22~06시)과 겹치지 않으므로 야간 차감 없음
-    # - 야간 휴게(00:00~01:00): 야간 구간 내에 위치하므로 야간 시간에서 차감
-    # 15:00 이후 시작 또는 새벽(06:00 이전) 시작을 야간 근무로 판단
-    is_night_shift = (in_min >= 15 * 60 or in_min < night_end)
-    night_break = break_min if is_night_shift else 0
-    night_calc = max(0, night_total - night_break)
-    night_hours = round(night_calc / 60, 2)
-
-    return total_hours, ot_hours, night_hours, holiday_work_hours
-
-
-def _get_cfg():
-    c = current_app.config
-    return {
-        "STANDARD_WORK_HOURS": c.get("STANDARD_WORK_HOURS", 8.0),
-        "BREAK_HOURS": c.get("BREAK_HOURS", 1.0),
-        "NIGHT_START": c.get("NIGHT_START", 22),
-        "NIGHT_END": c.get("NIGHT_END", 6),
-        "PUBLIC_HOLIDAYS_2026": c.get("PUBLIC_HOLIDAYS_2026", []),
-    }
-
-
-def _effective_day_type(work_date: date, cfg):
-    override = _calendar_override_type(work_date)
-    if override in CALENDAR_DAY_TYPES:
-        return override
-    return _default_day_type(work_date, cfg)
 
 
 def _db_not_ready_message():
@@ -340,10 +224,8 @@ def attendance_page():
 
 
 @attendance_bp.route("/admin/attendance-calendar")
+@require_admin
 def admin_attendance_calendar():
-    if not session.get("is_admin"):
-        return redirect(url_for("auth.login"))
-
     month_text = request.args.get("month", date.today().strftime("%Y-%m"))
     if not _validate_month(month_text):
         month_text = date.today().strftime("%Y-%m")
@@ -391,10 +273,8 @@ def admin_attendance_calendar():
 
 
 @attendance_bp.route("/admin/attendance-calendar", methods=["POST"])
+@require_admin
 def save_attendance_calendar():
-    if not session.get("is_admin"):
-        return redirect(url_for("auth.login"))
-
     work_date_text = (request.form.get("work_date") or "").strip()
     day_type = (request.form.get("day_type") or "").strip()
     note = (request.form.get("note") or "").strip()[:200]
@@ -448,10 +328,8 @@ def save_attendance_calendar():
 
 
 @attendance_bp.route("/admin/attendance")
+@require_admin
 def admin_attendance():
-    if not session.get("is_admin"):
-        return redirect(url_for("auth.login"))
-
     start = request.args.get("start_date", "")
     end = request.args.get("end_date", "")
     emp_name = request.args.get("emp_name", "")
@@ -500,10 +378,8 @@ def admin_attendance():
 
 
 @attendance_bp.route("/admin/attendance/excel")
+@require_admin
 def attendance_excel():
-    if not session.get("is_admin"):
-        return redirect(url_for("auth.login"))
-
     from openpyxl import Workbook
     from openpyxl.styles import Font
 
@@ -591,10 +467,8 @@ def attendance_excel():
 
 
 @attendance_bp.route("/api/attendance/<int:record_id>", methods=["PUT"])
+@require_admin
 def update_attendance(record_id):
-    if not session.get("is_admin"):
-        return jsonify({"error": "Unauthorized"}), 403
-
     record = db.get_or_404(AttendanceRecord, record_id)
     data = request.get_json(silent=True)
     if not data:
@@ -691,10 +565,8 @@ def update_attendance(record_id):
 
 
 @attendance_bp.route("/api/attendance/<int:record_id>", methods=["DELETE"])
+@require_admin
 def delete_attendance(record_id):
-    if not session.get("is_admin"):
-        return jsonify({"error": "Unauthorized"}), 403
-
     record = db.get_or_404(AttendanceRecord, record_id)
     try:
         db.session.delete(record)
