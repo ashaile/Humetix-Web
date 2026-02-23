@@ -29,12 +29,12 @@ echo "📦 라이브러리 설치..."
 pip3 install -r requirements.txt -q
 
 echo "🗄️ DB 마이그레이션..."
-# 마이그레이션 통합 대응: 이전 revision이면 새 initial_schema로 stamp
+# 마이그레이션 통합 대응: 이전 revision이면 직접 alembic_version 갱신
 CURRENT_REV=$(sqlite3 "$DB_FILE" "SELECT version_num FROM alembic_version LIMIT 1;" 2>/dev/null || echo "")
 TARGET_REV="2d328d13a043"
 if [ -n "$CURRENT_REV" ] && [ "$CURRENT_REV" != "$TARGET_REV" ]; then
   echo "   마이그레이션 통합 반영 (${CURRENT_REV} → ${TARGET_REV})..."
-  FLASK_APP=app.py python3 -m flask db stamp "$TARGET_REV"
+  sqlite3 "$DB_FILE" "UPDATE alembic_version SET version_num='${TARGET_REV}';"
 fi
 FLASK_APP=app.py python3 -m flask db upgrade
 echo "   마이그레이션 완료"
