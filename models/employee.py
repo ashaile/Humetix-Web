@@ -16,9 +16,16 @@ class Employee(db.Model):
     hire_date = db.Column(db.Date, nullable=True)
     resign_date = db.Column(db.Date, nullable=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
+    site_id = db.Column(
+        db.Integer,
+        db.ForeignKey("sites.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
+    site = db.relationship("Site", back_populates="employees")
     attendance_records = db.relationship(
         "AttendanceRecord", back_populates="employee", lazy=True
     )
@@ -36,5 +43,7 @@ class Employee(db.Model):
             "hire_date": self.hire_date.strftime("%Y-%m-%d") if self.hire_date else "",
             "resign_date": self.resign_date.strftime("%Y-%m-%d") if self.resign_date else "",
             "is_active": self.is_active,
+            "site_id": self.site_id,
+            "site_name": self.site.name if self.site else "",
             "created_at": self.created_at.strftime("%Y-%m-%d") if self.created_at else "",
         }

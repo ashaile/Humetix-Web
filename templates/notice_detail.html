@@ -1,0 +1,66 @@
+{% extends "base_public.html" %}
+
+{% block public_title %}HUMETIX - {{ notice.title if notice else '공지사항' }}{% endblock %}
+
+{% block page_css %}
+.notice-container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 32px 24px;
+    padding-top: 80px;
+}
+.notice-back {
+    display: inline-block;
+    margin-bottom: 16px;
+    font-size: 14px;
+    color: var(--accent);
+    text-decoration: none;
+}
+.notice-back:hover { text-decoration: underline; }
+.notice-header {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+}
+.notice-title {
+    font-size: 24px;
+    font-weight: 800;
+    margin-bottom: 8px;
+}
+.notice-meta {
+    font-size: 13px;
+    color: var(--text2);
+}
+.notice-body {
+    font-size: 15px;
+    line-height: 1.8;
+    white-space: pre-wrap;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+}
+.notice-not-found {
+    text-align: center;
+    padding: 64px 24px;
+    color: var(--text2);
+}
+{% endblock %}
+
+{% block public_content %}
+<div class="notice-container">
+    <a href="/notices" class="notice-back">&larr; 목록으로</a>
+
+    {% if notice %}
+    <div class="notice-header">
+        <h1 class="notice-title">{{ notice.title }}</h1>
+        <div class="notice-meta">
+            {{ notice.author }} &middot; {{ notice.created_at.strftime('%Y-%m-%d %H:%M') if notice.created_at else '' }}
+        </div>
+    </div>
+    <div class="notice-body">{{ notice.content }}</div>
+    {% else %}
+    <div class="notice-not-found">
+        <p>존재하지 않는 공지사항입니다.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

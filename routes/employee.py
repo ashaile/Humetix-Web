@@ -5,7 +5,7 @@ from datetime import datetime
 from flask import Blueprint, jsonify, render_template, request
 from sqlalchemy.exc import IntegrityError
 
-from models import AdvanceRequest, AttendanceRecord, Employee, Payslip, db
+from models import AdvanceRequest, AttendanceRecord, Employee, Payslip, Site, db
 from routes.utils import require_admin
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,8 @@ def _parse_bool(value):
 @require_admin
 def admin_employees():
     employees = Employee.query.order_by(Employee.name).all()
-    return render_template("admin_employee.html", employees=employees)
+    sites = Site.query.filter_by(is_active=True).order_by(Site.name).all()
+    return render_template("admin_employee.html", employees=employees, sites=sites)
 
 
 @employee_bp.route("/api/employees", methods=["POST"])
@@ -56,6 +57,10 @@ def create_employee():
         except ValueError:
             return jsonify({"error": "hire_date format must be YYYY-MM-DD"}), 400
 
+    site_id = data.get("site_id")
+    if site_id is not None:
+        site_id = int(site_id) if site_id else None
+
     existing = Employee.query.filter_by(name=name, birth_date=birth_date).first()
     if existing:
         return jsonify({"error": f"{name}({birth_date}) 직원이 이미 등록되어 있습니다."}), 409
@@ -66,6 +71,7 @@ def create_employee():
             birth_date=birth_date,
             hire_date=hire_date,
             work_type=work_type,
+            site_id=site_id,
             is_active=True,
         )
         db.session.add(employee)
@@ -109,6 +115,10 @@ def update_employee(emp_id):
             if work_type not in ALLOWED_EMPLOYEE_WORK_TYPES:
                 return jsonify({"error": f"work_type must be one of {sorted(ALLOWED_EMPLOYEE_WORK_TYPES)}"}), 400
             employee.work_type = work_type
+
+        if "site_id" in data:
+            raw_site = data["site_id"]
+            employee.site_id = int(raw_site) if raw_site else None
 
         if "is_active" in data:
             employee.is_active = _parse_bool(data["is_active"])

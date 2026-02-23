@@ -45,8 +45,47 @@ h1, h2, h3, h4, .en-font {
 }
 .navbar.scrolled .navbar-brand { font-size: 1.8rem; }
 
+/* ── Notice alert banner ── */
+.notice-alert-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 2000;
+    background: #1e40af;
+    color: #fff;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-size: 14px;
+    font-weight: 600;
+}
+.notice-alert-banner a {
+    color: #fff;
+    text-decoration: underline;
+}
+.notice-alert-close {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+}
+
 @media (max-width: 768px) {
     .navbar-brand { font-size: 1.8rem; }
     .navbar.scrolled .navbar-brand { font-size: 1.6rem; }
     .nav-link { margin-left: 0; }
+    body { font-size: 16px; }
+    input, select, textarea { font-size: 16px; min-height: 44px; }
+    button, .btn { min-height: 44px; }
+}
+
+@media (max-width: 480px) {
+    .navbar-brand { font-size: 1.5rem; }
+    .notice-alert-banner { font-size: 13px; padding: 8px 12px; }
 }

@@ -23,6 +23,10 @@
     gap: 12px;
     flex-wrap: wrap;
 }
+@media (max-width: 768px) {
+    .generate-row { flex-direction: column; align-items: stretch; }
+    .generate-row .form-group { width: 100%; }
+}
 {% endblock %}
 
 {% block content %}

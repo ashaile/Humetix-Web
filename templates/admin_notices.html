@@ -1,0 +1,240 @@
+{% extends "base_admin.html" %}
+
+{% block admin_title %}HUMETIX - 공지사항 관리{% endblock %}
+{% block page_title %}공지사항 관리{% endblock %}
+{% block page_desc %}공지사항을 작성, 수정, 삭제합니다.{% endblock %}
+
+{% block page_css %}
+.register-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 24px;
+}
+.register-card h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 16px;
+}
+.form-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+.form-row-full {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 12px;
+}
+.action-btns { display: flex; gap: 4px; }
+.badge-public { background: #dbeafe; color: #1e40af; }
+.badge-internal { background: #fef3c7; color: #92400e; }
+.badge-pinned { background: #fce7f3; color: #be185d; }
+@media (max-width: 768px) {
+    .form-row { flex-direction: column; }
+    .form-group { width: 100%; }
+    .action-btns { flex-wrap: wrap; }
+}
+{% endblock %}
+
+{% block content %}
+<div class="register-card">
+    <h3>공지 작성</h3>
+    <div class="form-row">
+        <div class="form-group" style="flex:1;">
+            <label class="form-label">제목</label>
+            <input type="text" id="notice-title" class="form-input" placeholder="공지사항 제목">
+        </div>
+        <div class="form-group">
+            <label class="form-label">카테고리</label>
+            <select id="notice-category" class="form-input">
+                <option value="public">공개</option>
+                <option value="internal">내부</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label" style="display:flex;align-items:center;gap:6px;">
+                <input type="checkbox" id="notice-pinned"> 고정
+            </label>
+        </div>
+    </div>
+    <div class="form-row-full">
+        <div class="form-group">
+            <label class="form-label">내용</label>
+            <textarea id="notice-content" class="form-input" rows="4" placeholder="공지사항 내용을 입력하세요."></textarea>
+        </div>
+        <div>
+            <button class="btn btn-primary" onclick="createNotice()">등록</button>
+        </div>
+    </div>
+</div>
+
+<div class="table-wrap">
+    <div class="table-header">
+        <div class="table-title">공지 목록 ({{ notices|length }}건)</div>
+    </div>
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>제목</th>
+                    <th>카테고리</th>
+                    <th>고정</th>
+                    <th>작성일</th>
+                    <th>관리</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for n in notices %}
+                <tr id="notice-row-{{ n.id }}">
+                    <td class="emp-name">{{ n.title }}</td>
+                    <td>
+                        {% if n.category == 'public' %}
+                        <span class="badge badge-public">공개</span>
+                        {% else %}
+                        <span class="badge badge-internal">내부</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if n.is_pinned %}<span class="badge badge-pinned">고정</span>{% else %}-{% endif %}
+                    </td>
+                    <td class="mono">{{ n.created_at.strftime('%Y-%m-%d') if n.created_at else '-' }}</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="btn btn-outline btn-sm" onclick='editNotice({{ n.id }}, {{ n.to_dict()|tojson }})'>수정</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteNotice({{ n.id }}, '{{ n.title }}')">삭제</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not notices %}
+                <tr>
+                    <td colspan="5" style="text-align:center;padding:24px;color:var(--text2);">
+                        등록된 공지사항이 없습니다.
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 수정 모달 -->
+<div id="editModal" class="modal-overlay">
+    <div class="modal-card">
+        <h3>공지 수정</h3>
+        <input type="hidden" id="editNoticeId">
+        <div class="form-group">
+            <label class="form-label">제목</label>
+            <input type="text" id="editTitle" class="form-input">
+        </div>
+        <div class="form-group" style="display:flex;gap:12px;">
+            <div style="flex:1;">
+                <label class="form-label">카테고리</label>
+                <select id="editCategory" class="form-input">
+                    <option value="public">공개</option>
+                    <option value="internal">내부</option>
+                </select>
+            </div>
+            <div>
+                <label class="form-label" style="display:flex;align-items:center;gap:6px;">
+                    <input type="checkbox" id="editPinned"> 고정
+                </label>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">내용</label>
+            <textarea id="editContent" class="form-input" rows="4"></textarea>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="closeEditModal()">취소</button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="submitEdit()">저장</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+const csrfToken = '{{ csrf_token() }}';
+const headers = { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken };
+
+async function createNotice() {
+    const title = document.getElementById('notice-title').value.trim();
+    const content = document.getElementById('notice-content').value.trim();
+    const category = document.getElementById('notice-category').value;
+    const is_pinned = document.getElementById('notice-pinned').checked;
+
+    if (!title) { showToast('제목을 입력하세요.'); return; }
+    if (!content) { showToast('내용을 입력하세요.'); return; }
+
+    const btn = document.querySelector('.register-card .btn-primary');
+    setButtonLoading(btn, true);
+    try {
+        const res = await fetch('/api/notices', {
+            method: 'POST', headers,
+            body: JSON.stringify({ title, content, category, is_pinned })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast('공지가 등록되었습니다.');
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showToast(data.error || '등록 실패');
+        }
+    } finally {
+        setButtonLoading(btn, false);
+    }
+}
+
+function deleteNotice(id, title) {
+    showConfirm('"' + title + '" 공지를 삭제하시겠습니까?', async () => {
+        const res = await fetch('/api/notices/' + id, { method: 'DELETE', headers });
+        const data = await res.json();
+        if (data.success) {
+            showToast('삭제되었습니다.');
+            document.getElementById('notice-row-' + id).remove();
+        } else {
+            showToast(data.error || '삭제 실패');
+        }
+    });
+}
+
+function editNotice(id, notice) {
+    document.getElementById('editNoticeId').value = id;
+    document.getElementById('editTitle').value = notice.title;
+    document.getElementById('editContent').value = notice.content;
+    document.getElementById('editCategory').value = notice.category;
+    document.getElementById('editPinned').checked = notice.is_pinned;
+    document.getElementById('editModal').classList.add('show');
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').classList.remove('show');
+}
+
+async function submitEdit() {
+    const id = document.getElementById('editNoticeId').value;
+    const title = document.getElementById('editTitle').value.trim();
+    const content = document.getElementById('editContent').value.trim();
+    const category = document.getElementById('editCategory').value;
+    const is_pinned = document.getElementById('editPinned').checked;
+
+    if (!title) { showToast('제목을 입력하세요.'); return; }
+    if (!content) { showToast('내용을 입력하세요.'); return; }
+
+    const res = await fetch('/api/notices/' + id, {
+        method: 'PUT', headers,
+        body: JSON.stringify({ title, content, category, is_pinned })
+    });
+    const data = await res.json();
+    if (data.success) {
+        showToast('수정되었습니다.');
+        setTimeout(() => location.reload(), 500);
+    } else {
+        showToast(data.error || '수정 실패');
+    }
+}
+{% endblock %}

@@ -1,4 +1,5 @@
 ﻿import logging
+import re
 from datetime import datetime
 from io import BytesIO
 
@@ -10,7 +11,7 @@ from flask import (
     request,
     send_file,
 )
-from models import Payslip, db
+from models import Employee, Payslip, db
 from routes.utils import require_admin, validate_month as _validate_month
 from services.payslip_service import ALLOWED_SALARY_MODES, compute_payslips
 
@@ -106,24 +107,8 @@ def delete_payslips_by_month():
         return jsonify({"error": "월 급여명세서 삭제 중 오류가 발생했습니다."}), 500
 
 
-@payslip_bp.route("/admin/payslip/pdf")
-@require_admin
-def payslip_pdf():
-    month = request.args.get("month", datetime.now().strftime("%Y-%m"))
-    if not _validate_month(month):
-        return jsonify({"error": "invalid month format"}), 400
-
-    employee_id = request.args.get("employee_id") or request.args.get("emp_id")
-    query = Payslip.query.filter(Payslip.month == month)
-    if employee_id:
-        if not str(employee_id).isdigit():
-            return jsonify({"error": "employee_id must be integer"}), 400
-        query = query.filter(Payslip.employee_id == int(employee_id))
-
-    payslips = query.order_by(Payslip.emp_name.asc()).all()
-    if not payslips:
-        return jsonify({"error": "해당 월 급여 데이터가 없습니다."}), 404
-
+def _generate_payslip_pdf(payslips):
+    """급여명세서 PDF 생성 (공통 헬퍼). BytesIO 반환."""
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import mm
     from reportlab.pdfbase import pdfmetrics
@@ -221,6 +206,28 @@ def payslip_pdf():
 
     pdf.save()
     buf.seek(0)
+    return buf
+
+
+@payslip_bp.route("/admin/payslip/pdf")
+@require_admin
+def payslip_pdf():
+    month = request.args.get("month", datetime.now().strftime("%Y-%m"))
+    if not _validate_month(month):
+        return jsonify({"error": "invalid month format"}), 400
+
+    employee_id = request.args.get("employee_id") or request.args.get("emp_id")
+    query = Payslip.query.filter(Payslip.month == month)
+    if employee_id:
+        if not str(employee_id).isdigit():
+            return jsonify({"error": "employee_id must be integer"}), 400
+        query = query.filter(Payslip.employee_id == int(employee_id))
+
+    payslips = query.order_by(Payslip.emp_name.asc()).all()
+    if not payslips:
+        return jsonify({"error": "해당 월 급여 데이터가 없습니다."}), 404
+
+    buf = _generate_payslip_pdf(payslips)
     return send_file(
         buf,
         as_attachment=True,
@@ -301,4 +308,76 @@ def payslip_excel():
         as_attachment=True,
         download_name=f"급여명세서_{month}.xlsx",
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
+# ── Public payslip lookup ──
+
+
+@payslip_bp.route("/payslip", methods=["GET", "POST"])
+def payslip_lookup():
+    if request.method == "GET":
+        return render_template("payslip_lookup.html")
+
+    birth_date = request.form.get("birth_date", "").strip()
+    emp_name = request.form.get("emp_name", "").strip()
+
+    errors = []
+    if not re.fullmatch(r"\d{6}", birth_date):
+        errors.append("생년월일은 YYMMDD 6자리 숫자여야 합니다.")
+    if not emp_name:
+        errors.append("이름을 입력해주세요.")
+    if errors:
+        return render_template("payslip_lookup.html", errors=errors, form=request.form)
+
+    employee = Employee.query.filter_by(
+        name=emp_name, birth_date=birth_date, is_active=True
+    ).first()
+    if not employee:
+        return render_template(
+            "payslip_lookup.html",
+            errors=["등록된 재직 직원이 아닙니다."],
+            form=request.form,
+        )
+
+    payslips = (
+        Payslip.query.filter_by(employee_id=employee.id)
+        .order_by(Payslip.month.desc())
+        .all()
+    )
+    return render_template(
+        "payslip_lookup.html",
+        payslips=payslips,
+        employee=employee,
+        form=request.form,
+    )
+
+
+@payslip_bp.route("/payslip/pdf")
+def payslip_public_pdf():
+    birth_date = request.args.get("birth_date", "").strip()
+    emp_name = request.args.get("emp_name", "").strip()
+    month = request.args.get("month", "").strip()
+
+    if not (re.fullmatch(r"\d{6}", birth_date) and emp_name and _validate_month(month)):
+        return jsonify({"error": "잘못된 요청입니다."}), 400
+
+    employee = Employee.query.filter_by(
+        name=emp_name, birth_date=birth_date, is_active=True
+    ).first()
+    if not employee:
+        return jsonify({"error": "직원 정보를 확인할 수 없습니다."}), 403
+
+    payslip = Payslip.query.filter_by(
+        employee_id=employee.id, month=month
+    ).first()
+    if not payslip:
+        return jsonify({"error": "해당 월 급여 데이터가 없습니다."}), 404
+
+    buf = _generate_payslip_pdf([payslip])
+    return send_file(
+        buf,
+        as_attachment=True,
+        download_name=f"급여명세서_{month}_{emp_name}.pdf",
+        mimetype="application/pdf",
     )

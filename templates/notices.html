@@ -1,0 +1,82 @@
+{% extends "base_public.html" %}
+
+{% block public_title %}HUMETIX - 공지사항{% endblock %}
+
+{% block page_css %}
+.notices-container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 32px 24px;
+    padding-top: 80px;
+}
+.page-title {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -.5px;
+    margin-bottom: 8px;
+}
+.page-desc {
+    color: var(--text2);
+    font-size: 14px;
+    margin-bottom: 28px;
+}
+.notice-list { list-style: none; padding: 0; margin: 0; }
+.notice-item {
+    display: block;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    text-decoration: none;
+    color: inherit;
+    transition: background .15s;
+}
+.notice-item:hover { background: var(--bg2); }
+.notice-item-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+.notice-item-meta {
+    font-size: 12px;
+    color: var(--text2);
+}
+.notice-pin {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-right: 6px;
+}
+.notice-empty {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text2);
+    font-size: 14px;
+}
+{% endblock %}
+
+{% block public_content %}
+<div class="notices-container">
+    <h1 class="page-title">공지사항</h1>
+    <p class="page-desc">Humetix 소식과 안내사항을 확인하세요.</p>
+
+    {% if notices %}
+    <ul class="notice-list">
+        {% for n in notices %}
+        <li>
+            <a href="/notices/{{ n.id }}" class="notice-item">
+                <div class="notice-item-title">
+                    {% if n.is_pinned %}<span class="notice-pin">[고정]</span>{% endif %}
+                    {{ n.title }}
+                </div>
+                <div class="notice-item-meta">
+                    {{ n.author }} &middot; {{ n.created_at.strftime('%Y-%m-%d') if n.created_at else '' }}
+                </div>
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div class="notice-empty">등록된 공지사항이 없습니다.</div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,230 @@
+{% extends "base_public.html" %}
+
+{% block public_title %}HUMETIX - 급여명세서 조회{% endblock %}
+
+{% block page_css %}
+.payslip-container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 32px 24px;
+    padding-top: 80px;
+}
+.page-title {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -.5px;
+    margin-bottom: 8px;
+}
+.page-desc {
+    color: var(--text2);
+    font-size: 14px;
+    margin-bottom: 28px;
+}
+.input-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    margin-bottom: 24px;
+}
+.input-card h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+.form-group { margin-bottom: 16px; }
+.form-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text2);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+.form-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: inherit;
+    background: var(--bg);
+    color: var(--text);
+    transition: border-color .2s;
+}
+.form-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(232, 93, 38, .1);
+}
+.error-msg {
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    font-size: 14px;
+    color: #dc2626;
+    font-weight: 500;
+    margin-bottom: 16px;
+}
+.result-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+.result-table th {
+    background: var(--bg3);
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    white-space: nowrap;
+}
+.result-table td {
+    padding: 12px;
+    border-top: 1px solid var(--border);
+    white-space: nowrap;
+}
+.result-table .mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+}
+.table-scroll { overflow-x: auto; }
+.btn-lookup {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px 20px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    background: var(--accent);
+    color: #fff;
+    transition: all .2s;
+}
+.btn-lookup:hover {
+    background: #d14e1a;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(232, 93, 38, .3);
+}
+.btn-pdf {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--bg3);
+    color: var(--text);
+    text-decoration: none;
+    border: 1px solid var(--border);
+    transition: all .2s;
+}
+.btn-pdf:hover { background: var(--border); }
+.emp-info {
+    background: var(--accent-bg);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    font-size: 14px;
+    color: var(--accent);
+    margin-bottom: 16px;
+    font-weight: 600;
+}
+@media (max-width: 768px) {
+    .payslip-container { padding: 16px; padding-top: 80px; }
+    .result-table th,
+    .result-table td { padding: 8px 10px; font-size: 12px; }
+    .btn-lookup { min-height: 44px; }
+    .btn-pdf { min-height: 36px; }
+}
+{% endblock %}
+
+{% block public_content %}
+<div class="payslip-container">
+    <h1 class="page-title">급여명세서 조회</h1>
+    <p class="page-desc">생년월일과 이름을 입력하여 급여명세서를 조회합니다.</p>
+
+    {% if errors %}
+    <div class="error-msg">
+        {% for e in errors %}<div>{{ e }}</div>{% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="input-card">
+        <h3>본인 확인</h3>
+        <form method="post" action="/payslip">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label class="form-label">생년월일 (YYMMDD)</label>
+                <input type="text" name="birth_date" class="form-input" placeholder="예: 900101"
+                    maxlength="6" required value="{{ form.get('birth_date','') if form else '' }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">이름</label>
+                <input type="text" name="emp_name" class="form-input" required
+                    value="{{ form.get('emp_name','') if form else '' }}">
+            </div>
+            <button type="submit" class="btn-lookup">조회</button>
+        </form>
+    </div>
+
+    {% if payslips is defined and payslips is not none %}
+    <div class="emp-info">
+        {{ employee.name }} ({{ employee.birth_date }}) — 총 {{ payslips|length }}건
+    </div>
+
+    {% if payslips|length > 0 %}
+    <div class="input-card" style="padding:0;overflow:hidden;">
+        <div class="table-scroll">
+            <table class="result-table">
+                <thead>
+                    <tr>
+                        <th>월</th>
+                        <th>총근무(h)</th>
+                        <th>기본급</th>
+                        <th>잔업수당</th>
+                        <th>심야수당</th>
+                        <th>총지급</th>
+                        <th>공제합계</th>
+                        <th>실수령</th>
+                        <th>PDF</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ps in payslips %}
+                    <tr>
+                        <td class="mono">{{ ps.month }}</td>
+                        <td class="mono">{{ ps.total_work_hours }}</td>
+                        <td class="mono">{{ '{:,}'.format(ps.base_salary) }}</td>
+                        <td class="mono">{{ '{:,}'.format(ps.ot_pay) }}</td>
+                        <td class="mono">{{ '{:,}'.format(ps.night_pay) }}</td>
+                        <td class="mono" style="font-weight:600">{{ '{:,}'.format(ps.gross) }}</td>
+                        <td class="mono" style="color:#dc2626">-{{ '{:,}'.format(ps.tax + ps.insurance + ps.advance_deduction) }}</td>
+                        <td class="mono" style="font-weight:700;color:var(--accent)">{{ '{:,}'.format(ps.net) }}</td>
+                        <td>
+                            <a href="/payslip/pdf?birth_date={{ form.get('birth_date','') }}&emp_name={{ form.get('emp_name','') }}&month={{ ps.month }}"
+                               class="btn-pdf">PDF</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="input-card" style="text-align:center;color:var(--text2);padding:32px;">
+        아직 생성된 급여명세서가 없습니다.
+    </div>
+    {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

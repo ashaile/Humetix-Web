@@ -26,8 +26,8 @@
                 {% set current_endpoint = request.endpoint or '' %}
                 {% set remove_urls = [] %}
                 {% if current_endpoint in ['index', 'apply.apply_form'] %}
-                    {% set remove_urls = ['/attendance', '/advance'] %}
-                {% elif current_endpoint in ['attendance.attendance_page', 'advance.advance_page'] %}
+                    {% set remove_urls = ['/attendance', '/advance', '/payslip', '/notices'] %}
+                {% elif current_endpoint in ['attendance.attendance_page', 'advance.advance_page', 'payslip.payslip_lookup', 'notice.public_notices', 'notice.public_notice_detail'] %}
                     {% set remove_urls = ['/#services', '/#contact', '/apply'] %}
                 {% endif %}
                 {% set public_nav = [
@@ -37,6 +37,8 @@
                     ('apply.apply_form', '/apply', '입사지원'),
                     ('attendance.attendance_page', '/attendance', '근태관리'),
                     ('advance.advance_page', '/advance', '가불신청'),
+                    ('payslip.payslip_lookup', '/payslip', '급여조회'),
+                    ('notice.public_notices', '/notices', '공지사항'),
                 ] %}
                 {% for endpoint, url, label in public_nav if url not in remove_urls %}
                 <li class="nav-item">
@@ -66,5 +68,25 @@
             }
         });
     }
+
+    /* New notice alert banner */
+    (function() {
+        const lastSeen = parseInt(localStorage.getItem('humetix_last_notice_id') || '0', 10);
+        fetch('/api/notices/new?last_seen_id=' + lastSeen)
+            .then(r => r.json())
+            .then(data => {
+                if (!data.has_new) return;
+                const banner = document.createElement('div');
+                banner.className = 'notice-alert-banner';
+                banner.innerHTML = '<a href="/notices">\uD83D\uDD14 ' + data.title + '</a>'
+                    + '<button type="button" class="notice-alert-close">&times;</button>';
+                document.body.prepend(banner);
+                banner.querySelector('.notice-alert-close').addEventListener('click', () => {
+                    localStorage.setItem('humetix_last_notice_id', data.latest_id);
+                    banner.remove();
+                });
+            })
+            .catch(() => {});
+    })();
 </script>
 {% endblock %}

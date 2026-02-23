@@ -26,6 +26,9 @@ PROTECTED = [
     ("GET",  "/admin/payslip/excel"),
     ("GET",  "/admin/employees"),
     ("GET",  "/admin/advance"),
+    ("GET",  "/admin/dashboard"),
+    ("GET",  "/admin/sites"),
+    ("GET",  "/admin/notices"),
 ]
 
 

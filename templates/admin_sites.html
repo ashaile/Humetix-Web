@@ -1,0 +1,302 @@
+{% extends "base_admin.html" %}
+
+{% block admin_title %}HUMETIX - 현장 관리{% endblock %}
+{% block page_title %}현장 관리{% endblock %}
+{% block page_desc %}현장(사업장)을 등록/수정하고 직원을 배정합니다. 미배정 인원: {{ unassigned }}명{% endblock %}
+
+{% block page_css %}
+.register-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 24px;
+}
+.register-card h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 16px;
+}
+.form-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+.action-btns { display: flex; gap: 4px; }
+.assign-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px;
+}
+.assign-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    font-size: 14px;
+}
+.assign-item:hover { background: var(--bg3); border-radius: 4px; }
+@media (max-width: 768px) {
+    .form-row { flex-direction: column; }
+    .form-group { width: 100%; }
+    .action-btns { flex-wrap: wrap; }
+}
+{% endblock %}
+
+{% block content %}
+<div class="register-card">
+    <h3>현장 등록</h3>
+    <div class="form-row">
+        <div class="form-group">
+            <label class="form-label">현장명</label>
+            <input type="text" id="site-name" class="form-input" placeholder="○○공장">
+        </div>
+        <div class="form-group">
+            <label class="form-label">주소</label>
+            <input type="text" id="site-address" class="form-input" placeholder="주소 (선택)">
+        </div>
+        <div class="form-group">
+            <label class="form-label">담당자</label>
+            <input type="text" id="site-contact" class="form-input" placeholder="이름">
+        </div>
+        <div class="form-group">
+            <label class="form-label">연락처</label>
+            <input type="text" id="site-phone" class="form-input" placeholder="010-0000-0000">
+        </div>
+        <div>
+            <button class="btn btn-primary" onclick="createSite()">등록</button>
+        </div>
+    </div>
+</div>
+
+<div class="table-wrap">
+    <div class="table-header">
+        <div class="table-title">현장 목록 ({{ sites|length }}개)</div>
+    </div>
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>현장명</th>
+                    <th>주소</th>
+                    <th>담당자</th>
+                    <th>연락처</th>
+                    <th>재직 인원</th>
+                    <th>상태</th>
+                    <th>관리</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for site in sites %}
+                <tr id="site-row-{{ site.id }}">
+                    <td class="emp-name">{{ site.name }}</td>
+                    <td>{{ site.address }}</td>
+                    <td>{{ site.contact_person }}</td>
+                    <td class="mono">{{ site.contact_phone }}</td>
+                    <td class="mono">{{ site.employees|selectattr('is_active')|list|length }}명</td>
+                    <td>
+                        {% if site.is_active %}
+                        <span class="badge badge-active">활성</span>
+                        {% else %}
+                        <span class="badge badge-inactive">비활성</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="btn btn-outline btn-sm" onclick='openEditSite({{ site.id }}, {{ site.to_dict()|tojson }})'>수정</button>
+                            <button class="btn btn-outline btn-sm" onclick="openAssignModal({{ site.id }}, '{{ site.name }}')">배정</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteSite({{ site.id }}, '{{ site.name }}')">삭제</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not sites %}
+                <tr>
+                    <td colspan="7" style="text-align:center;padding:24px;color:var(--text2);">
+                        등록된 현장이 없습니다.
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 현장 수정 모달 -->
+<div id="editSiteModal" class="modal-overlay">
+    <div class="modal-card">
+        <h3>현장 정보 수정</h3>
+        <input type="hidden" id="editSiteId">
+        <div class="form-group" style="margin-bottom:12px;">
+            <label class="form-label">현장명</label>
+            <input type="text" id="editSiteName" class="form-input">
+        </div>
+        <div class="form-group" style="margin-bottom:12px;">
+            <label class="form-label">주소</label>
+            <input type="text" id="editSiteAddress" class="form-input">
+        </div>
+        <div class="form-group" style="margin-bottom:12px;">
+            <label class="form-label">담당자</label>
+            <input type="text" id="editSiteContact" class="form-input">
+        </div>
+        <div class="form-group" style="margin-bottom:12px;">
+            <label class="form-label">연락처</label>
+            <input type="text" id="editSitePhone" class="form-input">
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="closeEditSite()">취소</button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="submitEditSite()">저장</button>
+        </div>
+    </div>
+</div>
+
+<!-- 배정 모달 -->
+<div id="assignModal" class="modal-overlay">
+    <div class="modal-card">
+        <h3 id="assignModalTitle">직원 배정</h3>
+        <input type="hidden" id="assignSiteId">
+        <div class="assign-list" id="assignList">
+            {% for emp in employees %}
+            <label class="assign-item">
+                <input type="checkbox" value="{{ emp.id }}" data-site="{{ emp.site_id or '' }}">
+                {{ emp.name }} ({{ emp.birth_date }})
+                {% if emp.site %}<span style="font-size:11px;color:var(--text2);"> — {{ emp.site.name }}</span>{% endif %}
+            </label>
+            {% endfor %}
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="closeAssignModal()">취소</button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="submitAssign()">배정</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+const csrfToken = '{{ csrf_token() }}';
+const headers = { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken };
+
+async function createSite() {
+    const name = document.getElementById('site-name').value.trim();
+    if (!name) { showToast('현장 이름을 입력하세요.'); return; }
+
+    const btn = document.querySelector('.register-card .btn-primary');
+    setButtonLoading(btn, true);
+    try {
+        const res = await fetch('/api/sites', {
+            method: 'POST', headers,
+            body: JSON.stringify({
+                name,
+                address: document.getElementById('site-address').value.trim(),
+                contact_person: document.getElementById('site-contact').value.trim(),
+                contact_phone: document.getElementById('site-phone').value.trim(),
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(name + ' 현장이 등록되었습니다.');
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showToast(data.error || '등록 실패');
+        }
+    } finally {
+        setButtonLoading(btn, false);
+    }
+}
+
+function openEditSite(id, site) {
+    document.getElementById('editSiteId').value = id;
+    document.getElementById('editSiteName').value = site.name;
+    document.getElementById('editSiteAddress').value = site.address || '';
+    document.getElementById('editSiteContact').value = site.contact_person || '';
+    document.getElementById('editSitePhone').value = site.contact_phone || '';
+    document.getElementById('editSiteModal').classList.add('show');
+}
+
+function closeEditSite() {
+    document.getElementById('editSiteModal').classList.remove('show');
+}
+
+async function submitEditSite() {
+    const id = document.getElementById('editSiteId').value;
+    const name = document.getElementById('editSiteName').value.trim();
+    if (!name) { showToast('현장명을 입력하세요.'); return; }
+
+    const res = await fetch('/api/sites/' + id, {
+        method: 'PUT', headers,
+        body: JSON.stringify({
+            name,
+            address: document.getElementById('editSiteAddress').value.trim(),
+            contact_person: document.getElementById('editSiteContact').value.trim(),
+            contact_phone: document.getElementById('editSitePhone').value.trim(),
+        })
+    });
+    const data = await res.json();
+    if (data.success) {
+        showToast('현장 정보가 수정되었습니다.');
+        setTimeout(() => location.reload(), 500);
+    } else {
+        showToast(data.error || '수정 실패');
+    }
+}
+
+function deleteSite(id, name) {
+    showConfirm(name + ' 현장을 삭제하시겠습니까?', async () => {
+        const res = await fetch('/api/sites/' + id, { method: 'DELETE', headers });
+        const data = await res.json();
+        if (data.success) {
+            showToast(name + ' 현장이 삭제되었습니다.');
+            document.getElementById('site-row-' + id).remove();
+        } else {
+            showToast(data.error || '삭제 실패');
+        }
+    });
+}
+
+function openAssignModal(siteId, siteName) {
+    document.getElementById('assignSiteId').value = siteId;
+    document.getElementById('assignModalTitle').textContent = siteName + ' — 직원 배정';
+    const checks = document.querySelectorAll('#assignList input[type="checkbox"]');
+    checks.forEach(cb => {
+        cb.checked = cb.dataset.site === String(siteId);
+    });
+    document.getElementById('assignModal').classList.add('show');
+}
+
+function closeAssignModal() {
+    document.getElementById('assignModal').classList.remove('show');
+}
+
+async function submitAssign() {
+    const siteId = document.getElementById('assignSiteId').value;
+    const checks = document.querySelectorAll('#assignList input[type="checkbox"]');
+    const assignIds = [];
+    const unassignIds = [];
+    checks.forEach(cb => {
+        if (cb.checked && cb.dataset.site !== siteId) {
+            assignIds.push(parseInt(cb.value));
+        } else if (!cb.checked && cb.dataset.site === siteId) {
+            unassignIds.push(parseInt(cb.value));
+        }
+    });
+
+    if (assignIds.length > 0) {
+        await fetch('/api/sites/' + siteId + '/assign', {
+            method: 'POST', headers,
+            body: JSON.stringify({ employee_ids: assignIds })
+        });
+    }
+    if (unassignIds.length > 0) {
+        await fetch('/api/sites/' + siteId + '/unassign', {
+            method: 'POST', headers,
+            body: JSON.stringify({ employee_ids: unassignIds })
+        });
+    }
+
+    showToast('배정이 완료되었습니다.');
+    setTimeout(() => location.reload(), 500);
+}
+{% endblock %}

@@ -1,0 +1,192 @@
+{% extends "base_admin.html" %}
+
+{% block admin_title %}HUMETIX - 대시보드{% endblock %}
+{% block page_title %}대시보드{% endblock %}
+{% block page_desc %}{{ month }} 기준 종합 현황{% endblock %}
+
+{% block page_css %}
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px; margin-bottom: 24px;
+}
+.stat-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px;
+    transition: transform .2s, box-shadow .2s;
+}
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.stat-label {
+    font-size: 12px; color: var(--text2); font-weight: 500;
+    text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px;
+}
+.stat-value {
+    font-size: 28px; font-weight: 800;
+    font-family: "JetBrains Mono", monospace; letter-spacing: -1px;
+}
+.stat-main { display: inline-flex; align-items: baseline; gap: 6px; }
+.stat-unit { font-size: 16px; font-weight: 700; color: var(--text2); letter-spacing: 0; }
+.stat-value.accent { color: var(--accent); }
+.stat-value.success { color: var(--success); }
+.stat-value.night { color: var(--night); }
+.stat-value.danger { color: var(--danger); }
+.dashboard-section { margin-bottom: 28px; }
+.section-title { font-size: 16px; font-weight: 700; margin-bottom: 14px; }
+@media (max-width: 768px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .stat-value { font-size: 22px; }
+}
+@media (max-width: 480px) {
+    .stats-grid { grid-template-columns: 1fr; }
+}
+{% endblock %}
+
+{% block content %}
+<form method="get" action="/admin/dashboard" class="filter-bar">
+    <input type="month" name="month" class="form-input" value="{{ month }}">
+    <button type="submit" class="btn btn-primary btn-sm">조회</button>
+</form>
+
+<!-- 재직자 현황 -->
+<div class="dashboard-section">
+    <h3 class="section-title">재직자 현황</h3>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">재직 중</div>
+            <div class="stat-main"><div class="stat-value accent">{{ stats.employees.active }}</div><div class="stat-unit">명</div></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">퇴직</div>
+            <div class="stat-main"><div class="stat-value">{{ stats.employees.inactive }}</div><div class="stat-unit">명</div></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">주간 근무</div>
+            <div class="stat-main"><div class="stat-value">{{ stats.employees.weekly }}</div><div class="stat-unit">명</div></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">교대 근무</div>
+            <div class="stat-main"><div class="stat-value night">{{ stats.employees.shift }}</div><div class="stat-unit">명</div></div>
+        </div>
+    </div>
+</div>
+
+<!-- 월별 근태 -->
+<div class="dashboard-section">
+    <h3 class="section-title">{{ month }} 근태 요약</h3>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">기록 수</div>
+            <div class="stat-main"><div class="stat-value">{{ stats.attendance.records }}</div><div class="stat-unit">건</div></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">출근 인원</div>
+            <div class="stat-main"><div class="stat-value accent">{{ stats.attendance.workers }}</div><div class="stat-unit">명</div></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">총 근무</div>
+            <div class="stat-main"><div class="stat-value">{{ stats.attendance.total_hours }}</div><div class="stat-unit">시간</div></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">잔업</div>
+            <div class="stat-main"><div class="stat-value success">{{ stats.attendance.ot_hours }}</div><div class="stat-unit">시간</div></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">심야</div>
+            <div class="stat-main"><div class="stat-value night">{{ stats.attendance.night_hours }}</div><div class="stat-unit">시간</div></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">특근</div>
+            <div class="stat-main"><div class="stat-value" style="color:#d946ef">{{ stats.attendance.holiday_hours }}</div><div class="stat-unit">시간</div></div>
+        </div>
+    </div>
+</div>
+
+<!-- 급여 현황 -->
+<div class="dashboard-section">
+    <h3 class="section-title">{{ month }} 급여 현황</h3>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">생성 건수</div>
+            <div class="stat-main"><div class="stat-value">{{ stats.payslip.count }}</div><div class="stat-unit">건</div></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">총 지급액</div>
+            <div class="stat-main"><div class="stat-value accent">{{ '{:,}'.format(stats.payslip.total_gross) }}</div><div class="stat-unit">원</div></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">총 실수령</div>
+            <div class="stat-main"><div class="stat-value success">{{ '{:,}'.format(stats.payslip.total_net) }}</div><div class="stat-unit">원</div></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">평균 실수령</div>
+            <div class="stat-main"><div class="stat-value">{{ '{:,}'.format(stats.payslip.avg_net) }}</div><div class="stat-unit">원</div></div>
+        </div>
+    </div>
+</div>
+
+<!-- 가불 현황 -->
+<div class="dashboard-section">
+    <h3 class="section-title">가불 현황</h3>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">대기 중</div>
+            <div class="stat-main"><div class="stat-value accent">{{ stats.advance.pending }}</div><div class="stat-unit">건</div></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">승인</div>
+            <div class="stat-main"><div class="stat-value success">{{ stats.advance.approved }}</div><div class="stat-unit">건</div></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">반려</div>
+            <div class="stat-main"><div class="stat-value danger">{{ stats.advance.rejected }}</div><div class="stat-unit">건</div></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">총 승인 금액</div>
+            <div class="stat-main"><div class="stat-value">{{ '{:,}'.format(stats.advance.total_amount) }}</div><div class="stat-unit">원</div></div>
+        </div>
+    </div>
+</div>
+
+<!-- 현장별 인원 -->
+<div class="dashboard-section">
+    <h3 class="section-title">현장별 인원</h3>
+    <div class="stats-grid">
+        {% for sid, sname, cnt in site_stats %}
+        <div class="stat-card">
+            <div class="stat-label">{{ sname }}</div>
+            <div class="stat-main"><div class="stat-value">{{ cnt }}</div><div class="stat-unit">명</div></div>
+        </div>
+        {% endfor %}
+        <div class="stat-card">
+            <div class="stat-label">미배정</div>
+            <div class="stat-main"><div class="stat-value danger">{{ unassigned }}</div><div class="stat-unit">명</div></div>
+        </div>
+    </div>
+</div>
+
+<!-- 최근 입사지원 -->
+{% if recent_apps %}
+<div class="dashboard-section">
+    <h3 class="section-title">최근 입사지원</h3>
+    <div class="table-wrap">
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr><th>이름</th><th>연락처</th><th>일시</th><th>상태</th></tr>
+                </thead>
+                <tbody>
+                    {% for app in recent_apps %}
+                    <tr>
+                        <td class="emp-name">{{ app.name }}</td>
+                        <td class="mono">{{ app.phone }}</td>
+                        <td class="mono">{{ app.timestamp.strftime('%Y-%m-%d') if app.timestamp else '-' }}</td>
+                        <td><span class="badge badge-pending">{{ app.status or 'new' }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
