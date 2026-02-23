@@ -67,6 +67,13 @@
                 {% endfor %}
             </select>
         </div>
+        <div class="form-group">
+            <label class="form-label">공제유형</label>
+            <select id="emp-insurance" class="form-input">
+                <option value="3.3%">소득세 3.3%</option>
+                <option value="4대보험">4대보험</option>
+            </select>
+        </div>
         <div>
             <button class="btn btn-primary" onclick="createEmployee()">등록</button>
         </div>
@@ -85,6 +92,7 @@
                     <th>이름</th>
                     <th>생년월일</th>
                     <th>현장</th>
+                    <th>공제유형</th>
                     <th>입사일</th>
                     <th>퇴사일</th>
                     <th>상태</th>
@@ -97,6 +105,13 @@
                     <td class="emp-name">{{ emp.name }}</td>
                     <td class="mono">{{ emp.birth_date }}</td>
                     <td>{{ emp.site.name if emp.site else '-' }}</td>
+                    <td>
+                        {% if emp.insurance_type == '4대보험' %}
+                        <span class="badge badge-active">4대보험</span>
+                        {% else %}
+                        <span class="badge" style="background:#FEF3C7;color:#D97706;">3.3%</span>
+                        {% endif %}
+                    </td>
                     <td class="mono">{{ emp.hire_date.strftime('%Y-%m-%d') if emp.hire_date else '-' }}</td>
                     <td class="mono">{{ emp.resign_date.strftime('%Y-%m-%d') if emp.resign_date else '-' }}</td>
                     <td>
@@ -125,7 +140,7 @@
                 {% endfor %}
                 {% if not employees %}
                 <tr>
-                    <td colspan="7" style="text-align:center;padding:24px;color:var(--text2);">
+                    <td colspan="8" style="text-align:center;padding:24px;color:var(--text2);">
                         등록된 사원이 없습니다. 위 양식으로 사원을 등록해주세요.
                     </td>
                 </tr>
@@ -153,6 +168,13 @@
             <select id="editEmpWorkType" class="form-input">
                 <option value="weekly">주간</option>
                 <option value="shift">교대</option>
+            </select>
+        </div>
+        <div class="form-group" style="margin-bottom:12px;">
+            <label class="form-label">공제유형</label>
+            <select id="editEmpInsurance" class="form-input">
+                <option value="3.3%">소득세 3.3%</option>
+                <option value="4대보험">4대보험</option>
             </select>
         </div>
         <div class="form-group" style="margin-bottom:12px;">
@@ -188,7 +210,8 @@ async function createEmployee() {
     if (!birth_date || birth_date.length !== 6) { showToast('생년월일 6자리를 입력하세요.'); return; }
 
     const site_id = document.getElementById('emp-site').value;
-    const body = { name, birth_date };
+    const insurance_type = document.getElementById('emp-insurance').value;
+    const body = { name, birth_date, insurance_type };
     if (hire_date) body.hire_date = hire_date;
     if (site_id) body.site_id = parseInt(site_id);
 
@@ -272,6 +295,7 @@ function openEditEmp(id, emp) {
     document.getElementById('editEmpName').value = emp.name;
     document.getElementById('editEmpBirth').value = emp.birth_date;
     document.getElementById('editEmpWorkType').value = emp.work_type || 'weekly';
+    document.getElementById('editEmpInsurance').value = emp.insurance_type || '3.3%';
     document.getElementById('editEmpHire').value = emp.hire_date || '';
     document.getElementById('editEmpSite').value = emp.site_id || '';
     document.getElementById('editEmpModal').classList.add('show');
@@ -293,6 +317,7 @@ async function submitEditEmp() {
         name,
         birth_date,
         work_type: document.getElementById('editEmpWorkType').value,
+        insurance_type: document.getElementById('editEmpInsurance').value,
         hire_date: document.getElementById('editEmpHire').value || '',
         site_id: document.getElementById('editEmpSite').value || null,
     };

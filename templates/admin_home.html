@@ -1,0 +1,309 @@
+{% extends "base_admin.html" %}
+
+{% block admin_title %}HUMETIX - 홈{% endblock %}
+{% block page_title %}홈{% endblock %}
+{% block page_desc %}오늘의 업무 현황을 한눈에 확인합니다.{% endblock %}
+
+{% block page_css %}
+/* ── 처리 대기 ── */
+.todo-section { margin-bottom: 28px; }
+.section-title {
+    font-size: 16px; font-weight: 700; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+}
+.todo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+}
+.todo-card {
+    display: flex; align-items: center; gap: 16px;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+    text-decoration: none; color: var(--text);
+    transition: transform .2s, box-shadow .2s, border-color .2s;
+    cursor: pointer;
+}
+.todo-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--accent);
+}
+.todo-card.has-items { border-left: 4px solid var(--accent); }
+.todo-icon {
+    font-size: 28px; width: 48px; height: 48px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg3); border-radius: 12px; flex-shrink: 0;
+}
+.todo-info { flex: 1; min-width: 0; }
+.todo-label { font-size: 13px; color: var(--text2); font-weight: 500; margin-bottom: 4px; }
+.todo-count {
+    font-size: 28px; font-weight: 800;
+    font-family: "JetBrains Mono", "Inter", monospace; letter-spacing: -1px;
+}
+.todo-count.accent { color: var(--accent); }
+.todo-count.zero { color: var(--text2); }
+.todo-unit { font-size: 14px; font-weight: 600; color: var(--text2); margin-left: 2px; }
+
+/* ── 운영 현황 ── */
+.snapshot-section { margin-bottom: 28px; }
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+}
+.stat-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px;
+    transition: transform .2s, box-shadow .2s;
+}
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.stat-label {
+    font-size: 12px; color: var(--text2); font-weight: 500;
+    text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px;
+}
+.stat-main { display: inline-flex; align-items: baseline; gap: 6px; }
+.stat-value {
+    font-size: 26px; font-weight: 800;
+    font-family: "JetBrains Mono", monospace; letter-spacing: -1px;
+}
+.stat-unit { font-size: 14px; font-weight: 700; color: var(--text2); letter-spacing: 0; }
+.stat-value.accent { color: var(--accent); }
+.stat-value.success { color: var(--success); }
+
+/* ── 현장별 인원 ── */
+.site-section { margin-bottom: 28px; }
+.site-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+}
+.site-chip {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px;
+    text-align: center;
+}
+.site-chip .name { font-size: 13px; color: var(--text2); font-weight: 500; margin-bottom: 4px; }
+.site-chip .count {
+    font-size: 22px; font-weight: 800;
+    font-family: "JetBrains Mono", monospace;
+}
+.site-chip .count.danger { color: var(--danger); }
+
+/* ── 최근 활동 ── */
+.activity-section { margin-bottom: 28px; }
+.activity-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 18px;
+}
+.activity-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+}
+.activity-card-header {
+    padding: 14px 18px; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+}
+.activity-card-header h4 { font-size: 14px; font-weight: 700; margin: 0; }
+.activity-card-header a {
+    font-size: 12px; color: var(--accent); text-decoration: none; font-weight: 600;
+}
+.activity-card-header a:hover { text-decoration: underline; }
+.activity-list { list-style: none; margin: 0; padding: 0; }
+.activity-list li {
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 13px;
+}
+.activity-list li:last-child { border-bottom: none; }
+.activity-name { font-weight: 600; }
+.activity-meta { color: var(--text2); font-size: 12px; }
+.activity-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 11px; font-weight: 600;
+}
+.activity-badge.new { background: #e0e7ff; color: #4338ca; }
+.activity-badge.pending { background: #fef3c7; color: #b45309; }
+.activity-badge.approved { background: #dcfce7; color: #16a34a; }
+.activity-empty {
+    padding: 24px 18px; text-align: center;
+    color: var(--text2); font-size: 13px;
+}
+
+@media (max-width: 768px) {
+    .todo-grid { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .activity-grid { grid-template-columns: 1fr; }
+    .stat-value { font-size: 22px; }
+    .todo-count { font-size: 24px; }
+}
+@media (max-width: 480px) {
+    .stats-grid { grid-template-columns: 1fr; }
+    .site-grid { grid-template-columns: repeat(2, 1fr); }
+}
+{% endblock %}
+
+{% block content %}
+
+<!-- 처리 대기 -->
+<div class="todo-section">
+    <h3 class="section-title">&#128203; 처리 대기</h3>
+    <div class="todo-grid">
+        <a href="{{ url_for('advance.admin_advance') }}?status=pending" class="todo-card{% if todo.advances > 0 %} has-items{% endif %}">
+            <div class="todo-icon">&#127974;</div>
+            <div class="todo-info">
+                <div class="todo-label">가불 승인 대기</div>
+                <span class="todo-count{% if todo.advances > 0 %} accent{% else %} zero{% endif %}">{{ todo.advances }}</span>
+                <span class="todo-unit">건</span>
+            </div>
+        </a>
+        <a href="{{ url_for('admin.applications') }}?status=new" class="todo-card{% if todo.applications > 0 %} has-items{% endif %}">
+            <div class="todo-icon">&#128196;</div>
+            <div class="todo-info">
+                <div class="todo-label">신규 입사지원</div>
+                <span class="todo-count{% if todo.applications > 0 %} accent{% else %} zero{% endif %}">{{ todo.applications }}</span>
+                <span class="todo-unit">건</span>
+            </div>
+        </a>
+        <a href="{{ url_for('admin.inquiries') }}?status=new" class="todo-card{% if todo.inquiries > 0 %} has-items{% endif %}">
+            <div class="todo-icon">&#128232;</div>
+            <div class="todo-info">
+                <div class="todo-label">미확인 문의</div>
+                <span class="todo-count{% if todo.inquiries > 0 %} accent{% else %} zero{% endif %}">{{ todo.inquiries }}</span>
+                <span class="todo-unit">건</span>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- 이번 달 운영 현황 -->
+<div class="snapshot-section">
+    <h3 class="section-title">&#128200; {{ month }} 운영 현황</h3>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">재직 인원</div>
+            <div class="stat-main">
+                <div class="stat-value accent">{{ snapshot.emp_active }}</div>
+                <div class="stat-unit">명</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">근태 기록</div>
+            <div class="stat-main">
+                <div class="stat-value">{{ snapshot.att_records }}</div>
+                <div class="stat-unit">건</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">총 근무시간</div>
+            <div class="stat-main">
+                <div class="stat-value">{{ '{:,.1f}'.format(snapshot.att_hours) }}</div>
+                <div class="stat-unit">시간</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">잔업시간</div>
+            <div class="stat-main">
+                <div class="stat-value success">{{ '{:,.1f}'.format(snapshot.att_ot) }}</div>
+                <div class="stat-unit">시간</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">급여명세서</div>
+            <div class="stat-main">
+                <div class="stat-value">{{ snapshot.pay_count }}</div>
+                <div class="stat-unit">건</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">가불 승인액</div>
+            <div class="stat-main">
+                <div class="stat-value">{{ '{:,}'.format(snapshot.adv_amount) }}</div>
+                <div class="stat-unit">원</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 현장별 인원 -->
+{% if site_stats or unassigned > 0 %}
+<div class="site-section">
+    <h3 class="section-title">&#127959; 현장별 인원</h3>
+    <div class="site-grid">
+        {% for sname, cnt in site_stats %}
+        <div class="site-chip">
+            <div class="name">{{ sname }}</div>
+            <div class="count">{{ cnt }}</div>
+        </div>
+        {% endfor %}
+        {% if unassigned > 0 %}
+        <div class="site-chip">
+            <div class="name">미배정</div>
+            <div class="count danger">{{ unassigned }}</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- 최근 활동 -->
+<div class="activity-section">
+    <h3 class="section-title">&#128337; 최근 활동</h3>
+    <div class="activity-grid">
+        <div class="activity-card">
+            <div class="activity-card-header">
+                <h4>최근 입사지원</h4>
+                <a href="{{ url_for('admin.applications') }}">전체 보기 &#8594;</a>
+            </div>
+            {% if recent_apps %}
+            <ul class="activity-list">
+                {% for app in recent_apps %}
+                <li>
+                    <div>
+                        <span class="activity-name">{{ app.name }}</span>
+                        <span class="activity-meta"> &middot; {{ app.phone or '' }}</span>
+                    </div>
+                    <div>
+                        <span class="activity-badge new">{{ app.status or 'new' }}</span>
+                        <span class="activity-meta">{{ app.timestamp.strftime('%m/%d') if app.timestamp else '' }}</span>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="activity-empty">최근 입사지원이 없습니다.</div>
+            {% endif %}
+        </div>
+
+        <div class="activity-card">
+            <div class="activity-card-header">
+                <h4>최근 가불 신청</h4>
+                <a href="{{ url_for('advance.admin_advance') }}">전체 보기 &#8594;</a>
+            </div>
+            {% if recent_advances %}
+            <ul class="activity-list">
+                {% for adv in recent_advances %}
+                <li>
+                    <div>
+                        <span class="activity-name">{{ adv.employee.name if adv.employee else '?' }}</span>
+                        <span class="activity-meta"> &middot; {{ '{:,}'.format(adv.amount) }}원</span>
+                    </div>
+                    <div>
+                        <span class="activity-badge {{ adv.status }}">
+                            {% if adv.status == 'pending' %}대기{% elif adv.status == 'approved' %}승인{% else %}반려{% endif %}
+                        </span>
+                        <span class="activity-meta">{{ adv.created_at.strftime('%m/%d') if adv.created_at else '' }}</span>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="activity-empty">최근 가불 신청이 없습니다.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -2,7 +2,7 @@ import hmac
 import logging
 import os
 import re
-from datetime import datetime
+from datetime import date, datetime
 from io import BytesIO
 
 from flask import (
@@ -20,10 +20,19 @@ from openpyxl.drawing.image import Image as ExcelImage
 from openpyxl.styles import Border, Font, Side
 from openpyxl.utils import get_column_letter
 from PIL import Image as PILImage, ImageOps
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import joinedload
 
-from models import Application, Inquiry, db
+from models import (
+    AdvanceRequest,
+    Application,
+    AttendanceRecord,
+    Employee,
+    Inquiry,
+    Payslip,
+    Site,
+    db,
+)
 from routes.utils import BASE_DIR, ENV_FILE_PATH, UPLOAD_DIR, require_admin
 from services.excel_service import (
     EXCEL_COLUMN_LABELS,
@@ -128,6 +137,90 @@ def build_filtered_query(args):
 @admin_bp.route('/humetix_master_99')
 @require_admin
 def master_view():
+    today = date.today()
+    current_month = today.strftime("%Y-%m")
+
+    # ── 처리 대기 (To-Do) ──
+    pending_advances = AdvanceRequest.query.filter_by(status="pending").count()
+    new_applications = Application.query.filter_by(status="new").count()
+    new_inquiries = Inquiry.query.filter_by(status="new").count()
+
+    # ── 운영 스냅샷 ──
+    emp_active = Employee.query.filter_by(is_active=True).count()
+
+    month_start = date(today.year, today.month, 1)
+    if today.month == 12:
+        month_end = date(today.year + 1, 1, 1)
+    else:
+        month_end = date(today.year, today.month + 1, 1)
+
+    att = db.session.query(
+        func.count(AttendanceRecord.id),
+        func.coalesce(func.sum(AttendanceRecord.total_work_hours), 0),
+        func.coalesce(func.sum(AttendanceRecord.overtime_hours), 0),
+    ).filter(
+        AttendanceRecord.work_date >= month_start,
+        AttendanceRecord.work_date < month_end,
+    ).first()
+
+    pay_count = Payslip.query.filter_by(month=current_month).count()
+
+    adv_approved_amount = db.session.query(
+        func.coalesce(func.sum(AdvanceRequest.amount), 0)
+    ).filter(
+        AdvanceRequest.status == "approved",
+        AdvanceRequest.request_month == current_month,
+    ).scalar()
+
+    # ── 현장별 인원 ──
+    site_stats = db.session.query(
+        Site.name,
+        func.count(Employee.id),
+    ).outerjoin(Employee, db.and_(
+        Employee.site_id == Site.id,
+        Employee.is_active.is_(True),
+    )).filter(Site.is_active.is_(True)).group_by(Site.name).all()
+
+    unassigned = Employee.query.filter(
+        Employee.is_active.is_(True),
+        Employee.site_id.is_(None),
+    ).count()
+
+    # ── 최근 활동 ──
+    recent_apps = Application.query.order_by(
+        Application.timestamp.desc()
+    ).limit(5).all()
+
+    recent_advances = AdvanceRequest.query.order_by(
+        AdvanceRequest.created_at.desc()
+    ).limit(5).all()
+
+    return render_template(
+        'admin_home.html',
+        month=current_month,
+        todo={
+            'advances': pending_advances,
+            'applications': new_applications,
+            'inquiries': new_inquiries,
+        },
+        snapshot={
+            'emp_active': emp_active,
+            'att_records': att[0] or 0,
+            'att_hours': round(float(att[1]), 1),
+            'att_ot': round(float(att[2]), 1),
+            'pay_count': pay_count,
+            'adv_amount': int(adv_approved_amount),
+        },
+        site_stats=site_stats,
+        unassigned=unassigned,
+        recent_apps=recent_apps,
+        recent_advances=recent_advances,
+    )
+
+
+@admin_bp.route('/admin/applications')
+@require_admin
+def applications():
     query, filters, search_query, start_date, end_date = build_filtered_query(request.args)
 
     page = request.args.get('page', 1, type=int)
@@ -138,7 +231,7 @@ def master_view():
 
     status_options = ['new', 'review', 'interview', 'offer', 'hired', 'rejected']
     return render_template(
-        'admin.html',
+        'admin_applications.html',
         data=data,
         pagination=pagination,
         filters=filters,
@@ -380,8 +473,7 @@ def download_excel():
                         max_dim = (800, 1000)
                         if img.width > max_dim[0] or img.height > max_dim[1]:
                             img.thumbnail(max_dim)
-                        from io import BytesIO as _BytesIO
-                        img_stream = _BytesIO()
+                        img_stream = BytesIO()
                         img.save(img_stream, format='PNG', optimize=False)
                         img_stream.seek(0)
                         excel_img = ExcelImage(img_stream)
@@ -509,7 +601,7 @@ def update_inquiry(inquiry_id):
 def delete_selected():
     selected_ids = request.form.getlist('selected_ids')
     if not selected_ids:
-        return redirect(url_for('admin.master_view'))
+        return redirect(url_for('admin.applications'))
 
     apps = Application.query.filter(Application.id.in_(selected_ids)).all()
     for app in apps:
@@ -521,7 +613,7 @@ def delete_selected():
         db.session.delete(app)
     db.session.commit()
 
-    return redirect(url_for('admin.master_view'))
+    return redirect(url_for('admin.applications'))
 @admin_bp.route('/view_photo/<filename>')
 @require_admin
 def view_photo(filename):
@@ -574,5 +666,4 @@ def clear_data():
             except Exception as e:
                 logger.error(f"Error deleting leftover file {f}: {e}")
         
-    return redirect(url_for('admin.master_view'))
-
+    return redirect(url_for('admin.applications'))

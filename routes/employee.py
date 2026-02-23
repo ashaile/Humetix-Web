@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 employee_bp = Blueprint("employee", __name__)
 
 ALLOWED_EMPLOYEE_WORK_TYPES = {"weekly", "shift"}
+ALLOWED_INSURANCE_TYPES = {"3.3%", "4대보험"}
 
 
 def _parse_bool(value):
@@ -66,11 +67,16 @@ def create_employee():
         return jsonify({"error": f"{name}({birth_date}) 직원이 이미 등록되어 있습니다."}), 409
 
     try:
+        insurance_type = str(data.get("insurance_type", "3.3%")).strip() or "3.3%"
+        if insurance_type not in ALLOWED_INSURANCE_TYPES:
+            return jsonify({"error": f"insurance_type must be one of {sorted(ALLOWED_INSURANCE_TYPES)}"}), 400
+
         employee = Employee(
             name=name,
             birth_date=birth_date,
             hire_date=hire_date,
             work_type=work_type,
+            insurance_type=insurance_type,
             site_id=site_id,
             is_active=True,
         )
@@ -115,6 +121,12 @@ def update_employee(emp_id):
             if work_type not in ALLOWED_EMPLOYEE_WORK_TYPES:
                 return jsonify({"error": f"work_type must be one of {sorted(ALLOWED_EMPLOYEE_WORK_TYPES)}"}), 400
             employee.work_type = work_type
+
+        if "insurance_type" in data:
+            ins_type = str(data["insurance_type"]).strip()
+            if ins_type not in ALLOWED_INSURANCE_TYPES:
+                return jsonify({"error": f"insurance_type must be one of {sorted(ALLOWED_INSURANCE_TYPES)}"}), 400
+            employee.insurance_type = ins_type
 
         if "site_id" in data:
             raw_site = data["site_id"]

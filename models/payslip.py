@@ -32,8 +32,13 @@ class Payslip(db.Model):
     gross = db.Column(db.Integer, nullable=False, default=0)
     tax = db.Column(db.Integer, nullable=False, default=0)
     insurance = db.Column(db.Integer, nullable=False, default=0)
+    pension = db.Column(db.Integer, nullable=False, default=0)
+    health_ins = db.Column(db.Integer, nullable=False, default=0)
+    longterm_care = db.Column(db.Integer, nullable=False, default=0)
+    employment_ins = db.Column(db.Integer, nullable=False, default=0)
     advance_deduction = db.Column(db.Integer, nullable=False, default=0)
     net = db.Column(db.Integer, nullable=False, default=0)
+    is_manual = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
@@ -59,6 +64,11 @@ class Payslip(db.Model):
             "gross": self.gross,
             "tax": self.tax,
             "insurance": self.insurance,
+            "pension": self.pension,
+            "health_ins": self.health_ins,
+            "longterm_care": self.longterm_care,
+            "employment_ins": self.employment_ins,
             "advance_deduction": self.advance_deduction,
             "net": self.net,
+            "is_manual": self.is_manual,
         }

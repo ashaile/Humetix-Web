@@ -262,7 +262,7 @@
 .attendance-container table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 14px;
+    font-size: 15px;
 }
 
 .attendance-container thead {
@@ -287,9 +287,14 @@
 }
 
 .mono {
-    font-family: "JetBrains Mono", monospace;
-    font-size: 13px;
+    font-family: "Inter", system-ui, sans-serif;
+    font-variant-numeric: tabular-nums;
+    font-size: 15px;
 }
+td.col-total { font-weight: 700; color: var(--text); }
+td.col-ot { font-weight: 700; color: var(--success); }
+td.col-night { font-weight: 700; color: var(--night); }
+td.col-holiday { font-weight: 700; color: #d946ef; }
 
 .emp-name {
     font-weight: 600;
@@ -298,9 +303,9 @@
 .badge {
     display: inline-flex;
     align-items: center;
-    padding: 3px 10px;
+    padding: 4px 12px;
     border-radius: 20px;
-    font-size: 11px;
+    font-size: 12.5px;
     font-weight: 600;
 }
 
@@ -470,10 +475,10 @@
                             <td class="mono">{{ r.work_date.strftime('%Y-%m-%d') if r.work_date else '' }}</td>
                             <td class="mono">{{ r.clock_in or '' }}</td>
                             <td class="mono">{{ r.clock_out or '' }}</td>
-                            <td class="mono">{{ r.total_work_hours }}h</td>
-                            <td class="mono">{{ r.overtime_hours }}h</td>
-                            <td class="mono">{{ r.night_hours }}h</td>
-                            <td class="mono" style="color:#d946ef;font-weight:600">{{ r.holiday_work_hours or 0 }}h</td>
+                            <td class="mono col-total">{{ r.total_work_hours }}h</td>
+                            <td class="mono col-ot">{{ r.overtime_hours }}h</td>
+                            <td class="mono col-night">{{ r.night_hours }}h</td>
+                            <td class="mono col-holiday">{{ r.holiday_work_hours or 0 }}h</td>
                             <td>
                                 {% if r.work_type == 'night' %}
                                 <span class="badge badge-night">야간</span>
@@ -651,10 +656,10 @@ function loadRecords() {
                         <td class="mono">${r.work_date || ""}</td>
                         <td class="mono">${r.clock_in || ""}</td>
                         <td class="mono">${r.clock_out || ""}</td>
-                        <td class="mono">${r.total_work_hours}h</td>
-                        <td class="mono">${r.overtime_hours}h</td>
-                        <td class="mono">${r.night_hours}h</td>
-                        <td class="mono" style="color:#d946ef;font-weight:600">${r.holiday_work_hours || 0}h</td>
+                        <td class="mono col-total">${r.total_work_hours}h</td>
+                        <td class="mono col-ot">${r.overtime_hours}h</td>
+                        <td class="mono col-night">${r.night_hours}h</td>
+                        <td class="mono col-holiday">${r.holiday_work_hours || 0}h</td>
                         <td><span class="badge ${badgeClass}">${workTypeLabel}</span></td>
                     </tr>
                 `;

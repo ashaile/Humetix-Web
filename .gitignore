@@ -6,9 +6,14 @@ applications.json
 humetix.db
 tests/*.db
 *.xlsx
+data/*.txt
+data/*.json
 
 # 업로드 파일
 uploads/
+
+# 임시 파일
+tmp/
 
 # Codex/Claude worktrees
 .claude/

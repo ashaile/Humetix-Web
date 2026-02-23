@@ -1,4 +1,5 @@
 ﻿import logging
+import os
 import re
 from calendar import monthrange
 from datetime import date, datetime
@@ -333,6 +334,7 @@ def admin_attendance():
     start = request.args.get("start_date", "")
     end = request.args.get("end_date", "")
     emp_name = request.args.get("emp_name", "")
+    work_type = request.args.get("work_type", "")
 
     query = AttendanceRecord.query
     if start:
@@ -347,31 +349,53 @@ def admin_attendance():
             end = ""
     if emp_name:
         query = query.filter(AttendanceRecord.emp_name.contains(emp_name))
+    if work_type:
+        query = query.filter(AttendanceRecord.work_type == work_type)
+
+    page = request.args.get("page", 1, type=int)
+    per_page = 50
 
     try:
-        records = query.order_by(AttendanceRecord.work_date.desc()).all()
+        # 통계는 전체 필터 결과 기반
+        from sqlalchemy import func as sa_func
+        stats_query = query.with_entities(
+            sa_func.count().label("total"),
+            sa_func.sum(AttendanceRecord.total_work_hours).label("total_work"),
+            sa_func.sum(AttendanceRecord.night_hours).label("total_night"),
+            sa_func.sum(AttendanceRecord.overtime_hours).label("total_ot"),
+            sa_func.sum(AttendanceRecord.holiday_work_hours).label("total_holiday"),
+        ).first()
+
+        day_count = query.filter(AttendanceRecord.work_type == "normal").count()
+        night_count = query.filter(AttendanceRecord.work_type == "night").count()
+
+        stats = {
+            "total": stats_query.total or 0,
+            "day": day_count,
+            "night": night_count,
+            "total_work": round(stats_query.total_work or 0, 1),
+            "total_night": round(stats_query.total_night or 0, 1),
+            "total_ot": round(stats_query.total_ot or 0, 1),
+            "total_holiday": round(stats_query.total_holiday or 0, 1),
+        }
+
+        pagination = query.order_by(AttendanceRecord.work_date.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
     except OperationalError as exc:
         logger.error("Admin attendance query failed: %s", exc)
         return _db_not_ready_page()
 
     today = date.today()
-    stats_source = records
-    stats = {
-        "total": len(stats_source),
-        "day": len([r for r in stats_source if r.work_type == "normal"]),
-        "night": len([r for r in stats_source if r.work_type == "night"]),
-        "total_work": round(sum(r.total_work_hours for r in stats_source), 1),
-        "total_night": round(sum(r.night_hours for r in stats_source), 1),
-        "total_ot": round(sum(r.overtime_hours for r in stats_source), 1),
-        "total_holiday": round(sum((r.holiday_work_hours or 0) for r in stats_source), 1),
-    }
 
     return render_template(
         "admin_attendance.html",
-        records=records,
+        records=pagination.items,
+        pagination=pagination,
         start_date=start,
         end_date=end,
         emp_name=emp_name,
+        work_type=work_type,
         stats=stats,
         today=today,
     )
@@ -386,6 +410,7 @@ def attendance_excel():
     start = request.args.get("start_date", "")
     end = request.args.get("end_date", "")
     emp_name = request.args.get("emp_name", "")
+    work_type = request.args.get("work_type", "")
 
     query = AttendanceRecord.query
     if start:
@@ -400,6 +425,8 @@ def attendance_excel():
             end = ""
     if emp_name:
         query = query.filter(AttendanceRecord.emp_name.contains(emp_name))
+    if work_type:
+        query = query.filter(AttendanceRecord.work_type == work_type)
 
     try:
         records = query.order_by(AttendanceRecord.work_date.asc()).all()
@@ -576,3 +603,210 @@ def delete_attendance(record_id):
         db.session.rollback()
         logger.error("Attendance delete error: %s", exc)
         return jsonify({"error": "DELETE failed"}), 500
+
+
+@attendance_bp.route("/api/attendance/bulk-delete", methods=["POST"])
+@require_admin
+def bulk_delete_attendance():
+    """선택 삭제 또는 필터 조건 전체 삭제."""
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"error": "JSON body required"}), 400
+
+    try:
+        # 방법 1: ID 목록으로 삭제
+        ids = data.get("ids")
+        if ids and isinstance(ids, list):
+            ids = [int(i) for i in ids]
+            deleted = AttendanceRecord.query.filter(AttendanceRecord.id.in_(ids)).delete(
+                synchronize_session=False
+            )
+            db.session.commit()
+            return jsonify({"success": True, "deleted": deleted})
+
+        # 방법 2: 필터 조건으로 전체 삭제
+        filt = data.get("filter", {})
+        query = AttendanceRecord.query
+        start = filt.get("start_date", "")
+        end = filt.get("end_date", "")
+        emp_name = filt.get("emp_name", "")
+        work_type = filt.get("work_type", "")
+
+        if start:
+            try:
+                query = query.filter(AttendanceRecord.work_date >= _parse_date(start))
+            except ValueError:
+                pass
+        if end:
+            try:
+                query = query.filter(AttendanceRecord.work_date <= _parse_date(end))
+            except ValueError:
+                pass
+        if emp_name:
+            query = query.filter(AttendanceRecord.emp_name.contains(emp_name))
+        if work_type:
+            query = query.filter(AttendanceRecord.work_type == work_type)
+
+        deleted = query.delete(synchronize_session=False)
+        db.session.commit()
+        return jsonify({"success": True, "deleted": deleted})
+
+    except Exception as exc:
+        db.session.rollback()
+        logger.error("Bulk delete error: %s", exc)
+        return jsonify({"error": f"삭제 실패: {exc}"}), 500
+
+
+# ── 근태 엑셀 업로드 ──────────────────────────────────
+
+@attendance_bp.route("/admin/attendance/import", methods=["GET", "POST"])
+@require_admin
+def import_attendance():
+    """GET: 업로드 폼, POST: 미리보기(dry-run)"""
+    if request.method == "GET":
+        return render_template("admin_attendance_import.html", result=None)
+
+    file = request.files.get("file")
+    if not file or not file.filename:
+        return render_template(
+            "admin_attendance_import.html",
+            result={"errors": ["파일을 선택해주세요."]},
+        )
+
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in (".xlsx", ".xls"):
+        return render_template(
+            "admin_attendance_import.html",
+            result={"errors": ["엑셀 파일(.xlsx, .xls)만 업로드 가능합니다."]},
+        )
+
+    from services.attendance_import import import_attendance_to_db, parse_attendance_excel
+
+    try:
+        parsed = parse_attendance_excel(file, filename=file.filename)
+    except Exception as exc:
+        logger.error("엑셀 파싱 오류: %s", exc)
+        return render_template(
+            "admin_attendance_import.html",
+            result={"errors": [f"엑셀 파싱 실패: {exc}"]},
+        )
+
+    if parsed.get("errors"):
+        return render_template(
+            "admin_attendance_import.html",
+            result={"errors": parsed["errors"]},
+        )
+
+    # dry_run으로 미리보기 결과 생성
+    preview = import_attendance_to_db(parsed, dry_run=True)
+    preview["month_str"] = parsed["month_str"]
+    preview["site_name"] = parsed["site_name"]
+    preview["employee_count"] = len(parsed["employees"])
+
+    # 파싱 결과를 임시 파일에 저장 (세션 쿠키 4KB 제한 회피)
+    import json
+    import uuid
+
+    from flask import session as flask_session
+
+    serializable = _serialize_parsed(parsed)
+    import_id = uuid.uuid4().hex[:12]
+    tmp_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "tmp")
+    os.makedirs(tmp_dir, exist_ok=True)
+    tmp_path = os.path.join(tmp_dir, f"import_{import_id}.json")
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        json.dump(serializable, f, ensure_ascii=False)
+    flask_session["attendance_import_id"] = import_id
+
+    return render_template(
+        "admin_attendance_import.html",
+        result=preview,
+        preview=True,
+    )
+
+
+@attendance_bp.route("/admin/attendance/import/execute", methods=["POST"])
+@require_admin
+def execute_import():
+    """미리보기 확인 후 실제 DB 저장 실행."""
+    import json
+
+    from flask import flash, session as flask_session
+
+    from services.attendance_import import import_attendance_to_db
+
+    import_id = flask_session.pop("attendance_import_id", None)
+    if not import_id:
+        flash("업로드 데이터가 만료되었습니다. 다시 업로드해주세요.", "error")
+        return redirect(url_for("attendance.import_attendance"))
+
+    tmp_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "tmp")
+    tmp_path = os.path.join(tmp_dir, f"import_{import_id}.json")
+
+    if not os.path.exists(tmp_path):
+        flash("업로드 데이터가 만료되었습니다. 다시 업로드해주세요.", "error")
+        return redirect(url_for("attendance.import_attendance"))
+
+    try:
+        with open(tmp_path, "r", encoding="utf-8") as f:
+            parsed = json.load(f)
+        parsed = _deserialize_parsed(parsed)
+        os.remove(tmp_path)  # 사용 후 삭제
+    except Exception as exc:
+        logger.error("Import 데이터 복원 실패: %s", exc)
+        flash("데이터 복원 실패. 다시 업로드해주세요.", "error")
+        return redirect(url_for("attendance.import_attendance"))
+
+    result = import_attendance_to_db(parsed, dry_run=False)
+    result["month_str"] = parsed["month_str"]
+    result["site_name"] = parsed["site_name"]
+    result["employee_count"] = len(parsed["employees"])
+
+    from flask import flash
+
+    if not result["errors"]:
+        flash(
+            f"{result['month_str']} {result['site_name']} 근태 업로드 완료: "
+            f"신규 {result['created']}건, 갱신 {result['updated']}건",
+            "success",
+        )
+    else:
+        flash("일부 오류가 발생했습니다. 아래 결과를 확인해주세요.", "error")
+
+    return render_template(
+        "admin_attendance_import.html",
+        result=result,
+        executed=True,
+    )
+
+
+def _serialize_parsed(parsed: dict) -> dict:
+    """파싱 결과를 JSON 직렬화 가능하게 변환."""
+    import copy
+
+    data = copy.deepcopy(parsed)
+    for emp in data.get("employees", []):
+        if emp.get("hire_date"):
+            emp["hire_date"] = emp["hire_date"].isoformat()
+        if emp.get("resign_date"):
+            emp["resign_date"] = emp["resign_date"].isoformat()
+        new_days = {}
+        for d, v in emp.get("days", {}).items():
+            key = d.isoformat() if isinstance(d, date) else str(d)
+            new_days[key] = v
+        emp["days"] = new_days
+    return data
+
+
+def _deserialize_parsed(data: dict) -> dict:
+    """JSON에서 복원된 파싱 결과를 원래 타입으로 변환."""
+    for emp in data.get("employees", []):
+        if emp.get("hire_date"):
+            emp["hire_date"] = date.fromisoformat(emp["hire_date"])
+        if emp.get("resign_date"):
+            emp["resign_date"] = date.fromisoformat(emp["resign_date"])
+        new_days = {}
+        for d_str, v in emp.get("days", {}).items():
+            new_days[date.fromisoformat(d_str)] = v
+        emp["days"] = new_days
+    return data

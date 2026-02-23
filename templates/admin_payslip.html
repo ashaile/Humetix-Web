@@ -23,9 +23,245 @@
     gap: 12px;
     flex-wrap: wrap;
 }
+.badge-manual {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #FEF3C7;
+    color: #D97706;
+    margin-left: 4px;
+}
+/* 미리보기 모달 */
+.preview-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.6);
+    z-index: 1100;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 20px;
+}
+.preview-overlay.active { display: flex; }
+.preview-card {
+    background: #fff;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 520px;
+    padding: 32px 36px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    position: relative;
+    color: #212529;
+}
+.preview-close {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    color: #6B7280;
+    line-height: 1;
+}
+.preview-close:hover { color: #111; }
+.pv-company {
+    font-size: 20px;
+    font-weight: 800;
+    color: #E85D26;
+    margin-bottom: 2px;
+}
+.pv-divider {
+    height: 3px;
+    background: #E85D26;
+    margin: 6px 0 12px 0;
+    border: none;
+}
+.pv-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #212529;
+    margin-bottom: 14px;
+}
+.pv-info-box {
+    background: #F8F9FA;
+    border: 1px solid #DEE2E6;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    display: grid;
+    grid-template-columns: auto 1fr auto 1fr;
+    gap: 6px 10px;
+    font-size: 13px;
+}
+.pv-info-box .lbl { color: #6B7280; font-weight: 600; }
+.pv-info-box .val { color: #212529; }
+.pv-section-header {
+    display: flex;
+    align-items: center;
+    padding: 7px 12px;
+    border-radius: 5px 5px 0 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+}
+.pv-section-header.earn { background: #E85D26; }
+.pv-section-header.deduct { background: #6B7280; }
+.pv-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 14px;
+    border: 1px solid #DEE2E6;
+    border-top: none;
+}
+.pv-table td {
+    padding: 6px 12px;
+    border-bottom: 1px solid #f0f0f0;
+}
+.pv-table td:last-child {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+.pv-table tr.total-row {
+    background: #FFF3ED;
+    font-weight: 700;
+    border-top: 1px solid #DEE2E6;
+}
+.pv-table tr.total-row.deduct-total {
+    background: #FEF2F2;
+}
+.pv-table td.deduct-val { color: #DC2626; }
+.pv-net-box {
+    background: #E85D26;
+    color: #fff;
+    border-radius: 6px;
+    text-align: center;
+    padding: 14px;
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 12px;
+}
+.pv-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: #9CA3AF;
+}
+.pv-manual-note {
+    font-size: 11px;
+    color: #F59E0B;
+    text-align: right;
+    margin-top: 2px;
+}
+.pv-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid #eee;
+}
+@media (max-width: 600px) {
+    .preview-card { padding: 20px 18px; }
+    .pv-info-box { grid-template-columns: auto 1fr; }
+    .pv-net-box { font-size: 16px; }
+}
+
+.edit-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+.edit-modal-overlay.active { display: flex; }
+.edit-modal {
+    background: var(--bg);
+    border-radius: var(--radius);
+    padding: 28px;
+    width: 95%;
+    max-width: 560px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,.3);
+}
+.edit-modal h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+.edit-section {
+    margin-bottom: 16px;
+}
+.edit-section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+}
+.edit-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+.edit-field label {
+    display: block;
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 3px;
+}
+.edit-field input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: inherit;
+    background: var(--bg);
+    color: var(--text);
+}
+.edit-field input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(232,93,38,.1);
+}
+.edit-summary {
+    background: var(--bg3);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    font-size: 14px;
+}
+.edit-summary .label { color: var(--text2); font-size: 12px; }
+.edit-summary .value { font-weight: 700; font-size: 16px; }
+.edit-summary .value.accent { color: var(--accent); }
+.edit-summary .value.danger { color: #dc2626; }
+.edit-btns {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    justify-content: flex-end;
+}
 @media (max-width: 768px) {
     .generate-row { flex-direction: column; align-items: stretch; }
     .generate-row .form-group { width: 100%; }
+    .edit-grid { grid-template-columns: 1fr; }
+    .edit-summary { grid-template-columns: 1fr; }
+    .edit-modal { padding: 20px; }
 }
 {% endblock %}
 
@@ -79,9 +315,6 @@
                     <th>부서</th>
                     <th>방식</th>
                     <th>총근무(h)</th>
-                    <th>잔업(h)</th>
-                    <th>심야(h)</th>
-                    <th>휴일(h)</th>
                     <th>기본급</th>
                     <th>잔업수당</th>
                     <th>심야수당</th>
@@ -91,20 +324,19 @@
                     <th>4대보험</th>
                     <th>가불차감</th>
                     <th>실수령</th>
-                    <th>PDF</th>
-                    <th>삭제</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
                 {% for ps in payslips %}
-                <tr>
-                    <td class="emp-name">{{ ps.emp_name }}</td>
+                <tr data-ps='{{ ps.to_dict()|tojson }}'>
+                    <td class="emp-name">
+                        {{ ps.emp_name }}
+                        {% if ps.is_manual %}<span class="badge-manual">수정됨</span>{% endif %}
+                    </td>
                     <td>{{ ps.dept }}</td>
                     <td>{{ '고정' if ps.salary_mode == 'standard' else '실근무' }}</td>
                     <td class="mono">{{ ps.total_work_hours }}</td>
-                    <td class="mono">{{ ps.ot_hours }}</td>
-                    <td class="mono">{{ ps.night_hours }}</td>
-                    <td class="mono">{{ ps.holiday_hours }}</td>
                     <td class="mono">{{ '{:,}'.format(ps.base_salary) }}</td>
                     <td class="mono">{{ '{:,}'.format(ps.ot_pay) }}</td>
                     <td class="mono">{{ '{:,}'.format(ps.night_pay) }}</td>
@@ -114,30 +346,301 @@
                     <td class="mono" style="color:#dc2626">-{{ '{:,}'.format(ps.insurance) }}</td>
                     <td class="mono" style="color:#dc2626">{% if ps.advance_deduction > 0 %}-{{
                         '{:,}'.format(ps.advance_deduction) }}{% else %}0{% endif %}</td>
-                    <td class="mono" style="font-weight:700;color:var(--accent)">{{ '{:,}'.format(ps.net) }}
-                    </td>
-                    <td><a href="/admin/payslip/pdf?month={{ month }}&employee_id={{ ps.employee_id }}"
-                            class="btn btn-outline btn-sm">PDF</a></td>
-                    <td>
-                        <button type="button" class="btn btn-outline btn-sm"
-                            style="color:#dc2626;border-color:#dc2626;"
-                            onclick="deletePayslip({{ ps.id }}, '{{ ps.emp_name }}')">삭제</button>
+                    <td class="mono" style="font-weight:700;color:var(--accent)">{{ '{:,}'.format(ps.net) }}</td>
+                    <td style="white-space:nowrap">
+                        <button type="button" class="btn btn-outline btn-sm btn-action" data-action="preview"
+                            style="padding:4px 8px;">미리보기</button>
+                        <button type="button" class="btn btn-outline btn-sm btn-action" data-action="edit"
+                            style="padding:4px 8px;">수정</button>
+                        <a href="/admin/payslip/pdf?month={{ month }}&employee_id={{ ps.employee_id }}"
+                            class="btn btn-outline btn-sm"
+                            style="padding:4px 8px;">PDF</a>
                     </td>
                 </tr>
                 {% endfor %}
                 {% if not payslips %}
                 <tr>
-                    <td colspan="18" style="text-align:center;padding:24px;color:var(--text2);">급여 데이터가 없습니다. 먼저 급여를 생성해 주세요.</td>
+                    <td colspan="14" style="text-align:center;padding:24px;color:var(--text2);">급여 데이터가 없습니다. 먼저 급여를 생성해 주세요.</td>
                 </tr>
                 {% endif %}
             </tbody>
         </table>
     </div>
 </div>
+
+<!-- 수정 모달 -->
+<div class="edit-modal-overlay" id="editOverlay" onclick="if(event.target===this)closeEditModal()">
+    <div class="edit-modal">
+        <h3 id="editTitle">급여명세서 수정</h3>
+        <input type="hidden" id="editId">
+
+        <div class="edit-section">
+            <div class="edit-section-title">지급 내역</div>
+            <div class="edit-grid">
+                <div class="edit-field">
+                    <label>기본급</label>
+                    <input type="number" id="edit-base_salary" oninput="recalcEdit()">
+                </div>
+                <div class="edit-field">
+                    <label>잔업수당</label>
+                    <input type="number" id="edit-ot_pay" oninput="recalcEdit()">
+                </div>
+                <div class="edit-field">
+                    <label>심야수당</label>
+                    <input type="number" id="edit-night_pay" oninput="recalcEdit()">
+                </div>
+                <div class="edit-field">
+                    <label>휴일수당</label>
+                    <input type="number" id="edit-holiday_pay" oninput="recalcEdit()">
+                </div>
+            </div>
+        </div>
+
+        <div class="edit-section">
+            <div class="edit-section-title">공제 내역</div>
+            <div class="edit-grid">
+                <div class="edit-field">
+                    <label>소득세</label>
+                    <input type="number" id="edit-tax" oninput="recalcEdit()">
+                </div>
+                <div class="edit-field">
+                    <label>국민연금</label>
+                    <input type="number" id="edit-pension" oninput="recalcEdit()">
+                </div>
+                <div class="edit-field">
+                    <label>건강보험</label>
+                    <input type="number" id="edit-health_ins" oninput="recalcEdit()">
+                </div>
+                <div class="edit-field">
+                    <label>장기요양보험</label>
+                    <input type="number" id="edit-longterm_care" oninput="recalcEdit()">
+                </div>
+                <div class="edit-field">
+                    <label>고용보험</label>
+                    <input type="number" id="edit-employment_ins" oninput="recalcEdit()">
+                </div>
+                <div class="edit-field">
+                    <label>가불차감</label>
+                    <input type="number" id="edit-advance_deduction" oninput="recalcEdit()">
+                </div>
+            </div>
+        </div>
+
+        <div class="edit-summary">
+            <div>
+                <div class="label">총지급액</div>
+                <div class="value" id="edit-preview-gross">0</div>
+            </div>
+            <div>
+                <div class="label">공제합계</div>
+                <div class="value danger" id="edit-preview-deduct">0</div>
+            </div>
+            <div>
+                <div class="label">실수령액</div>
+                <div class="value accent" id="edit-preview-net">0</div>
+            </div>
+        </div>
+
+        <div class="edit-btns">
+            <button class="btn btn-outline btn-sm" onclick="closeEditModal()">취소</button>
+            <button class="btn btn-outline btn-sm" id="editResetBtn" style="color:#D97706;border-color:#D97706;display:none"
+                onclick="resetPayslip()">초기화(재계산)</button>
+            <button class="btn btn-outline btn-sm" style="color:#dc2626;border-color:#dc2626;"
+                onclick="deletePayslip(document.getElementById('editId').value, document.getElementById('editTitle').dataset.name)">삭제</button>
+            <button class="btn btn-success btn-sm" onclick="savePayslip()">저장</button>
+        </div>
+    </div>
+</div>
+<!-- 미리보기 모달 -->
+<div class="preview-overlay" id="previewOverlay" onclick="if(event.target===this)closePreview()">
+    <div class="preview-card">
+        <button class="preview-close" onclick="closePreview()">&times;</button>
+        <div class="pv-company">Humetix Inc.</div>
+        <hr class="pv-divider">
+        <div class="pv-title" id="pvTitle"></div>
+        <div class="pv-info-box" id="pvInfo"></div>
+
+        <!-- 지급 내역 -->
+        <div class="pv-section-header earn">지급 내역</div>
+        <table class="pv-table" id="pvEarnTable"><tbody></tbody></table>
+
+        <!-- 공제 내역 -->
+        <div class="pv-section-header deduct">공제 내역</div>
+        <table class="pv-table" id="pvDeductTable"><tbody></tbody></table>
+
+        <!-- 실수령액 -->
+        <div class="pv-net-box" id="pvNet"></div>
+
+        <div class="pv-footer">
+            <span id="pvDate"></span>
+            <span id="pvManual"></span>
+        </div>
+
+        <div class="pv-actions">
+            <button class="btn btn-outline btn-sm" onclick="closePreview()">닫기</button>
+            <a id="pvPdfLink" href="#" class="btn btn-primary btn-sm">PDF 다운로드</a>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block page_js %}
 const csrfToken = '{{ csrf_token() }}';
+const hourlyWage = {{ hourly_wage }};
+const currentMonth = '{{ month }}';
+
+function fmt(n) { return n.toLocaleString() + '원'; }
+
+// 테이블 버튼 이벤트 위임
+document.querySelector('.table-scroll table tbody').addEventListener('click', function(e) {
+    const btn = e.target.closest('.btn-action');
+    const row = e.target.closest('tr[data-ps]');
+    if (!row) return;
+    const data = JSON.parse(row.dataset.ps);
+    if (btn) {
+        e.stopPropagation();
+        if (btn.dataset.action === 'preview') openPreview(data);
+        else if (btn.dataset.action === 'edit') openEditModal(data.id, data);
+    }
+});
+
+function openPreview(d) {
+    const [year, mon] = d.month.split('-');
+    document.getElementById('pvTitle').textContent = `${year}년 ${parseInt(mon)}월 급여명세서`;
+
+    const modeLabel = d.salary_mode === 'standard' ? '209h 고정' : '실근무시간';
+    document.getElementById('pvInfo').innerHTML = `
+        <span class="lbl">성명</span><span class="val">${d.emp_name}</span>
+        <span class="lbl">부서</span><span class="val">${d.dept || '-'}</span>
+        <span class="lbl">시급</span><span class="val">${hourlyWage.toLocaleString()}원</span>
+        <span class="lbl">계산방식</span><span class="val">${modeLabel}</span>
+        <span class="lbl">총근무</span><span class="val">${d.total_work_hours}h</span>
+        <span class="lbl">잔업</span><span class="val">${d.ot_hours}h</span>
+        <span class="lbl">심야</span><span class="val">${d.night_hours}h</span>
+        <span class="lbl">휴일</span><span class="val">${d.holiday_hours}h</span>
+    `;
+
+    // 지급 테이블
+    const earnBody = document.querySelector('#pvEarnTable tbody');
+    earnBody.innerHTML = `
+        <tr><td>기본급</td><td>${fmt(d.base_salary)}</td></tr>
+        <tr><td>잔업수당 (${d.ot_hours}h)</td><td>${fmt(d.ot_pay)}</td></tr>
+        <tr><td>심야수당 (${d.night_hours}h)</td><td>${fmt(d.night_pay)}</td></tr>
+        <tr><td>휴일수당 (${d.holiday_hours}h)</td><td>${fmt(d.holiday_pay)}</td></tr>
+        <tr class="total-row"><td>총지급액</td><td>${fmt(d.gross)}</td></tr>
+    `;
+
+    // 공제 테이블
+    const dedRows = [];
+    if (d.tax > 0) dedRows.push(`<tr><td>소득세 (3.3%)</td><td class="deduct-val">-${fmt(d.tax)}</td></tr>`);
+    if (d.pension > 0) dedRows.push(`<tr><td>국민연금 (4.75%)</td><td class="deduct-val">-${fmt(d.pension)}</td></tr>`);
+    if (d.health_ins > 0) dedRows.push(`<tr><td>건강보험 (3.595%)</td><td class="deduct-val">-${fmt(d.health_ins)}</td></tr>`);
+    if (d.longterm_care > 0) dedRows.push(`<tr><td>장기요양보험</td><td class="deduct-val">-${fmt(d.longterm_care)}</td></tr>`);
+    if (d.employment_ins > 0) dedRows.push(`<tr><td>고용보험 (1.15%)</td><td class="deduct-val">-${fmt(d.employment_ins)}</td></tr>`);
+    if (d.advance_deduction > 0) dedRows.push(`<tr><td>가불 차감</td><td class="deduct-val">-${fmt(d.advance_deduction)}</td></tr>`);
+    const totalDeduct = d.tax + d.insurance + d.advance_deduction;
+    dedRows.push(`<tr class="total-row deduct-total"><td>공제합계</td><td class="deduct-val">-${fmt(totalDeduct)}</td></tr>`);
+    document.querySelector('#pvDeductTable tbody').innerHTML = dedRows.join('');
+
+    // 실수령액
+    document.getElementById('pvNet').textContent = `실수령액  ${fmt(d.net)}`;
+
+    // 하단
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('pvDate').textContent = `발급일: ${today}`;
+    document.getElementById('pvManual').textContent = d.is_manual ? '* 관리자에 의해 수동 수정됨' : '';
+
+    // PDF 링크
+    document.getElementById('pvPdfLink').href = `/admin/payslip/pdf?month=${d.month}&employee_id=${d.employee_id}`;
+
+    document.getElementById('previewOverlay').classList.add('active');
+}
+
+function closePreview() {
+    document.getElementById('previewOverlay').classList.remove('active');
+}
+
+function openEditModal(id, data) {
+    document.getElementById('editId').value = id;
+    document.getElementById('editTitle').textContent = `${data.emp_name} — 급여명세서 수정`;
+    document.getElementById('editTitle').dataset.name = data.emp_name;
+
+    const fields = ['base_salary','ot_pay','night_pay','holiday_pay','tax','pension','health_ins','longterm_care','employment_ins','advance_deduction'];
+    fields.forEach(f => {
+        document.getElementById('edit-' + f).value = data[f] || 0;
+    });
+
+    // 수동수정 초기화 버튼 표시
+    document.getElementById('editResetBtn').style.display = data.is_manual ? '' : 'none';
+
+    recalcEdit();
+    document.getElementById('editOverlay').classList.add('active');
+}
+
+function closeEditModal() {
+    document.getElementById('editOverlay').classList.remove('active');
+}
+
+function recalcEdit() {
+    const v = f => parseInt(document.getElementById('edit-' + f).value) || 0;
+    const gross = v('base_salary') + v('ot_pay') + v('night_pay') + v('holiday_pay');
+    const insurance = v('pension') + v('health_ins') + v('longterm_care') + v('employment_ins');
+    const totalDeduct = v('tax') + insurance + v('advance_deduction');
+    const net = gross - totalDeduct;
+
+    document.getElementById('edit-preview-gross').textContent = gross.toLocaleString() + '원';
+    document.getElementById('edit-preview-deduct').textContent = '-' + totalDeduct.toLocaleString() + '원';
+    document.getElementById('edit-preview-net').textContent = net.toLocaleString() + '원';
+}
+
+async function savePayslip() {
+    const id = document.getElementById('editId').value;
+    const fields = ['base_salary','ot_pay','night_pay','holiday_pay','tax','pension','health_ins','longterm_care','employment_ins','advance_deduction'];
+    const body = {};
+    fields.forEach(f => { body[f] = parseInt(document.getElementById('edit-' + f).value) || 0; });
+
+    try {
+        const r = await fetch(`/admin/payslip/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            credentials: 'same-origin',
+            body: JSON.stringify(body),
+        });
+        const res = await r.json();
+        if (res.success) {
+            showToast('저장 완료');
+            setTimeout(() => location.reload(), 800);
+        } else {
+            showToast(res.error || '저장 실패');
+        }
+    } catch {
+        showToast('서버 연결 실패');
+    }
+}
+
+async function resetPayslip() {
+    const id = document.getElementById('editId').value;
+    const name = document.getElementById('editTitle').dataset.name;
+
+    showConfirm(`${name} 급여명세서를 근태 데이터 기준으로 초기화하시겠습니까?`, async () => {
+        try {
+            const r = await fetch(`/admin/payslip/${id}/reset`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken },
+                credentials: 'same-origin',
+            });
+            const res = await r.json();
+            if (res.success) {
+                showToast('초기화 완료');
+                setTimeout(() => location.reload(), 800);
+            } else {
+                showToast(res.error || '초기화 실패');
+            }
+        } catch {
+            showToast('서버 연결 실패');
+        }
+    });
+}
 
 async function generatePayslips() {
     const month = document.getElementById('gen-month').value;
@@ -157,7 +660,9 @@ async function generatePayslips() {
         const res = await r.json();
         const el = document.getElementById('gen-msg');
         if (res.success) {
-            el.innerHTML = `<div class="success-msg">생성 ${res.created}건, 갱신 ${res.updated}건 완료</div>`;
+            let msg = `생성 ${res.created}건, 갱신 ${res.updated}건`;
+            if (res.skipped > 0) msg += `, 수동수정 건너뜀 ${res.skipped}건`;
+            el.innerHTML = `<div class="success-msg">${msg} 완료</div>`;
             setTimeout(() => location.reload(), 1500);
         } else {
             el.innerHTML = `<div class="error-msg">오류: ${res.error}</div>`;

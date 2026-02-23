@@ -17,15 +17,31 @@
 }
 .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
 .stat-label {
-    font-size: 12px; color: var(--text2); font-weight: 500;
+    font-size: 13px; color: var(--text2); font-weight: 500;
     text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px;
 }
 .stat-value {
-    font-size: 28px; font-weight: 800;
-    font-family: "JetBrains Mono", monospace; letter-spacing: -1px;
+    font-size: 30px; font-weight: 800;
+    font-family: "Inter", system-ui, sans-serif; font-variant-numeric: tabular-nums;
+    letter-spacing: -1px;
 }
 .stat-main { display: inline-flex; align-items: baseline; gap: 6px; }
 .stat-unit { font-size: 16px; font-weight: 700; color: var(--text2); letter-spacing: 0; }
+table { font-size: 15px !important; }
+table thead th { font-size: 13px !important; padding: 14px 18px !important; }
+table tbody td { padding: 14px 18px !important; font-size: 15px !important; }
+table tbody td.mono {
+    font-family: "Inter", system-ui, sans-serif;
+    font-variant-numeric: tabular-nums; font-size: 15px !important;
+}
+table tbody td.emp-name { font-size: 15px !important; font-weight: 700; }
+td.col-total { font-weight: 700; color: var(--text); }
+td.col-ot { font-weight: 700; color: var(--success); }
+td.col-night { font-weight: 700; color: var(--night); }
+td.col-holiday { font-weight: 700; color: #d946ef; }
+.badge { font-size: 12.5px !important; padding: 4px 12px !important; }
+.filter-bar .form-input, .filter-bar select { font-size: 14px !important; padding: 9px 14px !important; }
+.table-title { font-size: 16px !important; }
 .stat-value.accent { color: var(--accent); }
 .stat-value.success { color: var(--success); }
 .stat-value.night { color: var(--night); }
@@ -77,15 +93,30 @@
     <span style="color:var(--text2)">~</span>
     <input type="date" name="end_date" class="form-input" value="{{ end_date }}">
     <input type="text" name="emp_name" class="form-input" value="{{ emp_name }}" placeholder="이름" style="width:160px;min-width:0">
+    <select name="work_type" class="form-input" style="width:120px;min-width:0">
+        <option value="">전체</option>
+        <option value="normal" {{ 'selected' if work_type == 'normal' }}>주간</option>
+        <option value="night" {{ 'selected' if work_type == 'night' }}>야간</option>
+        <option value="annual" {{ 'selected' if work_type == 'annual' }}>연차</option>
+        <option value="absent" {{ 'selected' if work_type == 'absent' }}>결근</option>
+        <option value="holiday" {{ 'selected' if work_type == 'holiday' }}>휴무</option>
+        <option value="early" {{ 'selected' if work_type == 'early' }}>조퇴</option>
+    </select>
     <button type="submit" class="btn btn-primary btn-sm">조회</button>
     <a href="/admin/attendance" class="btn btn-outline btn-sm">초기화</a>
 </form>
 
 <div class="table-wrap">
     <div class="table-header">
-        <div class="table-title">근태 기록 ({{ records|length }}건)</div>
-        <div class="table-actions">
-            <a href="/admin/attendance/excel?start_date={{ start_date }}&end_date={{ end_date }}&emp_name={{ emp_name }}"
+        <div class="table-title">근태 기록 ({{ stats.total }}건{% if pagination.pages > 1 %} / {{ pagination.page }}페이지{% endif %})</div>
+        <div class="table-actions" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <button type="button" id="bulkDeleteBtn" class="btn btn-outline btn-sm" style="color:#dc3545;border-color:#dc3545;display:none;" onclick="bulkDelete()">
+                선택 삭제 (<span id="bulkCount">0</span>건)
+            </button>
+            <button type="button" class="btn btn-outline btn-sm" style="color:#dc3545;border-color:#dc3545;" onclick="deleteFiltered()">
+                조회결과 전체삭제
+            </button>
+            <a href="/admin/attendance/excel?start_date={{ start_date }}&end_date={{ end_date }}&emp_name={{ emp_name }}&work_type={{ work_type }}"
                 class="btn btn-outline btn-sm">엑셀 다운로드</a>
         </div>
     </div>
@@ -93,6 +124,7 @@
         <table>
             <thead>
                 <tr>
+                    <th style="width:36px;text-align:center;"><input type="checkbox" id="checkAll" onchange="toggleAll(this)"></th>
                     <th>이름</th><th>부서</th><th>날짜</th><th>생년월일</th>
                     <th>출근</th><th>퇴근</th><th>구분</th>
                     <th>총근무(h)</th><th>잔업(h)</th><th>심야(h)</th><th>특근(h)</th>
@@ -102,6 +134,7 @@
             <tbody>
                 {% for r in records %}
                 <tr id="row-{{ r.id }}">
+                    <td style="text-align:center;"><input type="checkbox" class="row-check" value="{{ r.id }}" onchange="updateBulkBtn()"></td>
                     <td class="emp-name">{{ r.emp_name }}</td>
                     <td>{{ r.dept }}</td>
                     <td class="mono">{{ r.work_date.strftime('%Y-%m-%d') if r.work_date else '' }}</td>
@@ -125,10 +158,10 @@
                         <span class="badge badge-day">{{ r.work_type }}</span>
                         {% endif %}
                     </td>
-                    <td class="mono">{{ r.total_work_hours }}</td>
-                    <td class="mono">{{ r.overtime_hours }}</td>
-                    <td class="mono">{{ r.night_hours }}</td>
-                    <td class="mono" style="color:#d946ef;font-weight:600">{{ r.holiday_work_hours or 0 }}</td>
+                    <td class="mono col-total">{{ r.total_work_hours }}</td>
+                    <td class="mono col-ot">{{ r.overtime_hours }}</td>
+                    <td class="mono col-night">{{ r.night_hours }}</td>
+                    <td class="mono col-holiday">{{ r.holiday_work_hours or 0 }}</td>
                     <td style="text-align:center;">
                         <button type="button" class="btn btn-outline btn-sm"
                             onclick='openEditModal({{ r.to_dict()|tojson }})'
@@ -140,12 +173,39 @@
                 {% endfor %}
                 {% if not records %}
                 <tr>
-                    <td colspan="12" style="text-align:center;padding:24px;color:var(--text2);">기록이 없습니다.</td>
+                    <td colspan="13" style="text-align:center;padding:24px;color:var(--text2);">기록이 없습니다.</td>
                 </tr>
                 {% endif %}
             </tbody>
         </table>
     </div>
+
+    {% if pagination.pages > 1 %}
+    <div style="display:flex;justify-content:center;align-items:center;gap:6px;padding:16px 0;">
+        {% if pagination.has_prev %}
+        <a href="?page={{ pagination.prev_num }}&start_date={{ start_date }}&end_date={{ end_date }}&emp_name={{ emp_name }}&work_type={{ work_type }}"
+           class="btn btn-outline btn-sm">&laquo; 이전</a>
+        {% endif %}
+
+        {% for p in pagination.iter_pages(left_edge=1, left_current=2, right_current=2, right_edge=1) %}
+            {% if p %}
+                {% if p == pagination.page %}
+                <span class="btn btn-primary btn-sm" style="pointer-events:none;">{{ p }}</span>
+                {% else %}
+                <a href="?page={{ p }}&start_date={{ start_date }}&end_date={{ end_date }}&emp_name={{ emp_name }}&work_type={{ work_type }}"
+                   class="btn btn-outline btn-sm">{{ p }}</a>
+                {% endif %}
+            {% else %}
+                <span style="color:var(--text2);">...</span>
+            {% endif %}
+        {% endfor %}
+
+        {% if pagination.has_next %}
+        <a href="?page={{ pagination.next_num }}&start_date={{ start_date }}&end_date={{ end_date }}&emp_name={{ emp_name }}&work_type={{ work_type }}"
+           class="btn btn-outline btn-sm">다음 &raquo;</a>
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
 
 <div id="editModal" class="modal-overlay">
@@ -247,6 +307,66 @@ function submitEdit(e) {
     })
     .catch(err => showToast(err.message || "서버 연결 실패"));
     return false;
+}
+
+function toggleAll(master) {
+    document.querySelectorAll('.row-check').forEach(cb => cb.checked = master.checked);
+    updateBulkBtn();
+}
+
+function updateBulkBtn() {
+    const checked = document.querySelectorAll('.row-check:checked');
+    const btn = document.getElementById('bulkDeleteBtn');
+    const cnt = document.getElementById('bulkCount');
+    cnt.textContent = checked.length;
+    btn.style.display = checked.length > 0 ? '' : 'none';
+}
+
+function bulkDelete() {
+    const ids = [...document.querySelectorAll('.row-check:checked')].map(cb => parseInt(cb.value));
+    if (!ids.length) return;
+    showConfirm(`선택한 ${ids.length}건을 삭제하시겠습니까?`, () => {
+        fetch('/api/attendance/bulk-delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            credentials: 'same-origin',
+            body: JSON.stringify({ ids }),
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (!res.success) throw new Error(res.error || '삭제 실패');
+            showToast(`${res.deleted}건 삭제 완료`);
+            setTimeout(() => location.reload(), 800);
+        })
+        .catch(err => showToast(err.message));
+    });
+}
+
+function deleteFiltered() {
+    const total = {{ stats.total }};
+    if (!total) { showToast('삭제할 기록이 없습니다.'); return; }
+    showConfirm(`현재 조회 조건의 ${total}건을 모두 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`, () => {
+        fetch('/api/attendance/bulk-delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+                filter: {
+                    start_date: '{{ start_date }}',
+                    end_date: '{{ end_date }}',
+                    emp_name: '{{ emp_name }}',
+                    work_type: '{{ work_type }}',
+                }
+            }),
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (!res.success) throw new Error(res.error || '삭제 실패');
+            showToast(`${res.deleted}건 삭제 완료`);
+            setTimeout(() => location.reload(), 800);
+        })
+        .catch(err => showToast(err.message));
+    });
 }
 
 function deleteRecord(id) {

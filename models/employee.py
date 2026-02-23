@@ -13,6 +13,7 @@ class Employee(db.Model):
     name = db.Column(db.String(50), nullable=False, index=True)
     birth_date = db.Column(db.String(6), nullable=False)
     work_type = db.Column(db.String(10), nullable=False, default="weekly")
+    insurance_type = db.Column(db.String(10), nullable=False, default="3.3%")
     hire_date = db.Column(db.Date, nullable=True)
     resign_date = db.Column(db.Date, nullable=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
@@ -40,6 +41,7 @@ class Employee(db.Model):
             "name": self.name,
             "birth_date": self.birth_date,
             "work_type": self.work_type,
+            "insurance_type": self.insurance_type,
             "hire_date": self.hire_date.strftime("%Y-%m-%d") if self.hire_date else "",
             "resign_date": self.resign_date.strftime("%Y-%m-%d") if self.resign_date else "",
             "is_active": self.is_active,

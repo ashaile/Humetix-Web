@@ -1,0 +1,258 @@
+{% extends "base_admin.html" %}
+
+{% block admin_title %}HUMETIX - 근태 엑셀 업로드{% endblock %}
+{% block page_title %}근태 엑셀 업로드{% endblock %}
+{% block page_desc %}고객사에서 받은 근태 엑셀 파일을 업로드하여 근태 데이터를 일괄 등록합니다.{% endblock %}
+
+{% block page_css %}
+.upload-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 28px; margin-bottom: 24px;
+}
+.upload-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 16px; }
+.upload-form { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+.file-input-wrap {
+    flex: 1; min-width: 250px;
+}
+.file-input-wrap label { display: block; font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 6px; }
+.file-input-wrap input[type="file"] {
+    width: 100%; padding: 10px 14px; border: 1px solid var(--border);
+    border-radius: var(--radius); background: var(--bg); font-size: 14px;
+    color: var(--text); cursor: pointer;
+}
+.file-input-wrap input[type="file"]::file-selector-button {
+    padding: 6px 14px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2); color: var(--text); font-size: 13px; font-weight: 600;
+    cursor: pointer; margin-right: 10px; transition: background .2s;
+}
+.file-input-wrap input[type="file"]::file-selector-button:hover { background: var(--accent-bg); }
+.btn-upload {
+    padding: 10px 24px; border: none; border-radius: var(--radius);
+    font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap;
+    transition: background .2s, transform .1s;
+}
+.btn-upload:active { transform: scale(.97); }
+.btn-preview { background: var(--accent); color: #fff; }
+.btn-preview:hover { background: var(--accent-hover); }
+.btn-execute { background: var(--success); color: #fff; }
+.btn-execute:hover { filter: brightness(1.1); }
+.btn-back { background: var(--bg); color: var(--text); border: 1px solid var(--border) !important; }
+.btn-back:hover { background: var(--bg2); }
+
+/* 결과 영역 */
+.result-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px; margin-top: 20px;
+}
+.result-header {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 18px;
+    padding-bottom: 14px; border-bottom: 1px solid var(--border);
+}
+.result-header h3 { font-size: 17px; font-weight: 700; margin: 0; }
+.result-badge {
+    display: inline-block; padding: 4px 12px; border-radius: 20px;
+    font-size: 12px; font-weight: 700;
+}
+.result-badge.preview { background: var(--accent-bg); color: var(--accent); }
+.result-badge.success { background: rgba(34,197,94,.12); color: var(--success); }
+.result-badge.error { background: rgba(239,68,68,.12); color: #ef4444; }
+
+.result-stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px; margin-bottom: 18px;
+}
+.result-stat {
+    background: var(--bg); padding: 14px; border-radius: 8px;
+    text-align: center; border: 1px solid var(--border);
+}
+.result-stat .label { font-size: 12px; color: var(--text2); font-weight: 500; margin-bottom: 4px; }
+.result-stat .value {
+    font-size: 24px; font-weight: 800;
+    font-family: "Inter", system-ui, sans-serif; font-variant-numeric: tabular-nums;
+}
+.result-stat .value.accent { color: var(--accent); }
+.result-stat .value.success { color: var(--success); }
+.result-stat .value.warning { color: #f59e0b; }
+
+.result-list { margin: 0; padding: 0; list-style: none; }
+.result-list li {
+    padding: 8px 12px; border-radius: 6px; margin-bottom: 4px;
+    font-size: 13px; line-height: 1.5;
+}
+.result-list li.error { background: rgba(239,68,68,.08); color: #ef4444; }
+.result-list li.warning { background: rgba(245,158,11,.08); color: #b45309; }
+.result-list li.info { background: rgba(59,130,246,.08); color: #3b82f6; }
+
+.new-emp-list { margin-top: 10px; }
+.new-emp-list .emp-item {
+    display: inline-block; padding: 4px 10px; margin: 3px;
+    background: rgba(59,130,246,.08); color: #3b82f6;
+    border-radius: 6px; font-size: 13px; font-weight: 600;
+}
+
+.action-bar {
+    display: flex; gap: 12px; margin-top: 20px; padding-top: 16px;
+    border-top: 1px solid var(--border);
+}
+
+.help-text {
+    margin-top: 16px; padding: 14px 18px;
+    background: rgba(59,130,246,.06); border-radius: 8px;
+    font-size: 13px; color: var(--text2); line-height: 1.7;
+}
+.help-text strong { color: var(--text); }
+
+@media (max-width: 768px) {
+    .upload-form { flex-direction: column; }
+    .file-input-wrap { min-width: 100%; }
+    .result-stats { grid-template-columns: repeat(2, 1fr); }
+    .action-bar { flex-direction: column; }
+    .btn-upload { width: 100%; text-align: center; }
+}
+{% endblock %}
+
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div style="margin-bottom: 16px;">
+    {% for category, message in messages %}
+    <div style="padding: 12px 18px; border-radius: 8px; margin-bottom: 8px; font-size: 14px; font-weight: 600;
+        {% if category == 'success' %}background: rgba(34,197,94,.12); color: var(--success);
+        {% elif category == 'error' %}background: rgba(239,68,68,.12); color: #ef4444;
+        {% else %}background: rgba(59,130,246,.08); color: #3b82f6;{% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+<!-- 업로드 카드 -->
+<div class="upload-card">
+    <h3>&#128196; 근태 엑셀 파일 업로드</h3>
+    <form method="POST" action="{{ url_for('attendance.import_attendance') }}" enctype="multipart/form-data" class="upload-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="file-input-wrap">
+            <label for="file">엑셀 파일 선택 (.xlsx)</label>
+            <input type="file" id="file" name="file" accept=".xlsx,.xls">
+        </div>
+        <button type="submit" class="btn-upload btn-preview">미리보기</button>
+    </form>
+
+    <div class="help-text">
+        <strong>사용 방법:</strong>
+        1) 고객사에서 받은 근태 엑셀 파일을 선택합니다.<br>
+        2) <strong>미리보기</strong>를 클릭하면 파싱 결과를 먼저 확인할 수 있습니다.<br>
+        3) 결과 확인 후 <strong>업로드 실행</strong>을 클릭하면 실제로 DB에 저장됩니다.<br>
+        &#8226; 이미 등록된 동일 날짜/직원 근태는 자동으로 갱신됩니다.<br>
+        &#8226; 미등록 직원은 자동 등록됩니다 (생년월일은 직원관리에서 수정 필요).
+    </div>
+</div>
+
+{% if result %}
+<div class="result-card">
+    <div class="result-header">
+        {% if preview is defined and preview %}
+            <span class="result-badge preview">미리보기</span>
+            <h3>파싱 결과 (아직 저장되지 않았습니다)</h3>
+        {% elif executed is defined and executed %}
+            {% if result.errors %}
+                <span class="result-badge error">오류 발생</span>
+            {% else %}
+                <span class="result-badge success">저장 완료</span>
+            {% endif %}
+            <h3>업로드 결과</h3>
+        {% else %}
+            <span class="result-badge error">오류</span>
+            <h3>처리 결과</h3>
+        {% endif %}
+    </div>
+
+    {% if result.errors %}
+    <ul class="result-list" style="margin-bottom: 16px;">
+        {% for err in result.errors %}
+        <li class="error">&#10060; {{ err }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if result.month_str is defined %}
+    <div class="result-stats">
+        <div class="result-stat">
+            <div class="label">대상월</div>
+            <div class="value" style="font-size:18px;">{{ result.month_str }}</div>
+        </div>
+        <div class="result-stat">
+            <div class="label">업체</div>
+            <div class="value" style="font-size:18px;">{{ result.site_name or '-' }}</div>
+        </div>
+        <div class="result-stat">
+            <div class="label">직원</div>
+            <div class="value accent">{{ result.employee_count }}명</div>
+        </div>
+        <div class="result-stat">
+            <div class="label">{% if executed is defined and executed %}신규 등록{% else %}등록 예정{% endif %}</div>
+            <div class="value success">{{ result.created }}건</div>
+        </div>
+        <div class="result-stat">
+            <div class="label">갱신</div>
+            <div class="value warning">{{ result.updated }}건</div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if result.new_employees %}
+    <div style="margin-bottom: 14px;">
+        <strong style="font-size:13px; color:var(--text2);">신규 등록 직원 ({{ result.new_employees|length }}명):</strong>
+        <div class="new-emp-list">
+            {% for emp in result.new_employees %}
+            <span class="emp-item">{{ emp.name }}{% if emp.hire_date %} ({{ emp.hire_date }}){% endif %}</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if result.matched_employees and preview is defined and preview %}
+    <details style="margin-bottom: 14px;">
+        <summary style="font-size:13px; font-weight:600; color:var(--text2); cursor:pointer;">
+            매칭 완료 직원 ({{ result.matched_employees|length }}명) &#9660;
+        </summary>
+        <div class="new-emp-list" style="margin-top:6px;">
+            {% for emp in result.matched_employees %}
+            <span class="emp-item" style="background:rgba(34,197,94,.08); color:var(--success);">{{ emp.name }}</span>
+            {% endfor %}
+        </div>
+    </details>
+    {% endif %}
+
+    {% if result.warnings %}
+    <ul class="result-list">
+        {% for warn in result.warnings %}
+        <li class="warning">&#9888;&#65039; {{ warn }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if preview is defined and preview and not result.errors %}
+    <div class="action-bar">
+        <form method="POST" action="{{ url_for('attendance.execute_import') }}" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn-upload btn-execute" onclick="this.disabled=true; this.textContent='저장 중...'; this.form.submit();">
+                &#10004; 업로드 실행 (DB 저장)
+            </button>
+        </form>
+        <a href="{{ url_for('attendance.import_attendance') }}" class="btn-upload btn-back">취소</a>
+    </div>
+    {% endif %}
+
+    {% if executed is defined and executed and not result.errors %}
+    <div class="action-bar">
+        <a href="{{ url_for('attendance.admin_attendance') }}" class="btn-upload btn-preview">근태 관리로 이동</a>
+        <a href="{{ url_for('attendance.import_attendance') }}" class="btn-upload btn-back">추가 업로드</a>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

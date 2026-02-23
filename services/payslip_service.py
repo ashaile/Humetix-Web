@@ -4,7 +4,7 @@ from datetime import datetime
 from flask import current_app
 from sqlalchemy import func
 
-from models import AdvanceRequest, AttendanceRecord, Payslip, db
+from models import AdvanceRequest, AttendanceRecord, Employee, Payslip, db
 
 ALLOWED_SALARY_MODES = {"standard", "actual"}
 
@@ -25,7 +25,7 @@ def _month_range(month: str):
 def compute_payslips(month: str, salary_mode: str):
     """월별 급여를 계산하고 DB에 저장한다.
 
-    Returns (created, updated) 또는 error 문자열.
+    Returns (created, updated, skipped) 또는 error 문자열.
     """
     cfg = current_app.config
     hourly = cfg.get("HOURLY_WAGE", 10320)
@@ -33,7 +33,10 @@ def compute_payslips(month: str, salary_mode: str):
     ot_mult = cfg.get("OT_MULTIPLIER", 1.5)
     night_prem = cfg.get("NIGHT_PREMIUM", 0.5)
     tax_rate = cfg.get("TAX_RATE", 0.033)
-    ins_rate = cfg.get("INSURANCE_RATE", 0.097)
+    pension_rate = cfg.get("PENSION_RATE", 0.045)
+    health_rate = cfg.get("HEALTH_RATE", 0.03545)
+    longterm_rate = cfg.get("LONGTERM_CARE_RATE", 0.1295)
+    employment_rate = cfg.get("EMPLOYMENT_RATE", 0.009)
 
     start_date, end_date = _month_range(month)
 
@@ -64,6 +67,7 @@ def compute_payslips(month: str, salary_mode: str):
 
     created = 0
     updated = 0
+    skipped = 0
     for row in aggregates:
         employee_id, emp_name, dept = row.employee_id, row.emp_name, row.dept
         total_h = round(row.total_hours or 0, 2)
@@ -81,8 +85,25 @@ def compute_payslips(month: str, salary_mode: str):
         holiday_pay = round(holiday_h * hourly * ot_mult)
 
         gross = base_salary + ot_pay + night_pay + holiday_pay
-        tax = round(gross * tax_rate)
-        insurance = round(gross * ins_rate)
+
+        # 직원별 보험 유형 조회
+        emp = db.session.get(Employee, employee_id)
+        emp_ins_type = emp.insurance_type if emp else "3.3%"
+
+        if emp_ins_type == "4대보험":
+            tax = 0
+            pension = round(gross * pension_rate)
+            health = round(gross * health_rate)
+            longterm = round(health * longterm_rate)
+            employment = round(gross * employment_rate)
+        else:
+            # 3.3% 소득세만
+            tax = round(gross * tax_rate)
+            pension = 0
+            health = 0
+            longterm = 0
+            employment = 0
+        insurance = pension + health + longterm + employment
 
         adv_total = (
             db.session.query(func.coalesce(func.sum(AdvanceRequest.amount), 0))
@@ -98,6 +119,9 @@ def compute_payslips(month: str, salary_mode: str):
 
         existing = Payslip.query.filter_by(employee_id=employee_id, month=month).first()
         if existing:
+            if existing.is_manual:
+                skipped += 1
+                continue
             existing.salary_mode = salary_mode
             existing.total_work_hours = total_h
             existing.ot_hours = ot_h
@@ -109,6 +133,10 @@ def compute_payslips(month: str, salary_mode: str):
             existing.holiday_pay = holiday_pay
             existing.gross = gross
             existing.tax = tax
+            existing.pension = pension
+            existing.health_ins = health
+            existing.longterm_care = longterm
+            existing.employment_ins = employment
             existing.insurance = insurance
             existing.advance_deduction = adv_total
             existing.net = net
@@ -130,6 +158,10 @@ def compute_payslips(month: str, salary_mode: str):
                 holiday_pay=holiday_pay,
                 gross=gross,
                 tax=tax,
+                pension=pension,
+                health_ins=health,
+                longterm_care=longterm,
+                employment_ins=employment,
                 insurance=insurance,
                 advance_deduction=adv_total,
                 net=net,
@@ -138,4 +170,4 @@ def compute_payslips(month: str, salary_mode: str):
             created += 1
 
     db.session.commit()
-    return created, updated
+    return created, updated, skipped

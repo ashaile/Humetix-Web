@@ -3,7 +3,7 @@ import os
 import uuid
 from datetime import datetime
 
-from flask import Blueprint, render_template, request
+from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from models import Application, Career, Inquiry, db
 from routes.utils import UPLOAD_DIR
@@ -43,9 +43,11 @@ def submit():
         phone = request.form.get('phone', '').strip()
         agree = request.form.get('agree')
         if not name or not phone:
-            return "<script>alert('이름과 연락처는 필수 항목입니다.'); history.back();</script>"
+            flash('이름과 연락처는 필수 항목입니다.', 'error')
+            return redirect(url_for('apply.apply_form'))
         if agree != 'on':
-            return "<script>alert('개인정보 수집·이용에 동의해주세요.'); history.back();</script>"
+            flash('개인정보 수집·이용에 동의해주세요.', 'error')
+            return redirect(url_for('apply.apply_form'))
 
         # 1. 신분증 사진 처리
         id_card = request.files.get('id_card')
@@ -53,17 +55,20 @@ def submit():
 
         if id_card and id_card.filename != '':
             if not allowed_file(id_card.filename):
-                return "<script>alert('허용되지 않는 파일 형식입니다. (jpg, png, gif, heic, webp만 가능)'); history.back();</script>"
+                flash('허용되지 않는 파일 형식입니다. (jpg, png, gif, heic, webp만 가능)', 'error')
+                return redirect(url_for('apply.apply_form'))
 
             if id_card.mimetype and id_card.mimetype not in ALLOWED_MIME_TYPES:
                 if id_card.mimetype != 'application/octet-stream':
-                    return "<script>alert('허용되지 않는 파일 형식입니다.'); history.back();</script>"
+                    flash('허용되지 않는 파일 형식입니다.', 'error')
+                    return redirect(url_for('apply.apply_form'))
 
             id_card.seek(0, 2)
             file_size = id_card.tell()
             id_card.seek(0)
             if file_size > MAX_FILE_SIZE:
-                return "<script>alert('파일 크기가 5MB를 초과했습니다. 다른 파일을 선택해주세요.'); history.back();</script>"
+                flash('파일 크기가 5MB를 초과했습니다. 다른 파일을 선택해주세요.', 'error')
+                return redirect(url_for('apply.apply_form'))
 
             # 매직 바이트 기반 이미지 검증(Pillow)
             try:
@@ -81,10 +86,12 @@ def submit():
                 img = Image.open(id_card)
                 img_format = (img.format or '').upper()
                 if img_format not in {'JPEG', 'PNG', 'GIF', 'WEBP', 'HEIC', 'HEIF'}:
-                    return "<script>alert('유효하지 않은 이미지 형식입니다.'); history.back();</script>"
+                    flash('유효하지 않은 이미지 형식입니다.', 'error')
+                    return redirect(url_for('apply.apply_form'))
                 id_card.seek(0)
             except Exception:
-                return "<script>alert('유효하지 않은 이미지 파일입니다. (손상 또는 지원하지 않는 형식)'); history.back();</script>"
+                flash('유효하지 않은 이미지 파일입니다. (손상 또는 지원하지 않는 형식)', 'error')
+                return redirect(url_for('apply.apply_form'))
 
             ext = os.path.splitext(id_card.filename)[1].lower()
             photo_name = f"{file_now}_id{ext}"
@@ -158,11 +165,13 @@ def submit():
             from services.notification_service import NotificationService
             NotificationService.send_admin_notification(new_app.to_dict())
 
-            return "<h1>지원서 접수 완료!</h1><script>setTimeout(function(){location.href='/';}, 2000);</script>"
+            flash('지원서가 접수되었습니다!', 'success')
+            return redirect('/')
 
         except ValueError as ve:
             logger.error(f"Form validation error: {str(ve)}")
-            return "<script>alert('입력 형식이 올바르지 않습니다. 다시 확인해주세요.'); history.back();</script>"
+            flash('입력 형식이 올바르지 않습니다. 다시 확인해주세요.', 'error')
+            return redirect(url_for('apply.apply_form'))
 
     except Exception as e:
         db.session.rollback()
@@ -185,7 +194,8 @@ def contact_submit():
     message = request.form.get('message', '').strip()
 
     if not company or not name or not phone:
-        return "<script>alert('필수 항목을 입력해주세요.'); history.back();</script>"
+        flash('필수 항목을 입력해주세요.', 'error')
+        return redirect('/#contact')
 
     try:
         inquiry = Inquiry(
@@ -200,6 +210,8 @@ def contact_submit():
     except Exception as e:
         db.session.rollback()
         logger.error(f"Contact submit error: {str(e)}", exc_info=True)
-        return "<script>alert('문의 접수 중 오류가 발생했습니다. 다시 시도해주세요.'); history.back();</script>"
+        flash('문의 접수 중 오류가 발생했습니다. 다시 시도해주세요.', 'error')
+        return redirect('/#contact')
 
-    return "<script>alert('문의가 접수되었습니다. 빠른 시일 내에 연락드리겠습니다.'); location.href='/'</script>"
+    flash('문의가 접수되었습니다. 빠른 시일 내에 연락드리겠습니다.', 'success')
+    return redirect('/')

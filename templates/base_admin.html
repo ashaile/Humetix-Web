@@ -17,9 +17,11 @@
         <div class="sidebar-brand">Hume<span>tix</span></div>
         <nav class="sidebar-nav">
             {% set nav_items = [
+                ('admin.master_view', '/humetix_master_99', 'icon', '&#127968;', '홈'),
+                ('admin.applications', '/admin/applications', 'icon', '&#128196;', '지원자관리'),
                 ('dashboard.admin_dashboard', '/admin/dashboard', 'icon', '&#128200;', '대시보드'),
-                ('admin.master_view', '/humetix_master_99', 'icon', '&#127968;', '관리자 홈'),
                 ('attendance.admin_attendance', '/admin/attendance', 'icon', '&#128203;', '근태관리'),
+                ('attendance.import_attendance', '/admin/attendance/import', 'icon', '&#128228;', '근태업로드'),
                 ('attendance.admin_attendance_calendar', '/admin/attendance-calendar', 'icon', '&#128197;', '운영캘린더'),
                 ('payslip.admin_payslip', '/admin/payslip', 'icon', '&#128176;', '급여명세서'),
                 ('advance.admin_advance', '/admin/advance', 'icon', '&#127974;', '가불관리'),
@@ -57,11 +59,11 @@
 <!-- Mobile bottom nav -->
 <nav class="mobile-bottom-nav" aria-label="모바일 하단 네비">
     {% set bottom_items = [
-        ('dashboard.admin_dashboard', '/admin/dashboard', '&#128200;', '대시보드'),
+        ('admin.master_view', '/humetix_master_99', '&#127968;', '홈'),
         ('attendance.admin_attendance', '/admin/attendance', '&#128203;', '근태'),
         ('payslip.admin_payslip', '/admin/payslip', '&#128176;', '급여'),
         ('employee.admin_employees', '/admin/employees', '&#128101;', '사원'),
-        ('admin.master_view', '/humetix_master_99', '&#127968;', '지원자'),
+        ('admin.applications', '/admin/applications', '&#128196;', '지원자'),
     ] %}
     {% for endpoint, url, icon_html, label in bottom_items %}
     <a href="{{ url }}" class="{% if request.endpoint == endpoint %}active{% endif %}">

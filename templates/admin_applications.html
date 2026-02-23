@@ -1,7 +1,7 @@
 {% extends "base_admin.html" %}
 
-{% block admin_title %}HUMETIX - 관리자 페이지{% endblock %}
-{% block page_title %}관리자 페이지{% endblock %}
+{% block admin_title %}HUMETIX - 지원자 관리{% endblock %}
+{% block page_title %}지원자 관리{% endblock %}
 {% block page_desc %}지원자 현황을 조회하고 관리합니다.{% endblock %}
 
 {% block page_css %}
@@ -413,7 +413,7 @@
 {% set status_labels = {'new':'신규','review':'검토','interview':'면접','offer':'오퍼','hired':'합격','rejected':'불합격'} %}
 
 <div class="filter-section">
-    <form id="searchForm" action="{{ url_for('admin.master_view') }}" method="get">
+    <form id="searchForm" action="{{ url_for('admin.applications') }}" method="get">
         <div class="search-row">
             <div class="search-field">
                 <input type="text" name="q" class="form-control" placeholder="이름 또는 연락처 검색"
@@ -501,7 +501,7 @@
 
         <div class="filter-actions">
             <button type="submit" class="btn btn-primary" style="width: 200px;">조건 검색</button>
-            <a href="{{ url_for('admin.master_view') }}" class="btn btn-outline">초기화</a>
+            <a href="{{ url_for('admin.applications') }}" class="btn btn-outline">초기화</a>
         </div>
     </form>
 </div>

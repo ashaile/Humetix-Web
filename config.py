@@ -43,8 +43,12 @@ class Config:
     NIGHT_PREMIUM = 0.5
     NIGHT_START = 22
     NIGHT_END = 6
-    TAX_RATE = 0.033
-    INSURANCE_RATE = 0.097
+    TAX_RATE = 0.033                    # 소득세 3.3% (사업소득 기준)
+    PENSION_RATE = 0.0475                # 국민연금 4.75% (근로자 부담분)
+    HEALTH_RATE = 0.03595                # 건강보험 3.595% (근로자 부담분, 2026)
+    LONGTERM_CARE_RATE = 0.1314          # 장기요양 = 건강보험료의 13.14% (2026)
+    EMPLOYMENT_RATE = 0.0115             # 고용보험 1.15% (근로자 부담분)
+    INSURANCE_RATE = 0.097               # (하위호환용, 미사용)
     MAX_ADVANCE_PERCENT = 50
 
     ADVANCE_LIMIT_WEEKLY = 300_000
