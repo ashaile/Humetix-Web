@@ -619,6 +619,8 @@ def delete_selected():
     return redirect(url_for('admin.master_view'))
 @admin_bp.route('/view_photo/<filename>')
 def view_photo(filename):
+    if not session.get('is_admin'):
+        return redirect(url_for('auth.login'))
     # 경로 탈출 방지: 파일명에 디렉토리 구분자가 포함되면 거부
     if filename != os.path.basename(filename):
         return "Not Found", 404

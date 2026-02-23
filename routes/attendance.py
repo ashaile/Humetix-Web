@@ -134,7 +134,13 @@ def calc_work_hours(clock_in: str, clock_out: str, cfg, work_date=None, calendar
     else:
         night_total = _minutes_in_range(in_min, out_min, night_start, night_end)
 
-    night_calc = max(0, night_total - break_min)
+    # 한국 노동법 기준 휴게시간 처리:
+    # - 주간 휴게(12:30~13:30): 야간 구간(22~06시)과 겹치지 않으므로 야간 차감 없음
+    # - 야간 휴게(00:00~01:00): 야간 구간 내에 위치하므로 야간 시간에서 차감
+    # 15:00 이후 시작 또는 새벽(06:00 이전) 시작을 야간 근무로 판단
+    is_night_shift = (in_min >= 15 * 60 or in_min < night_end)
+    night_break = break_min if is_night_shift else 0
+    night_calc = max(0, night_total - night_break)
     night_hours = round(night_calc / 60, 2)
 
     return total_hours, ot_hours, night_hours, holiday_work_hours

@@ -76,6 +76,14 @@ def health():
     except Exception as e:
         return jsonify({"status": "unhealthy", "database": str(e)}), 503
 
+@app.after_request
+def set_security_headers(response):
+    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    return response
+
+
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('error.html', error_code="404", error_message="페이지를 찾을 수 없습니다", error_description="요청하신 페이지가 존재하지 않거나 주소가 변경되었습니다."), 404

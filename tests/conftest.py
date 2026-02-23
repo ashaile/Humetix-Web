@@ -10,20 +10,25 @@ os.environ["SECRET_KEY"] = "test_secret_key"
 os.environ["ADMIN_PASSWORD"] = "test_admin_password"
 os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB_PATH.as_posix()}"
 
-from app import app, db
+from app import app as _flask_app, db
 
 
 @pytest.fixture
-def client():
-    app.config["TESTING"] = True
-    app.config["WTF_CSRF_ENABLED"] = False
+def flask_app():
+    _flask_app.config["TESTING"] = True
+    _flask_app.config["WTF_CSRF_ENABLED"] = False
 
-    with app.app_context():
+    with _flask_app.app_context():
         db.session.remove()
         db.drop_all()
         db.create_all()
-        with app.test_client() as client:
-            yield client
+        yield _flask_app
         db.session.remove()
         db.drop_all()
         db.engine.dispose()
+
+
+@pytest.fixture
+def client(flask_app):
+    with flask_app.test_client() as client:
+        yield client

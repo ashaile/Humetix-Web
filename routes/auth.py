@@ -42,6 +42,12 @@ def _clear_attempts(ip: str) -> None:
     AdminLoginAttempt.query.filter(AdminLoginAttempt.ip == ip).delete()
 
 
+def _purge_expired_attempts(block_seconds: int) -> None:
+    """만료된 로그인 시도 레코드 전체 정리 (DB 무한 증가 방지)"""
+    cutoff = datetime.now() - timedelta(seconds=block_seconds)
+    AdminLoginAttempt.query.filter(AdminLoginAttempt.created_at < cutoff).delete()
+
+
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -53,6 +59,12 @@ def login():
         if not admin_password:
             logger.error("ADMIN_PASSWORD environment variable is not set")
             return "<script>alert('서버 설정 오류: 관리자 비밀번호가 설정되지 않았습니다.'); history.back();</script>"
+
+        try:
+            _purge_expired_attempts(block_seconds)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
 
         if _recent_attempt_count(ip, block_seconds) >= max_attempts:
             logger.warning("Login blocked for IP %s due to too many failed attempts", ip)

@@ -1,6 +1,7 @@
 #!/bin/bash
 # Humetix 배포 스크립트
 # 사용법: 서버에서 bash /var/www/recruit/deploy.sh
+set -euo pipefail
 
 echo "🚀 배포 시작..."
 
@@ -26,7 +27,8 @@ echo "📦 라이브러리 설치..."
 pip3 install -r requirements.txt -q
 
 echo "🗄️ DB 마이그레이션..."
-python3 -m flask db upgrade
+FLASK_APP=app.py python3 -m flask db upgrade
+echo "   마이그레이션 완료"
 
 echo "🔒 권한 설정..."
 chown -R www-data:www-data /var/www/recruit

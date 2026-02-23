@@ -40,6 +40,15 @@ def submit():
     try:
         file_now = datetime.now().strftime('%Y%m%d_%H%M%S')
 
+        # 0. 필수 필드 서버사이드 검증
+        name = request.form.get('name', '').strip()
+        phone = request.form.get('phone', '').strip()
+        agree = request.form.get('agree')
+        if not name or not phone:
+            return "<script>alert('이름과 연락처는 필수 항목입니다.'); history.back();</script>"
+        if agree != 'on':
+            return "<script>alert('개인정보 수집·이용에 동의해주세요.'); history.back();</script>"
+
         # 1. 신분증 사진 처리
         id_card = request.files.get('id_card')
         photo_filename = ""
@@ -96,8 +105,6 @@ def submit():
             weight = int(request.form.get('weight')) if request.form.get('weight') else None
             shoes = int(request.form.get('shoes')) if request.form.get('shoes') else None
 
-            agree = True if request.form.get('agree') == 'on' else False
-
             vision_type = request.form.get('vision_type')
             vision_value = request.form.get('vision_value')
             vision = None
@@ -108,10 +115,11 @@ def submit():
                 id=str(uuid.uuid4()),
                 # timestamp는 default로 자동 설정됨
                 photo=photo_filename,
-                name=request.form.get('name'),
+                name=name,
+                agree=True,
                 birth=birth_date,
                 gender=request.form.get('gender'),
-                phone=request.form.get('phone'),
+                phone=phone,
                 email=request.form.get('email'),
                 address=request.form.get('address'),
                 height=height,
@@ -125,7 +133,6 @@ def submit():
                 holiday=request.form.get('holiday'),
                 interview_date=interview_date,
                 start_date=start_date,
-                agree=agree,
                 advance_pay=request.form.get('advance_pay', '비희망'),
                 insurance_type=request.form.get('insurance_type', '3.3%'),
             )
