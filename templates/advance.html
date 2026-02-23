@@ -3,58 +3,35 @@
 {% block public_title %}HUMETIX - 가불 신청{% endblock %}
 
 {% block page_css %}
-:root {
-    --bg: #f8f7f4;
-    --bg2: #fff;
-    --bg3: #f0efec;
-    --text: #1a1a1a;
-    --text2: #6b6b6b;
-    --accent: #e85d26;
-    --accent-bg: #fef3ee;
-    --border: #e8e6e1;
-    --success: #22a867;
-    --success-bg: #edfbf3;
-    --radius: 12px;
-    --radius-sm: 8px;
-}
-
 .advance-container {
     max-width: 520px;
     margin: 0 auto;
     padding: 32px 24px;
     padding-top: 80px;
 }
-
 .page-title {
     font-size: 26px;
     font-weight: 800;
     letter-spacing: -.5px;
     margin-bottom: 8px;
 }
-
 .page-desc {
     color: var(--text2);
     font-size: 14px;
     margin-bottom: 28px;
 }
-
 .input-card {
     background: var(--bg2);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 28px;
 }
-
 .input-card h3 {
     font-size: 18px;
     font-weight: 700;
     margin-bottom: 20px;
 }
-
-.form-group {
-    margin-bottom: 16px;
-}
-
+.form-group { margin-bottom: 16px; }
 .form-label {
     display: block;
     font-size: 12px;
@@ -64,7 +41,6 @@
     text-transform: uppercase;
     letter-spacing: .5px;
 }
-
 .form-input,
 .form-select,
 .form-textarea {
@@ -78,12 +54,7 @@
     color: var(--text);
     transition: border-color .2s;
 }
-
-.form-textarea {
-    min-height: 80px;
-    resize: vertical;
-}
-
+.form-textarea { min-height: 80px; resize: vertical; }
 .form-input:focus,
 .form-select:focus,
 .form-textarea:focus {
@@ -91,62 +62,14 @@
     border-color: var(--accent);
     box-shadow: 0 0 0 3px rgba(232, 93, 38, .1);
 }
-
-.success-msg {
-    background: var(--success-bg);
-    border: 1px solid #86efac;
-    border-radius: var(--radius-sm);
-    padding: 14px 16px;
-    font-size: 14px;
-    color: #166534;
-    font-weight: 500;
-    margin-bottom: 16px;
-    text-align: center;
+.success-msg { text-align: center; }
+.info-box { border: none; }
+.btn-submit {
+    width: 100%;
+    justify-content: center;
+    padding: 12px;
 }
-
-.error-msg {
-    background: #fef2f2;
-    border: 1px solid #fca5a5;
-    border-radius: var(--radius-sm);
-    padding: 14px 16px;
-    font-size: 14px;
-    color: #dc2626;
-    font-weight: 500;
-    margin-bottom: 16px;
-}
-
-.info-box {
-    background: var(--accent-bg);
-    border-radius: var(--radius-sm);
-    padding: 10px 14px;
-    font-size: 12px;
-    color: var(--accent);
-    margin-bottom: 16px;
-}
-
-.adv-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 20px;
-    border-radius: var(--radius-sm);
-    font-size: 14px;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
-    transition: all .2s;
-    font-family: inherit;
-    white-space: nowrap;
-    text-decoration: none;
-}
-
-.adv-btn-primary {
-    background: var(--accent);
-    color: #fff;
-}
-
-.adv-btn-primary:hover {
-    background: #d14e1a;
+.btn-submit:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(232, 93, 38, .3);
 }
@@ -223,7 +146,7 @@
                     placeholder="한도 증액 필요 시 작성해주세요">{{ form.get('reason','') if form else '' }}</textarea>
             </div>
 
-            <button type="submit" class="adv-btn adv-btn-primary" style="width:100%;justify-content:center;padding:12px;">
+            <button type="submit" class="btn btn-primary btn-submit">
                 가불 신청
             </button>
         </form>
@@ -233,31 +156,135 @@
 {% endblock %}
 
 {% block page_js %}
-// 초기 한도 설정 및 동적 변경
 const LIMIT_WEEKLY = 300000;
 const LIMIT_SHIFT = 500000;
 
-function updateLimit() {
+const birthInput = document.querySelector('input[name="birth_date"]');
+const nameInput = document.querySelector('input[name="emp_name"]');
+const amountInput = document.getElementById('amount-input');
+const limitMsg = document.getElementById('limit-msg');
+
+function getLimit() {
     const type = document.querySelector('input[name="work_type"]:checked').value;
-    const msg = document.getElementById('limit-msg');
-    const limit = type === 'weekly' ? LIMIT_WEEKLY : LIMIT_SHIFT;
-    msg.innerHTML = `* 현재 적용 한도: ${limit.toLocaleString()}원`;
+    return type === 'weekly' ? LIMIT_WEEKLY : LIMIT_SHIFT;
 }
 
-function validateAdvance() {
-    const type = document.querySelector('input[name="work_type"]:checked').value;
-    const amount = parseInt(document.getElementById('amount-input').value) || 0;
-    const limit = type === 'weekly' ? LIMIT_WEEKLY : LIMIT_SHIFT;
+function setFieldState(input, valid) {
+    input.classList.toggle('is-invalid', !valid);
+    input.classList.toggle('is-valid', valid);
+}
 
-    if (amount > limit) {
-        alert(`선택하신 근무 형태의 가불 한도는 ${limit.toLocaleString()}원입니다.\n한도를 초과하여 신청할 수 없습니다.`);
-        return false;
+function getOrCreateError(input, id) {
+    let el = document.getElementById(id);
+    if (!el) {
+        el = document.createElement('div');
+        el.id = id;
+        el.className = 'field-error';
+        input.parentNode.appendChild(el);
     }
-    return true;
+    return el;
 }
 
-// 페이지 로드 시 초기 상태 반영
-window.onload = function () {
-    updateLimit();
+function clearError(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
 }
+
+/* 생년월일 — 입력 중 실시간 검증 */
+birthInput.addEventListener('input', () => {
+    const v = birthInput.value.trim();
+    if (v.length === 0) {
+        birthInput.classList.remove('is-invalid', 'is-valid');
+        clearError('err-birth');
+        return;
+    }
+    const valid = /^\d{6}$/.test(v);
+    setFieldState(birthInput, valid);
+    if (!valid && v.length >= 1) {
+        getOrCreateError(birthInput, 'err-birth').textContent = '6자리 숫자를 입력하세요 (예: 900101)';
+    } else {
+        clearError('err-birth');
+    }
+});
+
+/* 이름 — blur 시 검증 */
+nameInput.addEventListener('blur', () => {
+    const v = nameInput.value.trim();
+    if (v.length === 0) {
+        setFieldState(nameInput, false);
+        getOrCreateError(nameInput, 'err-name').textContent = '이름을 입력하세요';
+    } else {
+        setFieldState(nameInput, true);
+        clearError('err-name');
+    }
+});
+nameInput.addEventListener('input', () => {
+    if (nameInput.value.trim().length > 0) {
+        setFieldState(nameInput, true);
+        clearError('err-name');
+    }
+});
+
+/* 금액 — 입력 중 한도 체크 */
+amountInput.addEventListener('input', () => {
+    const amount = parseInt(amountInput.value) || 0;
+    const limit = getLimit();
+    if (amount > limit) {
+        setFieldState(amountInput, false);
+        limitMsg.style.color = 'var(--danger)';
+        limitMsg.innerHTML = `한도 초과! 최대 ${limit.toLocaleString()}원까지 신청 가능합니다.`;
+    } else if (amount > 0) {
+        setFieldState(amountInput, true);
+        limitMsg.style.color = 'var(--text2)';
+        limitMsg.innerHTML = `* 현재 적용 한도: ${limit.toLocaleString()}원`;
+    } else {
+        amountInput.classList.remove('is-invalid', 'is-valid');
+        limitMsg.style.color = 'var(--text2)';
+        limitMsg.innerHTML = `* 현재 적용 한도: ${limit.toLocaleString()}원`;
+    }
+});
+
+/* 근무형태 변경 시 한도 갱신 */
+function updateLimit() {
+    const limit = getLimit();
+    const amount = parseInt(amountInput.value) || 0;
+    if (amount > limit) {
+        setFieldState(amountInput, false);
+        limitMsg.style.color = 'var(--danger)';
+        limitMsg.innerHTML = `한도 초과! 최대 ${limit.toLocaleString()}원까지 신청 가능합니다.`;
+    } else {
+        if (amount > 0) setFieldState(amountInput, true);
+        limitMsg.style.color = 'var(--text2)';
+        limitMsg.innerHTML = `* 현재 적용 한도: ${limit.toLocaleString()}원`;
+    }
+}
+
+/* 폼 제출 검증 */
+function validateAdvance() {
+    const birth = birthInput.value.trim();
+    const name = nameInput.value.trim();
+    const amount = parseInt(amountInput.value) || 0;
+    const limit = getLimit();
+    let valid = true;
+
+    if (!/^\d{6}$/.test(birth)) {
+        setFieldState(birthInput, false);
+        getOrCreateError(birthInput, 'err-birth').textContent = '6자리 숫자를 입력하세요';
+        valid = false;
+    }
+    if (!name) {
+        setFieldState(nameInput, false);
+        getOrCreateError(nameInput, 'err-name').textContent = '이름을 입력하세요';
+        valid = false;
+    }
+    if (amount > limit) {
+        setFieldState(amountInput, false);
+        limitMsg.style.color = 'var(--danger)';
+        limitMsg.innerHTML = `한도 초과! 최대 ${limit.toLocaleString()}원까지 신청 가능합니다.`;
+        valid = false;
+    }
+    return valid;
+}
+
+updateLimit();
 {% endblock %}

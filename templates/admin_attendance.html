@@ -78,6 +78,7 @@
     <input type="date" name="end_date" class="form-input" value="{{ end_date }}">
     <input type="text" name="emp_name" class="form-input" value="{{ emp_name }}" placeholder="이름" style="width:160px">
     <button type="submit" class="btn btn-primary btn-sm">조회</button>
+    <a href="/admin/attendance" class="btn btn-outline btn-sm">초기화</a>
 </form>
 
 <div class="table-wrap">
@@ -244,23 +245,24 @@ function submitEdit(e) {
         if (!res.success) throw new Error(res.error || "수정 실패");
         location.reload();
     })
-    .catch(err => alert(err.message || "서버 연결 실패"));
+    .catch(err => showToast(err.message || "서버 연결 실패"));
     return false;
 }
 
 function deleteRecord(id) {
-    if (!confirm("이 기록을 삭제하시겠습니까?")) return;
-    fetch(`/api/attendance/${id}`, {
-        method: "DELETE",
-        headers: { "X-CSRFToken": csrfToken },
-        credentials: "same-origin",
-    })
-    .then(r => r.json())
-    .then(res => {
-        if (!res.success) throw new Error(res.error || "삭제 실패");
-        const row = document.getElementById(`row-${id}`);
-        if (row) row.remove();
-    })
-    .catch(err => alert(err.message || "서버 연결 실패"));
+    showConfirm("이 기록을 삭제하시겠습니까?", () => {
+        fetch(`/api/attendance/${id}`, {
+            method: "DELETE",
+            headers: { "X-CSRFToken": csrfToken },
+            credentials: "same-origin",
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (!res.success) throw new Error(res.error || "삭제 실패");
+            const row = document.getElementById(`row-${id}`);
+            if (row) row.remove();
+        })
+        .catch(err => showToast(err.message || "서버 연결 실패"));
+    });
 }
 {% endblock %}

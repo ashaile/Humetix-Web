@@ -23,6 +23,7 @@
         <option value="cancelled" {{ 'selected' if filter_status=='cancelled' }}>취소</option>
     </select>
     <button type="submit" class="btn btn-primary btn-sm">조회</button>
+    <a href="/admin/advance" class="btn btn-outline btn-sm">초기화</a>
 </form>
 
 <div class="table-wrap">
@@ -80,23 +81,38 @@
 const csrfToken = '{{ csrf_token() }}';
 
 function processAdvance(id, action) {
-    const comment = action === 'reject' ? prompt('반려 사유를 입력하세요:') : '';
-    if (action === 'reject' && comment === null) return;
+    function doProcess(comment) {
+        const btn = event && event.target;
+        if (btn) setButtonLoading(btn, true);
 
-    const fd = new FormData();
-    fd.append('comment', comment || '');
-    fd.append('csrf_token', csrfToken);
+        const fd = new FormData();
+        fd.append('comment', comment || '');
+        fd.append('csrf_token', csrfToken);
 
-    fetch(`/admin/advance/${id}/${action}`, { method: 'POST', body: fd })
-        .then(r => r.json())
-        .then(res => {
-            if (res.success) {
-                showToast(action === 'approve' ? '승인 완료' : '반려 완료');
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                showToast('오류: ' + res.error);
-            }
-        })
-        .catch(() => showToast('서버 연결 실패'));
+        fetch(`/admin/advance/${id}/${action}`, { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    showToast(action === 'approve' ? '승인 완료' : '반려 완료');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showToast('오류: ' + res.error);
+                    if (btn) setButtonLoading(btn, false);
+                }
+            })
+            .catch(() => {
+                showToast('서버 연결 실패');
+                if (btn) setButtonLoading(btn, false);
+            });
+    }
+
+    if (action === 'reject') {
+        showPrompt('반려 사유를 입력하세요:', { type: 'textarea', placeholder: '사유 입력' }, (comment) => {
+            if (comment === null) return;
+            doProcess(comment);
+        });
+    } else {
+        doProcess('');
+    }
 }
 {% endblock %}

@@ -1,0 +1,45 @@
+/* ── Reset & CSS Variables ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+    --bg: #f8f7f4;
+    --bg2: #fff;
+    --bg3: #f0efec;
+    --text: #1a1a1a;
+    --text2: #6b6b6b;
+    --accent: #e85d26;
+    --accent-bg: #fef3ee;
+    --border: #e8e6e1;
+    --success: #22a867;
+    --success-bg: #edfbf3;
+    --danger: #dc2626;
+    --night: #6366f1;
+    --night-bg: #eef2ff;
+    --shadow: 0 1px 3px rgba(0,0,0,.06);
+    --shadow-lg: 0 10px 25px rgba(0,0,0,.08);
+    --radius: 12px;
+    --radius-sm: 8px;
+}
+body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+}
+
+/* ── Form validation states ── */
+.form-input.is-invalid,
+.form-select.is-invalid,
+.form-textarea.is-invalid { border-color: var(--danger); }
+.form-input.is-invalid:focus,
+.form-select.is-invalid:focus,
+.form-textarea.is-invalid:focus { box-shadow: 0 0 0 3px rgba(220,38,38,.1); }
+
+.form-input.is-valid,
+.form-select.is-valid,
+.form-textarea.is-valid { border-color: var(--success); }
+.form-input.is-valid:focus,
+.form-select.is-valid:focus,
+.form-textarea.is-valid:focus { box-shadow: 0 0 0 3px rgba(34,168,103,.1); }
+
+.field-error { font-size: 12px; color: var(--danger); margin-top: 4px; }
+.field-success { font-size: 12px; color: var(--success); margin-top: 4px; }

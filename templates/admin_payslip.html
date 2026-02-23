@@ -55,6 +55,7 @@
 <form method="get" action="/admin/payslip" class="filter-bar">
     <input type="month" name="month" class="form-input" value="{{ month }}">
     <button type="submit" class="btn btn-primary btn-sm">조회</button>
+    <a href="/admin/payslip" class="btn btn-outline btn-sm">초기화</a>
 </form>
 
 <div class="table-wrap">
@@ -134,77 +135,75 @@
 {% block page_js %}
 const csrfToken = '{{ csrf_token() }}';
 
-function generatePayslips() {
+async function generatePayslips() {
     const month = document.getElementById('gen-month').value;
     const mode = document.getElementById('gen-mode').value;
-    if (!month) { alert('월을 선택하세요.'); return; }
+    if (!month) { showToast('월을 선택하세요.'); return; }
+
+    const btn = document.querySelector('.generate-card .btn-success');
+    setButtonLoading(btn, true);
 
     const fd = new FormData();
     fd.append('month', month);
     fd.append('salary_mode', mode);
     fd.append('csrf_token', csrfToken);
 
-    fetch('/admin/payslip/generate', { method: 'POST', body: fd })
-        .then(r => r.json())
-        .then(res => {
-            const el = document.getElementById('gen-msg');
-            if (res.success) {
-                el.innerHTML = `<div class="success-msg">생성 ${res.created}건, 갱신 ${res.updated}건 완료</div>`;
-                setTimeout(() => location.reload(), 1500);
-            } else {
-                el.innerHTML = `<div class="error-msg">오류: ${res.error}</div>`;
-            }
-        })
-        .catch(() => {
-            document.getElementById('gen-msg').innerHTML = '<div class="error-msg">서버 연결 실패</div>';
+    try {
+        const r = await fetch('/admin/payslip/generate', { method: 'POST', body: fd });
+        const res = await r.json();
+        const el = document.getElementById('gen-msg');
+        if (res.success) {
+            el.innerHTML = `<div class="success-msg">생성 ${res.created}건, 갱신 ${res.updated}건 완료</div>`;
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            el.innerHTML = `<div class="error-msg">오류: ${res.error}</div>`;
+        }
+    } catch {
+        document.getElementById('gen-msg').innerHTML = '<div class="error-msg">서버 연결 실패</div>';
+    } finally {
+        setButtonLoading(btn, false);
+    }
+}
+
+function deletePayslip(payslipId, empName) {
+    showConfirm(`${empName} 급여명세서를 삭제하시겠습니까?`, async () => {
+        const response = await fetch(`/admin/payslip/${payslipId}`, {
+            method: 'DELETE',
+            headers: { 'X-CSRFToken': csrfToken },
+            credentials: 'same-origin',
         });
-}
-
-async function deletePayslip(payslipId, empName) {
-    if (!confirm(`${empName} 급여명세서를 삭제하시겠습니까?`)) {
-        return;
-    }
-
-    const response = await fetch(`/admin/payslip/${payslipId}`, {
-        method: 'DELETE',
-        headers: {
-            'X-CSRFToken': csrfToken,
-        },
-        credentials: 'same-origin',
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            showToast(result.error || '삭제 중 오류가 발생했습니다.');
+            return;
+        }
+        location.reload();
     });
-    const result = await response.json();
-    if (!response.ok || !result.success) {
-        alert(result.error || '삭제 중 오류가 발생했습니다.');
-        return;
-    }
-    location.reload();
 }
 
-async function deleteMonthPayslips() {
+function deleteMonthPayslips() {
     const month = document.querySelector('input[name="month"]').value;
     if (!month) {
-        alert('삭제할 월을 먼저 선택하세요.');
+        showToast('삭제할 월을 먼저 선택하세요.');
         return;
     }
-    if (!confirm(`${month} 급여명세서를 전체 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) {
-        return;
-    }
+    showConfirm(`${month} 급여명세서를 전체 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`, async () => {
+        const formData = new FormData();
+        formData.append('month', month);
+        formData.append('csrf_token', csrfToken);
 
-    const formData = new FormData();
-    formData.append('month', month);
-    formData.append('csrf_token', csrfToken);
-
-    const response = await fetch('/admin/payslip/delete-month', {
-        method: 'POST',
-        body: formData,
-        credentials: 'same-origin',
+        const response = await fetch('/admin/payslip/delete-month', {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin',
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            showToast(result.error || '월별 삭제 중 오류가 발생했습니다.');
+            return;
+        }
+        await showAlert(`${result.month} 급여명세서 ${result.deleted}건을 삭제했습니다.`);
+        location.reload();
     });
-    const result = await response.json();
-    if (!response.ok || !result.success) {
-        alert(result.error || '월별 삭제 중 오류가 발생했습니다.');
-        return;
-    }
-    alert(`${result.month} 급여명세서 ${result.deleted}건을 삭제했습니다.`);
-    location.reload();
 }
 {% endblock %}

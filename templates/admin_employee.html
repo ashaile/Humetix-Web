@@ -137,38 +137,49 @@ async function createEmployee() {
     const body = { name, birth_date };
     if (hire_date) body.hire_date = hire_date;
 
-    const res = await fetch('/api/employees', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-        body: JSON.stringify(body)
-    });
-    const data = await res.json();
+    const btn = document.querySelector('.register-card .btn-primary');
+    setButtonLoading(btn, true);
 
-    if (data.success) {
-        showToast(name + ' 사원이 등록되었습니다.');
-        setTimeout(() => location.reload(), 500);
-    } else {
-        showToast(data.error || '등록 실패');
+    try {
+        const res = await fetch('/api/employees', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            showToast(name + ' 사원이 등록되었습니다.');
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showToast(data.error || '등록 실패');
+        }
+    } finally {
+        setButtonLoading(btn, false);
     }
 }
 
-async function markResign(id, name) {
-    const resignDate = prompt(name + ' 사원의 퇴사일을 입력하세요 (YYYY-MM-DD):', new Date().toISOString().slice(0, 10));
-    if (!resignDate) return;
+function markResign(id, name) {
+    showPrompt(name + ' 사원의 퇴사일을 입력하세요 (YYYY-MM-DD):', {
+        type: 'date',
+        value: new Date().toISOString().slice(0, 10)
+    }, async (resignDate) => {
+        if (!resignDate) return;
 
-    const res = await fetch('/api/employees/' + id, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-        body: JSON.stringify({ is_active: false, resign_date: resignDate })
+        const res = await fetch('/api/employees/' + id, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ is_active: false, resign_date: resignDate })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            showToast(name + ' 사원이 퇴사 처리되었습니다.');
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showToast(data.error || '처리 실패');
+        }
     });
-    const data = await res.json();
-
-    if (data.success) {
-        showToast(name + ' 사원이 퇴사 처리되었습니다.');
-        setTimeout(() => location.reload(), 500);
-    } else {
-        showToast(data.error || '처리 실패');
-    }
 }
 
 async function reactivate(id) {
@@ -187,17 +198,17 @@ async function reactivate(id) {
     }
 }
 
-async function deleteEmployee(id, name) {
-    if (!confirm(name + ' 사원을 명부에서 삭제하시겠습니까?\n(퇴사 처리를 권장합니다)')) return;
+function deleteEmployee(id, name) {
+    showConfirm(name + ' 사원을 명부에서 삭제하시겠습니까?\n(퇴사 처리를 권장합니다)', async () => {
+        const res = await fetch('/api/employees/' + id, { method: 'DELETE', headers: { 'X-CSRFToken': csrfToken } });
+        const data = await res.json();
 
-    const res = await fetch('/api/employees/' + id, { method: 'DELETE', headers: { 'X-CSRFToken': csrfToken } });
-    const data = await res.json();
-
-    if (data.success) {
-        showToast(name + ' 사원이 삭제되었습니다.');
-        document.getElementById('row-' + id).remove();
-    } else {
-        showToast(data.error || '삭제 실패');
-    }
+        if (data.success) {
+            showToast(name + ' 사원이 삭제되었습니다.');
+            document.getElementById('row-' + id).remove();
+        } else {
+            showToast(data.error || '삭제 실패');
+        }
+    });
 }
 {% endblock %}

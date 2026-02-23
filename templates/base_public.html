@@ -8,58 +8,8 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 {% endblock %}
 
-{% block base_css %}
-:root {
-    --primary-color: #0056b3;
-    --dark-color: #1a1a1a;
-}
-body {
-    font-family: 'Noto Sans KR', sans-serif;
-    word-break: keep-all;
-    color: #333;
-    background: #fff;
-}
-h1, h2, h3, h4, .en-font {
-    font-family: 'Montserrat', sans-serif;
-}
-
-/* ── Navbar ── */
-.navbar {
-    background: white;
-    box-shadow: 0 2px 15px rgba(0,0,0,0.03);
-    padding: 10px 0;
-    transition: all 0.3s ease;
-}
-.navbar.scrolled {
-    padding: 5px 0;
-    box-shadow: 0 2px 20px rgba(0,0,0,0.1);
-}
-.nav-link {
-    font-weight: 700;
-    color: #444 !important;
-    margin-left: 20px;
-    font-size: 1.05rem;
-    transition: 0.3s;
-}
-.nav-link:hover,
-.nav-link.active-link {
-    color: var(--primary-color) !important;
-}
-.navbar-brand {
-    font-family: 'Montserrat', sans-serif;
-    font-weight: 900;
-    font-size: 2.2rem;
-    color: var(--primary-color) !important;
-    letter-spacing: -0.5px;
-    transition: font-size 0.3s ease;
-}
-.navbar.scrolled .navbar-brand { font-size: 1.8rem; }
-
-@media (max-width: 768px) {
-    .navbar-brand { font-size: 1.8rem; }
-    .navbar.scrolled .navbar-brand { font-size: 1.6rem; }
-    .nav-link { margin-left: 0; }
-}
+{% block base_css_link %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/public.css') }}">
 {% endblock %}
 
 {% block body_content %}
