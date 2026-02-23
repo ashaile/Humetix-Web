@@ -19,12 +19,19 @@ class Config:
     )
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
 
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        "pool_pre_ping": True,
-        "pool_recycle": 1800,
-        "pool_size": 5,
-        "max_overflow": 10,
-    }
+    @staticmethod
+    def _build_engine_options():
+        uri = os.environ.get("DATABASE_URL", "")
+        if uri.startswith("mysql") or uri.startswith("postgresql"):
+            return {
+                "pool_pre_ping": True,
+                "pool_recycle": 1800,
+                "pool_size": 5,
+                "max_overflow": 10,
+            }
+        return {"pool_pre_ping": True}
+
+    SQLALCHEMY_ENGINE_OPTIONS = _build_engine_options()
 
     HOURLY_WAGE = 10_320
     MONTHLY_STANDARD_HOURS = 209

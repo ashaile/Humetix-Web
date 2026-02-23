@@ -10,11 +10,12 @@ cd /var/www/recruit
 echo "💾 DB 백업..."
 BACKUP_DIR="/var/www/recruit/backup"
 mkdir -p "$BACKUP_DIR"
-BACKUP_FILE="$BACKUP_DIR/humetix_$(date +%Y%m%d_%H%M%S).sql.gz"
-if mysqldump --defaults-file=/var/www/recruit/.my.cnf humetix | gzip > "$BACKUP_FILE"; then
+DB_FILE="/var/www/recruit/humetix.db"
+BACKUP_FILE="$BACKUP_DIR/humetix_$(date +%Y%m%d_%H%M%S).db"
+if cp "$DB_FILE" "$BACKUP_FILE"; then
   echo "   백업 완료: $BACKUP_FILE"
   # 7일 이상 된 백업 자동 삭제
-  find "$BACKUP_DIR" -name "humetix_*.sql.gz" -mtime +7 -delete
+  find "$BACKUP_DIR" -name "humetix_*.db" -mtime +7 -delete
 else
   echo "   백업 실패 — 배포 중단"
   exit 1
@@ -28,6 +29,13 @@ echo "📦 라이브러리 설치..."
 pip3 install -r requirements.txt -q
 
 echo "🗄️ DB 마이그레이션..."
+# 마이그레이션 통합 대응: 이전 revision이면 새 initial_schema로 stamp
+CURRENT_REV=$(sqlite3 "$DB_FILE" "SELECT version_num FROM alembic_version LIMIT 1;" 2>/dev/null || echo "")
+TARGET_REV="2d328d13a043"
+if [ -n "$CURRENT_REV" ] && [ "$CURRENT_REV" != "$TARGET_REV" ]; then
+  echo "   마이그레이션 통합 반영 (${CURRENT_REV} → ${TARGET_REV})..."
+  FLASK_APP=app.py python3 -m flask db stamp "$TARGET_REV"
+fi
 FLASK_APP=app.py python3 -m flask db upgrade
 echo "   마이그레이션 완료"
 

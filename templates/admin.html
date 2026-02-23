@@ -512,6 +512,7 @@
     </h3>
     <div style="display: flex; gap: 8px; align-items: center;">
         <button type="button" class="btn btn-success btn-sm" id="openExcelColumnModalBtn">엑셀 내보내기</button>
+        <button type="button" class="btn btn-primary btn-sm" id="downloadApplicationFormBtn">입사지원서 다운로드</button>
         <button onclick="if(confirm('선택한 항목을 삭제하시겠습니까?')) document.getElementById('deleteForm').submit();"
             class="btn btn-danger btn-sm">선택 삭제</button>
     </div>
@@ -858,6 +859,14 @@ function downloadSelectedExcelColumns() {
     window.location.href = `/download_excel?${params.toString()}`;
     closeExcelColumnModal();
 }
+
+/* 입사지원서 다운로드 (템플릿 형식) */
+document.getElementById('downloadApplicationFormBtn').addEventListener('click', () => {
+    const params = new URLSearchParams(currentQueryString || '');
+    params.delete('page');
+    params.delete('excel_columns');
+    window.location.href = `/download_excel?${params.toString()}`;
+});
 
 /* 엑셀 모달 이벤트 */
 const excelColumnModal        = document.getElementById('excelColumnModal');

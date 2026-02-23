@@ -254,10 +254,10 @@ def download_excel():
         if not vision_text:
             return ""
         text = str(vision_text)
-        if "援먯젙" in text:
-            return "援먯젙"
-        if "?섏븞" in text:
-            return "?섏븞"
+        if "교정" in text:
+            return "교정"
+        if "나안" in text:
+            return "나안"
         return ""
 
     for app in apps:
@@ -283,7 +283,7 @@ def download_excel():
                     break
             ws.merge_cells("O4:Q4")
             ws.merge_cells("R4:AB4")
-            set_value(ws, "O4", "(?쒓?)")
+            set_value(ws, "O4", "(한글)")
             ws["O4"].font = Font(size=14)
             set_value(ws, "R4", name)
             ws["R4"].font = Font(size=24, bold=True)
@@ -341,7 +341,7 @@ def download_excel():
         set_value(ws, "Z23", vision_val)
         vision_type = parse_vision_type(app.vision)
         if vision_type:
-            set_value(ws, "R22", f"????( ?섏븞 , 援먯젙 )-{vision_type}")
+            set_value(ws, "R22", f"시 력 ( 나안 , 교정 )-{vision_type}")
         set_value(ws, "AC23", f"{app.height}cm" if app.height is not None else "")
         set_value(ws, "AG23", f"{app.weight}kg" if app.weight is not None else "")
         set_value(ws, "AK23", f"{app.shoes}mm" if app.shoes is not None else "")
