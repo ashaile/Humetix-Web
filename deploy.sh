@@ -10,13 +10,14 @@ cd /var/www/recruit
 echo "💾 DB 백업..."
 BACKUP_DIR="/var/www/recruit/backup"
 mkdir -p "$BACKUP_DIR"
-if [ -f humetix.db ]; then
-  cp humetix.db "$BACKUP_DIR/humetix_$(date +%Y%m%d_%H%M%S).db"
-  echo "   백업 완료: $BACKUP_DIR"
+BACKUP_FILE="$BACKUP_DIR/humetix_$(date +%Y%m%d_%H%M%S).sql.gz"
+if mysqldump --defaults-file=/var/www/recruit/.my.cnf humetix | gzip > "$BACKUP_FILE"; then
+  echo "   백업 완료: $BACKUP_FILE"
   # 7일 이상 된 백업 자동 삭제
-  find "$BACKUP_DIR" -name "humetix_*.db" -mtime +7 -delete
+  find "$BACKUP_DIR" -name "humetix_*.sql.gz" -mtime +7 -delete
 else
-  echo "   DB 파일 없음 — 건너뜀"
+  echo "   백업 실패 — 배포 중단"
+  exit 1
 fi
 
 echo "📥 최신 코드 받기..."

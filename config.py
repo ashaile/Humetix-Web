@@ -19,6 +19,13 @@ class Config:
     )
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
 
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_recycle": 1800,
+        "pool_size": 5,
+        "max_overflow": 10,
+    }
+
     HOURLY_WAGE = 10_320
     MONTHLY_STANDARD_HOURS = 209
     BASE_SALARY = HOURLY_WAGE * MONTHLY_STANDARD_HOURS

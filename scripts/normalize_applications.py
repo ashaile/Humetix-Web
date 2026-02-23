@@ -1,37 +1,55 @@
-import sqlite3
+"""
+지원서 데이터 정규화 스크립트
+잘못된 값(물음표, None 등)을 한글 기본값으로 치환합니다.
+사용법: python scripts/normalize_applications.py
+"""
+import os
+import sys
 
-DB_PATH = 'humetix.db'
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from app import app
+from models import db, Application
 
 VISION_BAD = {'None None', 'None', ''}
 ADVANCE_BAD = {'???', '??', '?'}
 ADVANCE_DEFAULT = "비희망"
 
 SHIFT_MAP = {
-    'day': '??',
-    'daytime': '??',
-    'night': '??',
-    '2shift': '2??',
-    '2 shift': '2??',
-    'two shift': '2??',
+    'day': '주간',
+    'daytime': '주간',
+    'night': '야간',
+    '2shift': '2교대',
+    '2 shift': '2교대',
+    'two shift': '2교대',
 }
 POSTURE_MAP = {
-    'good': '??',
-    'any': '??',
-    'sitting': '??',
-    'standing': '??',
+    'good': '무관',
+    'any': '무관',
+    'sitting': '좌식',
+    'standing': '입식',
 }
 BOOL_MAP = {
-    'yes': '??',
-    'y': '??',
-    'true': '??',
-    'no': '???',
-    'n': '???',
-    'false': '???',
+    'yes': '가능',
+    'y': '가능',
+    'true': '가능',
+    'no': '불가능',
+    'n': '불가능',
+    'false': '불가능',
 }
-
 
 BAD_MARK = {'???', '??', '?'}
 BAD_MARK_UTF = {'?', '??', '???'}
+
+FILL_DEFAULTS = {
+    'shift': '주간',
+    'posture': '무관',
+    'overtime': '불가능',
+    'holiday': '불가능',
+    'advance_pay': '비희망',
+    'insurance_type': '3.3%',
+}
+
 
 def _normalize_text(val):
     if val is None:
@@ -61,65 +79,56 @@ def _map_value(val, mapping):
     return mapping.get(key, val)
 
 
-FILL_DEFAULTS = {
-    'shift': '??',
-    'posture': '??',
-    'overtime': '???',
-    'holiday': '???',
-    'advance_pay': '???',
-    'insurance_type': '3.3%',
-}
-
-
 def normalize():
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
+    with app.app_context():
+        applications = Application.query.all()
+        updated = 0
 
-    cur.execute("""SELECT id, vision, advance_pay, insurance_type, shift, posture, overtime, holiday
-                   FROM applications""")
-    rows = cur.fetchall()
+        for row in applications:
+            changed = False
 
-    for app_id, vision, advance_pay, insurance_type, shift, posture, overtime, holiday in rows:
-        new_vision = vision
-        if vision is None or _normalize_text(vision) in VISION_BAD:
-            new_vision = None
+            # vision 정규화
+            if row.vision is None or _normalize_text(row.vision) in VISION_BAD:
+                if row.vision is not None:
+                    row.vision = None
+                    changed = True
 
-        new_advance = advance_pay
-        if advance_pay is None or _normalize_text(advance_pay) in ADVANCE_BAD or _normalize_text(advance_pay) == '':
-            new_advance = FILL_DEFAULTS['advance_pay']
+            # advance_pay 정규화
+            norm_adv = _normalize_text(row.advance_pay)
+            if row.advance_pay is None or norm_adv in ADVANCE_BAD or norm_adv == '':
+                if row.advance_pay != FILL_DEFAULTS['advance_pay']:
+                    row.advance_pay = FILL_DEFAULTS['advance_pay']
+                    changed = True
 
-        new_insurance = insurance_type
-        if insurance_type is None or _normalize_text(insurance_type) == '':
-            new_insurance = FILL_DEFAULTS['insurance_type']
-        elif _normalize_text(insurance_type).startswith('?'):
-            new_insurance = '4???'
+            # insurance_type 정규화
+            norm_ins = _normalize_text(row.insurance_type)
+            if row.insurance_type is None or norm_ins == '':
+                row.insurance_type = FILL_DEFAULTS['insurance_type']
+                changed = True
+            elif norm_ins and norm_ins.startswith('?'):
+                row.insurance_type = '4대보험'
+                changed = True
 
-        new_shift = _map_value(shift, SHIFT_MAP)
-        if new_shift is None or _normalize_text(new_shift) == '':
-            new_shift = FILL_DEFAULTS['shift']
-        new_posture = _map_value(posture, POSTURE_MAP)
-        if new_posture is None or _normalize_text(new_posture) == '':
-            new_posture = FILL_DEFAULTS['posture']
-        new_overtime = _map_value(overtime, BOOL_MAP)
-        if new_overtime is None or _normalize_text(new_overtime) == '':
-            new_overtime = FILL_DEFAULTS['overtime']
-        new_holiday = _map_value(holiday, BOOL_MAP)
-        if new_holiday is None or _normalize_text(new_holiday) == '':
-            new_holiday = FILL_DEFAULTS['holiday']
+            # shift, posture, overtime, holiday 정규화
+            for field, mapping, default in [
+                ('shift', SHIFT_MAP, FILL_DEFAULTS['shift']),
+                ('posture', POSTURE_MAP, FILL_DEFAULTS['posture']),
+                ('overtime', BOOL_MAP, FILL_DEFAULTS['overtime']),
+                ('holiday', BOOL_MAP, FILL_DEFAULTS['holiday']),
+            ]:
+                old_val = getattr(row, field)
+                new_val = _map_value(old_val, mapping)
+                if new_val is None or _normalize_text(new_val) == '':
+                    new_val = default
+                if old_val != new_val:
+                    setattr(row, field, new_val)
+                    changed = True
 
-        if (new_vision != vision or new_advance != advance_pay or new_insurance != insurance_type or
-                new_shift != shift or new_posture != posture or new_overtime != overtime or new_holiday != holiday):
-            cur.execute(
-                """UPDATE applications
-                   SET vision = ?, advance_pay = ?, insurance_type = ?,
-                       shift = ?, posture = ?, overtime = ?, holiday = ?
-                   WHERE id = ?""",
-                (new_vision, new_advance, new_insurance,
-                 new_shift, new_posture, new_overtime, new_holiday, app_id)
-            )
+            if changed:
+                updated += 1
 
-    conn.commit()
-    conn.close()
+        db.session.commit()
+        print(f"정규화 완료: {len(applications)}건 중 {updated}건 수정됨")
 
 
 if __name__ == '__main__':
