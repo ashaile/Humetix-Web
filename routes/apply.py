@@ -7,6 +7,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from models import Application, Career, Inquiry, db
 from routes.utils import UPLOAD_DIR
+from extensions import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,7 @@ def apply_form():
 
 
 @apply_bp.route('/submit', methods=['POST'])
+@limiter.limit("5 per minute")
 def submit():
     try:
         file_now = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -186,6 +188,7 @@ def submit():
 
 
 @apply_bp.route('/contact_submit', methods=['POST'])
+@limiter.limit("5 per minute")
 def contact_submit():
     company = request.form.get('company', '').strip()
     name = request.form.get('name', '').strip()

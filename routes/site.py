@@ -4,6 +4,7 @@ import logging
 
 from flask import Blueprint, jsonify, render_template, request
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 
 from models import Employee, Site, db
 from routes.utils import require_admin
@@ -16,7 +17,7 @@ site_bp = Blueprint("site", __name__)
 @site_bp.route("/admin/sites")
 @require_admin
 def admin_sites():
-    sites = Site.query.order_by(Site.name).all()
+    sites = Site.query.options(joinedload(Site.employees)).order_by(Site.name).all()
     unassigned = Employee.query.filter_by(is_active=True, site_id=None).count()
     employees = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
     return render_template(

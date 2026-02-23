@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from flask_wtf.csrf import CSRFProtect
 from flask_migrate import Migrate
 from models import db
+from extensions import limiter
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 # .env 파일에서 환경변수 로드
@@ -35,6 +36,7 @@ dictConfig(app_config.get_logging_config(LOG_DIR))
 db.init_app(app)
 migrate = Migrate(app, db)
 csrf = CSRFProtect(app)
+limiter.init_app(app)
 
 # uploads 폴더 생성
 UPLOAD_DIR = os.path.join(BASE_DIR, 'uploads')
@@ -80,4 +82,4 @@ def internal_server_error(e):
 if __name__ == '__main__':
     # Nginx가 SSL을 처리하므로 Flask는 보통 5000 포트에서 실행됩니다
     use_debug = os.environ.get('FLASK_DEBUG', '0') == '1'
-    app.run(host='0.0.0.0', port=5000, debug=use_debug)
+    app.run(host='127.0.0.1', port=5000, debug=use_debug)

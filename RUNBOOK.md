@@ -58,7 +58,7 @@ sudo nginx -t && sudo systemctl reload nginx
 
 # 그래도 안되면 — Gunicorn 직접 실행으로 에러 확인
 cd /var/www/recruit
-/usr/local/bin/gunicorn --workers 1 --bind 0.0.0.0:5000 app:app
+/usr/local/bin/gunicorn --workers 1 --bind 127.0.0.1:5000 app:app
 ```
 
 ### DB Migration 실패

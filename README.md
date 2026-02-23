@@ -58,7 +58,7 @@ ADMIN_PASSWORD=secure_admin_password
 ### 2. Gunicorn 실행
 Gunicorn을 사용하여 애플리케이션을 실행합니다. (보통 systemd 서비스로 등록하여 관리)
 ```bash
-gunicorn --workers 3 --bind 0.0.0.0:5000 app:app
+gunicorn --workers 3 --bind 127.0.0.1:5000 app:app
 ```
 
 ### 3. 배포 스크립트 사용

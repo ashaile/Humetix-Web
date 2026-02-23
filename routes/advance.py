@@ -14,6 +14,7 @@ from sqlalchemy.exc import IntegrityError
 
 from models import AdvanceRequest, Employee, db
 from routes.utils import require_admin, validate_month as _validate_month
+from extensions import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,7 @@ advance_bp = Blueprint("advance", __name__)
 
 
 @advance_bp.route("/advance", methods=["GET", "POST"])
+@limiter.limit("10 per minute")
 def advance_page():
     cfg = current_app.config
     limit_weekly = int(cfg.get("ADVANCE_LIMIT_WEEKLY", 300_000))

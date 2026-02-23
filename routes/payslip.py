@@ -14,6 +14,7 @@ from flask import (
 from models import Employee, Payslip, db
 from routes.utils import require_admin, validate_month as _validate_month
 from services.payslip_service import ALLOWED_SALARY_MODES, compute_payslips
+from extensions import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -632,6 +633,7 @@ def payslip_excel():
 
 
 @payslip_bp.route("/payslip", methods=["GET", "POST"])
+@limiter.limit("10 per minute")
 def payslip_lookup():
     if request.method == "GET":
         return render_template("payslip_lookup.html")
@@ -671,6 +673,7 @@ def payslip_lookup():
 
 
 @payslip_bp.route("/payslip/pdf")
+@limiter.limit("10 per minute")
 def payslip_public_pdf():
     birth_date = request.args.get("birth_date", "").strip()
     emp_name = request.args.get("emp_name", "").strip()

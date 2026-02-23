@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 
 from models import AdvanceRequest, AttendanceRecord, Employee, Payslip, Site, db
 from routes.utils import require_admin
+from extensions import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -193,6 +194,7 @@ def delete_employee(emp_id):
 
 
 @employee_bp.route("/api/employees/verify", methods=["POST"])
+@limiter.limit("5 per minute")
 def verify_employee():
     data = request.get_json(silent=True)
     if not data:
