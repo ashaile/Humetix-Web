@@ -589,7 +589,42 @@ function renderParticipants() {
             addBtn.onclick = addWorkerRow;
             wrapper.appendChild(addBtn);
 
-            /* 미리서명 섹션은 첫 번째 역할에만 유지 */
+            /* 미리서명 섹션 */
+            if (roleFields.length > 0) {
+                const psDiv = document.createElement('div');
+                psDiv.style.marginTop = '12px';
+                let psHtml = '<div class="pre-sign-section">';
+                psHtml += '<label class="pre-sign-toggle">';
+                psHtml += '<input type="checkbox" data-role="' + rk + '" data-field="pre_signed" onchange="togglePreSign(this)">';
+                psHtml += ' 미리 서명하기 (관리자가 대신 입력)</label>';
+                psHtml += '<div class="sign-fields-list" id="preSignFields_' + rk + '" style="display:none;">';
+                roleFields.forEach(f => {
+                    const typeLabel = { text: '텍스트', date: '날짜', signature: '서명',
+                                        stamp: '도장', checkbox: '체크', image: '이미지' }[f.type] || f.type;
+                    const defaultVal = f.default_value || '';
+                    psHtml += '<div class="sign-field-item" data-field-idx="' + f._idx + '">';
+                    psHtml += '<span class="field-type-badge">' + typeLabel + '</span>';
+                    psHtml += '<span>' + escHtml(f.label || f.type) + '</span>';
+                    if (f.type === 'text') {
+                        psHtml += '<input type="text" data-vidx="' + f._idx + '" value="' + escHtml(defaultVal) + '">';
+                    } else if (f.type === 'date') {
+                        psHtml += '<input type="date" data-vidx="' + f._idx + '" value="' + escHtml(defaultVal) + '">';
+                    } else if (f.type === 'signature' || f.type === 'stamp') {
+                        psHtml += '<img class="sig-preview" data-vidx="' + f._idx + '" src="" style="display:none;">';
+                        psHtml += '<button class="sign-btn-small" onclick="openSigModal(' + f._idx + ',\'' + f.type + '\')">' +
+                                  (f.type === 'signature' ? '서명' : '도장') + '</button>';
+                    } else if (f.type === 'checkbox') {
+                        psHtml += '<input type="checkbox" data-vidx="' + f._idx + '">';
+                    } else if (f.type === 'image') {
+                        psHtml += '<input type="file" accept="image/*" data-vidx="' + f._idx + '" onchange="uploadFieldImage(this,' + f._idx + ')">';
+                    }
+                    psHtml += '</div>';
+                });
+                psHtml += '</div></div>';
+                psDiv.innerHTML = psHtml;
+                wrapper.appendChild(psDiv);
+            }
+
             return;
         }
 
@@ -796,12 +831,13 @@ async function submitContract() {
             const name = nameEl ? nameEl.value.trim() : '';
             if (!name) { showToast(secondaryRole.label + ' 이름을 모두 입력하세요.'); return; }
 
+            const preSign2 = collectPreSignValues(secondaryRole.key);
             workers.push({
                 role_key: secondaryRole.key,
                 name,
                 phone: phoneEl ? phoneEl.value.trim() : '',
-                pre_signed: false,
-                field_values: [],
+                pre_signed: preSign2.pre_signed,
+                field_values: preSign2.field_values,
             });
         }
     }
