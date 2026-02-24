@@ -3,7 +3,6 @@
 {% block title %}계약서 서명 - {{ contract.title }}{% endblock %}
 
 {% block head_extra %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
 {% endblock %}
 
@@ -90,29 +89,19 @@ body {
 }
 
 /* ============================================
-   PDF 뷰어
+   PDF 뷰어 (브라우저 내장)
    ============================================ */
-.pdf-viewer-body {
+.pdf-embed-wrap {
     background: #e8e8e8;
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
+    min-height: 70vh;
     position: relative;
 }
-.pdf-scroll-container {
-    transform-origin: top center;
-    transition: transform 0.15s ease;
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-}
-.pdf-page-canvas {
+.pdf-embed-wrap object,
+.pdf-embed-wrap iframe {
+    width: 100%;
+    height: 75vh;
+    border: none;
     display: block;
-    box-shadow: 0 2px 8px rgba(0,0,0,.12);
-    background: #fff;
-    max-width: 100%;
-    height: auto;
 }
 .pdf-loading {
     padding: 60px 20px;
@@ -120,42 +109,23 @@ body {
     color: var(--text2);
     font-size: 14px;
 }
-
-/* 줌 컨트롤 */
-.zoom-controls {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-.zoom-btn {
-    width: 32px;
-    height: 32px;
-    border: 1px solid var(--border);
-    background: var(--card-bg);
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text);
-    transition: background .15s;
-    font-family: inherit;
-}
-.zoom-btn:hover { background: #f0f0f0; }
-.zoom-btn:active { background: #e8e8e8; }
-.zoom-level {
-    font-size: 12px;
-    color: var(--text2);
-    min-width: 40px;
+.pdf-fallback {
+    padding: 24px;
     text-align: center;
-    font-weight: 500;
-}
-.page-info {
-    font-size: 12px;
     color: var(--text2);
-    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.8;
+}
+.pdf-fallback a {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 10px 20px;
+    background: var(--primary);
+    color: #fff;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
 }
 
 /* ============================================
@@ -563,24 +533,18 @@ body {
     </div>
 
 {% elif already_signed %}
-    <!-- PDF 뷰어 (서명 완료 후에도 표시) -->
+    <!-- PDF 뷰어 (서명 완료 — 완성된 계약서) -->
     <div class="card">
         <div class="card-header">
-            <span>계약서 문서</span>
-            <div class="zoom-controls">
-                <button class="zoom-btn" onclick="zoomOut()" title="축소">-</button>
-                <span class="zoom-level" id="zoomLevel">100%</span>
-                <button class="zoom-btn" onclick="zoomIn()" title="확대">+</button>
-                <button class="zoom-btn" onclick="zoomReset()" title="원본 크기" style="font-size:12px;">1:1</button>
-            </div>
+            <span>완성된 계약서</span>
         </div>
-        <div class="pdf-viewer-body" id="pdfViewerBody">
-            <div class="pdf-scroll-container" id="pdfScrollContainer">
-                <div class="pdf-loading" id="pdfLoading">PDF 문서를 불러오는 중...</div>
-            </div>
-        </div>
-        <div style="padding:8px 16px;text-align:center;border-top:1px solid var(--border);">
-            <span class="page-info" id="pageInfo"></span>
+        <div class="pdf-embed-wrap">
+            <object data="{{ pdf_url }}" type="application/pdf">
+                <div class="pdf-fallback">
+                    PDF를 표시할 수 없습니다.<br>
+                    <a href="{{ pdf_url }}" target="_blank">PDF 열기</a>
+                </div>
+            </object>
         </div>
     </div>
 
@@ -605,24 +569,18 @@ body {
     </div>
 
 {% else %}
-    <!-- PDF 뷰어 -->
+    <!-- PDF 뷰어 (서명 전 — 서식 템플릿) -->
     <div class="card">
         <div class="card-header">
             <span>계약서 문서</span>
-            <div class="zoom-controls">
-                <button class="zoom-btn" onclick="zoomOut()" title="축소">-</button>
-                <span class="zoom-level" id="zoomLevel">100%</span>
-                <button class="zoom-btn" onclick="zoomIn()" title="확대">+</button>
-                <button class="zoom-btn" onclick="zoomReset()" title="원본 크기" style="font-size:12px;">1:1</button>
-            </div>
         </div>
-        <div class="pdf-viewer-body" id="pdfViewerBody">
-            <div class="pdf-scroll-container" id="pdfScrollContainer">
-                <div class="pdf-loading" id="pdfLoading">PDF 문서를 불러오는 중...</div>
-            </div>
-        </div>
-        <div style="padding:8px 16px;text-align:center;border-top:1px solid var(--border);">
-            <span class="page-info" id="pageInfo"></span>
+        <div class="pdf-embed-wrap">
+            <object data="{{ pdf_url }}" type="application/pdf">
+                <div class="pdf-fallback">
+                    PDF를 표시할 수 없습니다.<br>
+                    <a href="{{ pdf_url }}" target="_blank">PDF 열기</a>
+                </div>
+            </object>
         </div>
     </div>
 
@@ -703,7 +661,6 @@ const MY_FIELDS = ALL_FIELDS.filter(f => f.role === MY_ROLE);
 
 const OTHER_VALUES = {{ other_values|tojson if other_values is defined and other_values else '{}' }};
 
-let pdfDoc = null;
 let signaturePad = null;
 let sigCallback = null;
 let fieldValues = {};
@@ -734,137 +691,7 @@ const TYPE_LABELS = {
     image: '이미지'
 };
 
-/* ============================================
-   PDF 뷰어 — 연속 스크롤, 핀치 줌
-   ============================================ */
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
-const PDF_BASE64 = '{{ pdf_base64 }}';
-let zoomScale = 1.0;
-const ZOOM_STEP = 0.25;
-const ZOOM_MIN = 0.5;
-const ZOOM_MAX = 3.0;
-
-function zoomIn() {
-    zoomScale = Math.min(zoomScale + ZOOM_STEP, ZOOM_MAX);
-    applyZoom();
-}
-function zoomOut() {
-    zoomScale = Math.max(zoomScale - ZOOM_STEP, ZOOM_MIN);
-    applyZoom();
-}
-function zoomReset() {
-    zoomScale = 1.0;
-    applyZoom();
-}
-function applyZoom() {
-    const container = document.getElementById('pdfScrollContainer');
-    if (container) {
-        container.style.transform = 'scale(' + zoomScale + ')';
-    }
-    const levelEl = document.getElementById('zoomLevel');
-    if (levelEl) {
-        levelEl.textContent = Math.round(zoomScale * 100) + '%';
-    }
-}
-
-/* 핀치 줌 (터치) */
-let pinchStartDist = 0;
-let pinchStartScale = 1;
-
-function initPinchZoom() {
-    const viewerBody = document.getElementById('pdfViewerBody');
-    if (!viewerBody) return;
-
-    viewerBody.addEventListener('touchstart', function(e) {
-        if (e.touches.length === 2) {
-            e.preventDefault();
-            pinchStartDist = getTouchDistance(e.touches);
-            pinchStartScale = zoomScale;
-        }
-    }, { passive: false });
-
-    viewerBody.addEventListener('touchmove', function(e) {
-        if (e.touches.length === 2) {
-            e.preventDefault();
-            const dist = getTouchDistance(e.touches);
-            const ratio = dist / pinchStartDist;
-            zoomScale = Math.min(Math.max(pinchStartScale * ratio, ZOOM_MIN), ZOOM_MAX);
-            applyZoom();
-        }
-    }, { passive: false });
-}
-
-function getTouchDistance(touches) {
-    const dx = touches[0].clientX - touches[1].clientX;
-    const dy = touches[0].clientY - touches[1].clientY;
-    return Math.sqrt(dx * dx + dy * dy);
-}
-
-/* PDF 로드 및 모든 페이지 연속 렌더링 */
-async function loadPdf() {
-    if (!PDF_BASE64) return;
-    const loadingEl = document.getElementById('pdfLoading');
-
-    try {
-        const raw = atob(PDF_BASE64);
-        const arr = new Uint8Array(raw.length);
-        for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
-        pdfDoc = await pdfjsLib.getDocument({
-            data: arr,
-            cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
-            cMapPacked: true,
-            standardFontDataUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/',
-            useSystemFonts: true,
-        }).promise;
-
-        const container = document.getElementById('pdfScrollContainer');
-        if (!container) return;
-
-        /* 로딩 텍스트 제거 */
-        if (loadingEl) loadingEl.remove();
-
-        /* 모든 페이지 렌더링 */
-        const totalPages = pdfDoc.numPages;
-        for (let i = 1; i <= totalPages; i++) {
-            const page = await pdfDoc.getPage(i);
-
-            /* 고해상도 렌더링: 최소 3x로 원본급 선명도 보장 */
-            const dpr = Math.max(window.devicePixelRatio || 1, 3);
-            const desiredWidth = Math.min(container.parentElement.clientWidth - 24, 680);
-            const unscaledViewport = page.getViewport({ scale: 1 });
-            const fitScale = desiredWidth / unscaledViewport.width;
-            const renderViewport = page.getViewport({ scale: fitScale * dpr });
-
-            const canvas = document.createElement('canvas');
-            canvas.className = 'pdf-page-canvas';
-            canvas.width = renderViewport.width;
-            canvas.height = renderViewport.height;
-            canvas.style.width = (renderViewport.width / dpr) + 'px';
-            canvas.style.height = (renderViewport.height / dpr) + 'px';
-            canvas.dataset.page = i;
-
-            container.appendChild(canvas);
-
-            const ctx = canvas.getContext('2d');
-            await page.render({ canvasContext: ctx, viewport: renderViewport }).promise;
-        }
-
-        /* 페이지 정보 표시 */
-        const pageInfoEl = document.getElementById('pageInfo');
-        if (pageInfoEl) {
-            pageInfoEl.textContent = '전체 ' + totalPages + '페이지';
-        }
-
-    } catch (e) {
-        console.error('PDF 로드 오류:', e);
-        const container = document.getElementById('pdfScrollContainer');
-        if (container) {
-            container.innerHTML = '<div class="pdf-loading" style="color:#999;">PDF를 불러올 수 없습니다.</div>';
-        }
-    }
-}
+/* (PDF는 브라우저 내장 뷰어로 렌더링 — 별도 JS 불필요) */
 
 /* ============================================
    입력 폼 렌더링
@@ -1233,9 +1060,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         renderFields();
     }
-
-    loadPdf();
-    initPinchZoom();
 });
 </script>
 {% endblock %}

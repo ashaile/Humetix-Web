@@ -1251,28 +1251,15 @@ def sign_page(token):
                 if idx is not None and fv.get("value"):
                     other_values[idx] = fv["value"]
 
-    # PDF를 base64로 인코딩하여 HTML에 직접 임베드 (IDM 우회)
-    import base64
-
-    pdf_base64 = ""
     template = contract.template
-
-    # 서명 완료 + 최종 PDF가 있으면 최종 PDF 표시
-    if participant.status == "signed" and contract.final_pdf_path and os.path.exists(
-        contract.final_pdf_path
-    ):
-        with open(contract.final_pdf_path, "rb") as f:
-            pdf_base64 = base64.b64encode(f.read()).decode("ascii")
-    elif template and os.path.exists(template.file_path):
-        with open(template.file_path, "rb") as f:
-            pdf_base64 = base64.b64encode(f.read()).decode("ascii")
+    pdf_url = url_for("contract.sign_pdf_view", token=token)
 
     render_kwargs = dict(
         participant=participant,
         contract=contract,
         template=template,
         other_values=other_values,
-        pdf_base64=pdf_base64,
+        pdf_url=pdf_url,
     )
 
     if participant.status == "signed":
@@ -1358,3 +1345,26 @@ def download_signed_pdf(token):
         as_attachment=True,
         download_name=f"{contract.title}_계약서.pdf",
     )
+
+
+@contract_bp.route("/sign/<token>/pdf")
+def sign_pdf_view(token):
+    """서명 페이지용 PDF 서빙 (브라우저 내장 뷰어용)."""
+    participant = ContractParticipant.query.filter_by(sign_token=token).first()
+    if not participant:
+        return "잘못된 요청입니다.", 404
+
+    contract = participant.contract
+
+    # 서명 완료 + 최종 PDF가 있으면 최종 PDF 서빙
+    if participant.status == "signed" and contract.final_pdf_path and os.path.exists(
+        contract.final_pdf_path
+    ):
+        return send_file(contract.final_pdf_path, mimetype="application/pdf")
+
+    # 아니면 서식 템플릿 PDF
+    template = contract.template
+    if template and os.path.exists(template.file_path):
+        return send_file(template.file_path, mimetype="application/pdf")
+
+    return "PDF를 찾을 수 없습니다.", 404
