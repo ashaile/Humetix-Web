@@ -159,7 +159,10 @@ def edit_template(tid):
     template = db.session.get(ContractTemplate, tid)
     if not template:
         return redirect(url_for("contract.admin_templates"))
-    return render_template("admin_template_editor.html", template=template)
+    contract_count = Contract.query.filter_by(template_id=tid).count()
+    return render_template(
+        "admin_template_editor.html", template=template, contract_count=contract_count
+    )
 
 
 @contract_bp.route("/api/contract-templates/<int:tid>", methods=["PUT"])

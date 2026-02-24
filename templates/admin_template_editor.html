@@ -421,6 +421,7 @@ body { overflow: hidden; font-family: 'Noto Sans KR', sans-serif; font-size: 13p
 const TID = {{ template.id }};
 const CSRF = '{{ csrf_token() }}';
 const PDF_URL = '/api/contract-templates/' + TID + '/pdf';
+const CONTRACT_COUNT = {{ contract_count|default(0) }};
 
 /* ── 역할 색상 (5가지) ── */
 const COLORS = [
@@ -963,9 +964,24 @@ function renderRoles() {
 
 function editRoleLabel(idx) {
     const r = roles[idx];
+    const canEditKey = CONTRACT_COUNT === 0;
+    if (canEditKey) {
+        const newKey = prompt('역할 키 수정 (영문):', r.key);
+        if (!newKey || !newKey.trim()) return;
+        const oldKey = r.key;
+        const trimKey = newKey.trim();
+        if (trimKey !== oldKey) {
+            if (roles.some((ro, ri) => ri !== idx && ro.key === trimKey)) {
+                alert('이미 사용 중인 키입니다.'); return;
+            }
+            fields.forEach(f => { if (f.role === oldKey) f.role = trimKey; });
+            r.key = trimKey;
+        }
+    }
     const newLabel = prompt('역할 표시명 수정:', r.label);
-    if (!newLabel || !newLabel.trim() || newLabel.trim() === r.label) return;
-    r.label = newLabel.trim();
+    if (newLabel && newLabel.trim() && newLabel.trim() !== r.label) {
+        r.label = newLabel.trim();
+    }
     renderRoles(); renderFields();
 }
 
