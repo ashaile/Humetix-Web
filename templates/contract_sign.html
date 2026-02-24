@@ -805,7 +805,11 @@ async function loadPdf() {
         const raw = atob(PDF_BASE64);
         const arr = new Uint8Array(raw.length);
         for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
-        pdfDoc = await pdfjsLib.getDocument({ data: arr }).promise;
+        pdfDoc = await pdfjsLib.getDocument({
+            data: arr,
+            cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+            cMapPacked: true,
+        }).promise;
 
         const container = document.getElementById('pdfScrollContainer');
         if (!container) return;
