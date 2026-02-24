@@ -261,7 +261,7 @@
             {% if contract.status == 'completed' and contract.final_pdf_path %}
             <a href="/admin/contracts/{{ contract.id }}/pdf" class="btn btn-success btn-sm">PDF 다운로드</a>
             {% endif %}
-            <button class="btn btn-outline btn-sm" onclick="duplicateContract({{ contract.id }})">복제</button>
+            <button class="btn btn-outline btn-sm" onclick="downloadAuditLog({{ contract.id }})">감사로그 다운로드</button>
             {% if contract.status not in ['cancelled', 'completed'] %}
             <button class="btn btn-danger btn-sm" onclick="cancelContract({{ contract.id }}, '{{ contract.title|replace("'", "\\'") }}')">취소</button>
             {% endif %}
@@ -476,24 +476,37 @@ function renamePart(cid, pid, currentName) {
     }).catch(() => showToast('오류가 발생했습니다.'));
 }
 
-/* ── 계약 복제 ── */
-function duplicateContract(cid) {
-    showConfirm('이 계약을 복제하시겠습니까?', async () => {
-        const res = await fetch('/api/contracts/' + cid + '/duplicate', {
-            method: 'POST', headers: headers
-        });
+/* ── 감사로그 다운로드 (CSV) ── */
+async function downloadAuditLog(cid) {
+    try {
+        const res = await fetch('/api/contracts/' + cid + '/audit-logs', { headers: headers });
         const data = await res.json();
-        if (data.success) {
-            showToast('계약이 복제되었습니다.');
-            if (data.contract && data.contract.id) {
-                setTimeout(() => { location.href = '/admin/contracts/' + data.contract.id; }, 500);
-            } else {
-                setTimeout(() => location.reload(), 500);
-            }
-        } else {
-            showToast(data.error || '복제 실패');
+        if (!data.success || !data.logs || data.logs.length === 0) {
+            showToast('다운로드할 감사 로그가 없습니다.');
+            return;
         }
-    });
+        const BOM = '\uFEFF';
+        const rows = [['일시', '액션', '상세', '실행자', 'IP']];
+        data.logs.forEach(l => {
+            rows.push([
+                l.created_at || '',
+                l.action || '',
+                (l.detail || '').replace(/"/g, '""'),
+                l.actor || '',
+                l.ip_address || ''
+            ]);
+        });
+        const csv = BOM + rows.map(r => r.map(c => '"' + c + '"').join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '감사로그_계약' + cid + '.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch(e) {
+        showToast('감사로그 다운로드 실패');
+    }
 }
 
 /* ── 계약 취소 ── */
