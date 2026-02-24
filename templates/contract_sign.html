@@ -818,8 +818,8 @@ async function loadPdf() {
         for (let i = 1; i <= totalPages; i++) {
             const page = await pdfDoc.getPage(i);
 
-            /* 고해상도(Retina) 대응: devicePixelRatio 적용 */
-            const dpr = window.devicePixelRatio || 1;
+            /* 고해상도 렌더링: 최소 3x로 원본급 선명도 보장 */
+            const dpr = Math.max(window.devicePixelRatio || 1, 3);
             const desiredWidth = Math.min(container.parentElement.clientWidth - 24, 680);
             const unscaledViewport = page.getViewport({ scale: 1 });
             const fitScale = desiredWidth / unscaledViewport.width;
