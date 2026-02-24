@@ -640,13 +640,32 @@ body {
 
 <!-- 서명 확인 모달 -->
 <div class="modal-overlay" id="confirmModal">
-    <div class="modal-card">
-        <span class="modal-icon">&#9997;</span>
-        <div class="modal-title">서명을 완료하시겠습니까?</div>
-        <div class="modal-desc">서명 후에는 수정할 수 없습니다.<br>모든 내용을 확인하셨나요?</div>
-        <div class="modal-actions">
-            <button class="modal-btn-cancel" onclick="closeConfirmModal()">취소</button>
-            <button class="modal-btn-confirm" onclick="doSubmitSign()">서명 완료</button>
+    <div class="modal-card" style="max-width:440px;text-align:left;">
+        <div style="text-align:center;">
+            <span class="modal-icon" style="font-size:44px;">&#9888;&#65039;</span>
+            <div class="modal-title" style="font-size:18px;">최종 확인</div>
+            <div class="modal-desc" style="margin-bottom:20px;">
+                모든 조건이 정확히 입력되었는지 확인해주세요.<br>
+                서명 완료 후에는 내용을 수정할 수 없습니다.
+            </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px;">
+            <div style="display:flex;align-items:flex-start;gap:10px;font-size:14px;line-height:1.5;">
+                <span style="color:var(--primary);font-size:18px;flex-shrink:0;">&#10003;</span>
+                <span>전자계약 및 전자서명의 법적 효력에 대해 동의합니다.</span>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:10px;font-size:14px;line-height:1.5;">
+                <span style="color:var(--primary);font-size:18px;flex-shrink:0;">&#10003;</span>
+                <span>서명 완료 후 전자계약 문서를 원본으로 인정합니다.</span>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:10px;font-size:14px;line-height:1.5;">
+                <span style="color:var(--primary);font-size:18px;flex-shrink:0;">&#10003;</span>
+                <span>모든 서명자는 본 계약 내용을 확인하고 서명한 것에 동의합니다.</span>
+            </div>
+        </div>
+        <div class="modal-actions" style="flex-direction:column;gap:8px;">
+            <button class="modal-btn-confirm" onclick="doSubmitSign()" style="width:100%;padding:15px;font-size:15px;">서명 완료 (전체 동의)</button>
+            <button class="modal-btn-cancel" onclick="closeConfirmModal()" style="width:100%;padding:13px;">취소</button>
         </div>
     </div>
 </div>
