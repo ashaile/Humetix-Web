@@ -83,8 +83,11 @@
 .participant-fields {
     display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
 }
-.participant-fields .form-input {
+.participant-fields .form-input,
+.participant-fields .form-group {
     min-width: 0; /* 그리드 오버플로우 방지 */
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* ── 근로자 추가/삭제 ── */

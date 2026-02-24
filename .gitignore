@@ -6,6 +6,7 @@ applications.json
 humetix.db
 tests/*.db
 *.xlsx
+!static/bulk_send_sample.xlsx
 data/*.txt
 data/*.json
 
