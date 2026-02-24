@@ -818,24 +818,25 @@ async function loadPdf() {
         for (let i = 1; i <= totalPages; i++) {
             const page = await pdfDoc.getPage(i);
 
-            /* 뷰어 너비에 맞추되 기본 스케일 적용 */
+            /* 고해상도(Retina) 대응: devicePixelRatio 적용 */
+            const dpr = window.devicePixelRatio || 1;
             const desiredWidth = Math.min(container.parentElement.clientWidth - 24, 680);
             const unscaledViewport = page.getViewport({ scale: 1 });
             const fitScale = desiredWidth / unscaledViewport.width;
-            const viewport = page.getViewport({ scale: fitScale });
+            const renderViewport = page.getViewport({ scale: fitScale * dpr });
 
             const canvas = document.createElement('canvas');
             canvas.className = 'pdf-page-canvas';
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-            canvas.style.width = viewport.width + 'px';
-            canvas.style.height = viewport.height + 'px';
+            canvas.width = renderViewport.width;
+            canvas.height = renderViewport.height;
+            canvas.style.width = (renderViewport.width / dpr) + 'px';
+            canvas.style.height = (renderViewport.height / dpr) + 'px';
             canvas.dataset.page = i;
 
             container.appendChild(canvas);
 
             const ctx = canvas.getContext('2d');
-            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+            await page.render({ canvasContext: ctx, viewport: renderViewport }).promise;
         }
 
         /* 페이지 정보 표시 */
