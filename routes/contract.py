@@ -275,6 +275,77 @@ def replace_template_file(tid):
         return jsonify({"error": f"문서 교체 실패: {str(e)}"}), 500
 
 
+@contract_bp.route(
+    "/api/contract-templates/<int:tid>/duplicate-with-pdf", methods=["POST"]
+)
+@require_admin
+def duplicate_template_with_pdf(tid):
+    """기존 서식의 필드/역할을 복제하고 새 PDF로 새 서식 생성."""
+    _ensure_dirs()
+    source = db.session.get(ContractTemplate, tid)
+    if not source:
+        return jsonify({"error": "원본 서식을 찾을 수 없습니다."}), 404
+
+    if "file" not in request.files:
+        return jsonify({"error": "파일을 선택해주세요."}), 400
+
+    file = request.files["file"]
+    ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
+    if ext not in ALLOWED_EXTENSIONS:
+        return jsonify({"error": "PDF 파일만 업로드 가능합니다."}), 400
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    safe_name = secure_filename(file.filename) or f"template_{timestamp}.pdf"
+    new_filename = f"{timestamp}_{safe_name}"
+    new_filepath = os.path.join(TEMPLATE_UPLOAD_DIR, new_filename)
+    file.save(new_filepath)
+
+    try:
+        import pypdf
+
+        with open(new_filepath, "rb") as f:
+            reader = pypdf.PdfReader(f)
+            new_page_count = len(reader.pages)
+
+        # 기존 필드 중 새 PDF 페이지 범위 내의 필드만 복제
+        import copy
+
+        source_fields = copy.deepcopy(source.fields)
+        kept_fields = [
+            fld for fld in source_fields if fld.get("page", 1) <= new_page_count
+        ]
+        removed_count = len(source_fields) - len(kept_fields)
+
+        new_template = ContractTemplate(
+            name=f"{source.name} (복제)",
+            file_path=new_filepath,
+            file_original_name=file.filename,
+            page_count=new_page_count,
+        )
+        new_template.fields = kept_fields
+        new_template.roles = copy.deepcopy(source.roles)
+        db.session.add(new_template)
+        db.session.commit()
+
+        msg = f"새 서식이 생성되었습니다. ({new_page_count}페이지, 필드 {len(kept_fields)}개 복제)"
+        if removed_count > 0:
+            msg += f" 페이지 범위 초과 필드 {removed_count}개 제외."
+
+        return jsonify({
+            "success": True,
+            "message": msg,
+            "redirect": f"/admin/contract-templates/{new_template.id}/edit",
+        }), 201
+
+    except Exception as e:
+        try:
+            os.remove(new_filepath)
+        except OSError:
+            pass
+        logger.error("서식 복제 실패: %s", e)
+        return jsonify({"error": f"서식 복제 실패: {str(e)}"}), 500
+
+
 @contract_bp.route("/api/contract-templates/<int:tid>/pdf")
 @require_admin
 def template_pdf(tid):

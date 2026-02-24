@@ -50,6 +50,7 @@
                     <th>필드 수</th>
                     <th>계약 수</th>
                     <th>생성일</th>
+                    <th>마지막 활동</th>
                     <th>관리</th>
                 </tr>
             </thead>
@@ -61,7 +62,8 @@
                     <td class="mono">{{ t.page_count }}p</td>
                     <td class="mono">{{ t.fields|length }}개</td>
                     <td class="mono">{{ t.contracts|length }}건</td>
-                    <td class="mono">{{ t.created_at.strftime('%Y-%m-%d') if t.created_at else '-' }}</td>
+                    <td class="mono">{{ t.created_at.strftime('%Y-%m-%d %H:%M:%S') if t.created_at else '-' }}</td>
+                    <td class="mono">{{ t.updated_at.strftime('%Y-%m-%d %H:%M:%S') if t.updated_at else '-' }}</td>
                     <td>
                         <div class="action-btns">
                             <a href="/admin/contract-templates/{{ t.id }}/edit" class="btn btn-primary btn-sm">편집</a>
@@ -73,7 +75,7 @@
                 {% endfor %}
                 {% if not templates %}
                 <tr>
-                    <td colspan="7" style="text-align:center;padding:24px;color:var(--text2);">
+                    <td colspan="8" style="text-align:center;padding:24px;color:var(--text2);">
                         등록된 서식이 없습니다. PDF를 업로드하여 서식을 만드세요.
                     </td>
                 </tr>
@@ -164,13 +166,13 @@ document.getElementById('replaceInput').addEventListener('change', async functio
     fd.append('csrf_token', csrfToken);
 
     try {
-        const res = await fetch('/api/contract-templates/' + replaceTargetId + '/replace', {
+        const res = await fetch('/api/contract-templates/' + replaceTargetId + '/duplicate-with-pdf', {
             method: 'POST', headers, body: fd
         });
         const data = await res.json();
-        if (data.success) {
-            showToast(data.message || '문서가 교체되었습니다.');
-            setTimeout(() => location.reload(), 800);
+        if (data.success && data.redirect) {
+            showToast('새 서식이 생성되었습니다. 필드를 확인하세요.');
+            location.href = data.redirect;
         } else {
             showToast(data.error || '문서 교체 실패');
         }
