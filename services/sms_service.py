@@ -59,7 +59,7 @@ def send_sms(to: str, text: str) -> dict:
 def send_contract_link(to: str, worker_name: str, contract_title: str, sign_url: str) -> dict:
     """계약서 서명 링크 SMS 발송."""
     text = (
-        f"[HUMETIX] {worker_name}님, 계약서가 도착했습니다.\n"
+        f"{worker_name}님, 계약서가 도착했습니다.\n"
         f"계약명: {contract_title}\n"
         f"서명 링크: {sign_url}\n"
         f"위 링크를 눌러 서명을 완료해주세요."
