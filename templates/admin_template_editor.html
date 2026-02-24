@@ -955,10 +955,18 @@ function renderRoles() {
         const rc = roleColor(i);
         const d = document.createElement('div'); d.className = 'part-item';
         d.innerHTML = '<span class="part-dot" style="background:' + rc.dot + '"></span>' +
-            '<span class="part-label">' + escHtml(r.label) + ' (' + escHtml(r.key) + ')</span>' +
+            '<span class="part-label" onclick="editRoleLabel(' + i + ')" style="cursor:pointer;" title="클릭하여 이름 수정">' + escHtml(r.label) + ' (' + escHtml(r.key) + ')</span>' +
             (roles.length > 1 ? '<button class="part-del" onclick="removeRole(' + i + ')">&#215;</button>' : '');
         c.appendChild(d);
     });
+}
+
+function editRoleLabel(idx) {
+    const r = roles[idx];
+    const newLabel = prompt('역할 표시명 수정:', r.label);
+    if (!newLabel || !newLabel.trim() || newLabel.trim() === r.label) return;
+    r.label = newLabel.trim();
+    renderRoles(); renderFields();
 }
 
 function addRole() {
