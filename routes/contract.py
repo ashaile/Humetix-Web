@@ -1347,6 +1347,21 @@ def download_signed_pdf(token):
     )
 
 
+@contract_bp.route("/download-bulk-sample")
+@require_admin
+def download_bulk_sample():
+    """대량전송 양식 샘플 다운로드."""
+    sample_path = os.path.join(BASE_DIR, "static", "bulk_send_sample.xlsx")
+    if not os.path.exists(sample_path):
+        return "양식 파일을 찾을 수 없습니다.", 404
+    return send_file(
+        sample_path,
+        as_attachment=True,
+        download_name="대량전송_양식.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
 @contract_bp.route("/sign/<token>/pdf")
 def sign_pdf_view(token):
     """서명 페이지용 PDF 서빙 (브라우저 내장 뷰어용)."""

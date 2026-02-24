@@ -238,7 +238,7 @@
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
         <label class="form-label" style="margin:0;">수신자 목록 (근로자)</label>
         <div class="excel-upload-area">
-            <a href="{{ url_for('static', filename='bulk_send_sample.xlsx') }}" class="excel-upload-btn" download>&#128203; 양식 다운로드</a>
+            <a href="{{ url_for('contract.download_bulk_sample') }}" class="excel-upload-btn">&#128203; 양식 다운로드</a>
             <label class="excel-upload-btn" for="excelInput">
                 &#128196; 엑셀/CSV 업로드
             </label>

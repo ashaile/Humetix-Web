@@ -83,6 +83,36 @@
 .participant-fields {
     display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
 }
+.participant-fields .form-input {
+    min-width: 0; /* 그리드 오버플로우 방지 */
+}
+
+/* ── 근로자 추가/삭제 ── */
+.worker-row {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 14px; margin-bottom: 8px;
+    position: relative;
+}
+.worker-row-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+}
+.worker-row-header .worker-num {
+    font-size: 13px; font-weight: 600; color: var(--text2);
+}
+.worker-remove-btn {
+    width: 24px; height: 24px; border: none; border-radius: 50%;
+    background: #fee2e2; color: #dc2626; cursor: pointer;
+    font-size: 14px; line-height: 1; display: flex; align-items: center; justify-content: center;
+}
+.worker-remove-btn:hover { background: #fca5a5; }
+.add-worker-btn {
+    width: 100%; padding: 10px; border: 2px dashed var(--border);
+    border-radius: var(--radius-sm); background: transparent;
+    cursor: pointer; font-size: 13px; font-family: inherit;
+    color: var(--text2); transition: all .15s;
+}
+.add-worker-btn:hover { border-color: var(--accent); color: var(--accent); }
 
 /* ── 미리서명 섹션 ── */
 .pre-sign-section {
@@ -349,6 +379,35 @@ let canvasHeight = 0;
 let signaturePad = null;
 let sigCallback = null;
 
+/* ── 근로자 다중 관리 ── */
+let workerRows = [{ id: 1 }];
+let workerIdCounter = 1;
+
+function addWorkerRow() {
+    workerIdCounter++;
+    workerRows.push({ id: workerIdCounter });
+    renderParticipants();
+}
+
+function removeWorkerRow(rowId) {
+    if (workerRows.length <= 1) return;
+    workerRows = workerRows.filter(r => r.id !== rowId);
+    renderParticipants();
+}
+
+/* ── 전화번호 하이픈 자동 추가 ── */
+function formatPhone(input) {
+    let val = input.value.replace(/[^0-9]/g, '');
+    if (val.length > 11) val = val.slice(0, 11);
+    if (val.length > 7) {
+        input.value = val.slice(0, 3) + '-' + val.slice(3, 7) + '-' + val.slice(7);
+    } else if (val.length > 3) {
+        input.value = val.slice(0, 3) + '-' + val.slice(3);
+    } else {
+        input.value = val;
+    }
+}
+
 /* ── PDF.js 초기화 ── */
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -361,8 +420,9 @@ function onTemplateChange() {
 }
 
 /* ── 직원에서 불러오기 (참여자 영역에서 사용) ── */
-function loadFromEmployee(roleKey) {
-    const sel = document.getElementById('empSelect_' + roleKey);
+function loadFromEmployee(roleKey, workerId) {
+    const selId = workerId ? 'empSelect_' + roleKey + '_' + workerId : 'empSelect_' + roleKey;
+    const sel = document.getElementById(selId);
     if (!sel) return;
     const empId = sel.value;
     if (!empId) { showToast('직원을 선택해주세요.'); return; }
@@ -370,11 +430,15 @@ function loadFromEmployee(roleKey) {
     const emp = employeesData[empId];
     if (!emp) return;
 
-    const nameInput = document.querySelector('input[data-role="' + roleKey + '"][data-field="name"]');
-    const phoneInput = document.querySelector('input[data-role="' + roleKey + '"][data-field="phone"]');
+    const suffix = workerId ? '_' + workerId : '';
+    const nameInput = document.getElementById('name_' + roleKey + suffix);
+    const phoneInput = document.getElementById('phone_' + roleKey + suffix);
 
     if (nameInput) nameInput.value = emp.name;
-    if (phoneInput) phoneInput.value = emp.phone;
+    if (phoneInput) {
+        phoneInput.value = emp.phone || '';
+        formatPhone(phoneInput);
+    }
     showToast(emp.name + ' 정보가 입력되었습니다.');
 }
 
@@ -454,7 +518,7 @@ function escHtml(str) {
 function prevPage() { if (currentPage > 1) showPage(currentPage - 1); }
 function nextPage() { if (pdfDoc && currentPage < pdfDoc.numPages) showPage(currentPage + 1); }
 
-/* ── 참여자 렌더링 ── */
+/* ── 참여자 렌더링 (근로자 다중 지원) ── */
 function renderParticipants() {
     const container = document.getElementById('participantsContainer');
     container.innerHTML = '';
@@ -467,33 +531,74 @@ function renderParticipants() {
         const roleFields = fields.map((f, idx) => ({ ...f, _idx: idx }))
                                   .filter(f => f.role === role.key);
 
+        if (role.key === 'worker') {
+            /* ── 근로자: 다중 행 ── */
+            const wrapper = document.createElement('div');
+            wrapper.className = 'participant-row';
+
+            let wrapHtml = '<h4><span class="role-dot" style="background:#ef4444"></span>' +
+                           escHtml(role.label) + ' <span style="font-size:12px;color:var(--text2);font-weight:400;">(' + workerRows.length + '명)</span></h4>';
+            wrapper.innerHTML = wrapHtml;
+            container.appendChild(wrapper);
+
+            workerRows.forEach((wr, wi) => {
+                const wDiv = document.createElement('div');
+                wDiv.className = 'worker-row';
+
+                let wh = '<div class="worker-row-header">';
+                wh += '<span class="worker-num">근로자 ' + (wi + 1) + '</span>';
+                if (workerRows.length > 1) {
+                    wh += '<button type="button" class="worker-remove-btn" onclick="removeWorkerRow(' + wr.id + ')" title="삭제">&times;</button>';
+                }
+                wh += '</div>';
+
+                wh += '<div class="emp-load-row">';
+                wh += '<select id="empSelect_worker_' + wr.id + '"><option value="">-- 직원에서 불러오기 --</option>';
+                for (const [eid, emp] of Object.entries(employeesData)) {
+                    wh += '<option value="' + eid + '">' + escHtml(emp.name) + (emp.phone ? ' (' + emp.phone + ')' : '') + '</option>';
+                }
+                wh += '</select>';
+                wh += '<button type="button" class="emp-load-btn" onclick="loadFromEmployee(\'worker\',' + wr.id + ')">불러오기</button>';
+                wh += '</div>';
+
+                wh += '<div class="participant-fields">';
+                wh += '<div class="form-group"><label class="form-label">이름 *</label>';
+                wh += '<input type="text" class="form-input" id="name_worker_' + wr.id + '"></div>';
+                wh += '<div class="form-group"><label class="form-label">연락처</label>';
+                wh += '<input type="text" class="form-input" id="phone_worker_' + wr.id + '" placeholder="010-0000-0000" oninput="formatPhone(this)"></div>';
+                wh += '</div>';
+
+                wDiv.innerHTML = wh;
+                wrapper.appendChild(wDiv);
+            });
+
+            /* 근로자 추가 버튼 */
+            const addBtn = document.createElement('button');
+            addBtn.type = 'button';
+            addBtn.className = 'add-worker-btn';
+            addBtn.textContent = '+ 근로자 추가';
+            addBtn.onclick = addWorkerRow;
+            wrapper.appendChild(addBtn);
+
+            /* 미리서명 섹션 (사용자 역할에만 유지) */
+            return;
+        }
+
+        /* ── 사용자(employer) / 기타 역할: 기존대로 1명 ── */
         const div = document.createElement('div');
         div.className = 'participant-row';
         div.dataset.roleKey = role.key;
 
-        const dotColor = role.key === 'employer' ? '#3b82f6' :
-                          role.key === 'worker' ? '#ef4444' : '#8b5cf6';
+        const dotColor = role.key === 'employer' ? '#3b82f6' : '#8b5cf6';
 
         let html = '<h4><span class="role-dot" style="background:' + dotColor + '"></span>' +
                    escHtml(role.label) + '</h4>';
 
-        /* 근로자 역할: 직원에서 불러오기 */
-        if (role.key === 'worker') {
-            html += '<div class="emp-load-row">';
-            html += '<select id="empSelect_worker"><option value="">-- 직원에서 불러오기 --</option>';
-            for (const [eid, emp] of Object.entries(employeesData)) {
-                html += '<option value="' + eid + '">' + escHtml(emp.name) + (emp.phone ? ' (' + emp.phone + ')' : '') + '</option>';
-            }
-            html += '</select>';
-            html += '<button type="button" class="emp-load-btn" onclick="loadFromEmployee(\'worker\')">불러오기</button>';
-            html += '</div>';
-        }
-
         html += '<div class="participant-fields">';
         html += '<div class="form-group"><label class="form-label">이름 *</label>';
-        html += '<input type="text" class="form-input" data-role="' + role.key + '" data-field="name"></div>';
+        html += '<input type="text" class="form-input" id="name_' + role.key + '" data-role="' + role.key + '" data-field="name"></div>';
         html += '<div class="form-group"><label class="form-label">연락처</label>';
-        html += '<input type="text" class="form-input" data-role="' + role.key + '" data-field="phone" placeholder="010-0000-0000"></div>';
+        html += '<input type="text" class="form-input" id="phone_' + role.key + '" data-role="' + role.key + '" data-field="phone" placeholder="010-0000-0000" oninput="formatPhone(this)"></div>';
         html += '</div>';
 
         /* 미리서명 섹션 */
@@ -515,7 +620,6 @@ function renderParticipants() {
                 html += '<span>' + escHtml(f.label || f.type) + '</span>';
 
                 if (f.type === 'text') {
-                    /* Task 3: 기본값 미리 채우기, 읽기전용 처리 */
                     html += '<input type="text" data-vidx="' + f._idx + '"' +
                             ' value="' + escHtml(defaultVal) + '"' +
                             (isReadOnly ? ' disabled' : '') + '>';
@@ -530,7 +634,6 @@ function renderParticipants() {
                 } else if (f.type === 'checkbox') {
                     html += '<input type="checkbox" data-vidx="' + f._idx + '">';
                 } else if (f.type === 'image') {
-                    /* Task 6: 이미지 필드 - 파일 업로드 */
                     html += '<input type="file" accept="image/*" data-vidx="' + f._idx + '" onchange="uploadFieldImage(this,' + f._idx + ')">';
                     html += '<img class="img-preview" data-img-vidx="' + f._idx + '" src="" style="display:none;">';
                 }
@@ -619,53 +722,81 @@ function confirmSig() {
     closeSigModal();
 }
 
-/* ── 계약 제출 ── */
+/* ── 사용자(employer) 미리서명 필드값 수집 ── */
+function collectPreSignValues(roleKey) {
+    const fieldValues = [];
+    const preSignEl = document.querySelector('input[data-role="' + roleKey + '"][data-field="pre_signed"]');
+    if (!preSignEl || !preSignEl.checked) return { pre_signed: false, field_values: fieldValues };
+
+    const container = document.getElementById('preSignFields_' + roleKey);
+    if (container) {
+        container.querySelectorAll('.sign-field-item').forEach(item => {
+            const idx = parseInt(item.dataset.fieldIdx);
+            const textInput = item.querySelector('input[type="text"][data-vidx]');
+            const dateInput = item.querySelector('input[type="date"][data-vidx]');
+            const sigImg = item.querySelector('img.sig-preview[data-vidx]');
+            const checkInput = item.querySelector('input[type="checkbox"][data-vidx]');
+            const fileInput = item.querySelector('input[type="file"][data-vidx]');
+
+            let value = '';
+            if (textInput) value = textInput.value;
+            else if (dateInput) value = dateInput.value;
+            else if (sigImg && sigImg.src && sigImg.style.display !== 'none') value = sigImg.src;
+            else if (checkInput) value = checkInput.checked ? 'Y' : '';
+            else if (fileInput && fileInput.dataset.uploadedUrl) value = fileInput.dataset.uploadedUrl;
+
+            fieldValues.push({ field_idx: idx, value });
+        });
+    }
+    return { pre_signed: true, field_values: fieldValues };
+}
+
+/* ── 계약 제출 (다중 근로자 지원) ── */
 async function submitContract() {
     const tid = document.getElementById('templateSelect').value;
     if (!tid || !currentTemplate) { showToast('서식을 선택하세요.'); return; }
 
     const roles = currentTemplate.roles || [];
-    const participants = [];
 
-    for (const role of roles) {
-        const nameEl = document.querySelector('input[data-role="' + role.key + '"][data-field="name"]');
-        const phoneEl = document.querySelector('input[data-role="' + role.key + '"][data-field="phone"]');
-        const preSignEl = document.querySelector('input[data-role="' + role.key + '"][data-field="pre_signed"]');
-
+    /* 사용자(employer) 정보 수집 */
+    const employerRole = roles.find(r => r.key === 'employer');
+    let employer = null;
+    if (employerRole) {
+        const nameEl = document.getElementById('name_employer');
+        const phoneEl = document.getElementById('phone_employer');
         const name = nameEl ? nameEl.value.trim() : '';
-        if (!name) { showToast(role.label + '의 이름을 입력하세요.'); return; }
+        if (!name) { showToast('사용자의 이름을 입력하세요.'); return; }
 
-        const p = {
-            role_key: role.key,
+        const preSign = collectPreSignValues('employer');
+        employer = {
+            role_key: 'employer',
             name,
             phone: phoneEl ? phoneEl.value.trim() : '',
-            pre_signed: preSignEl ? preSignEl.checked : false,
-            field_values: [],
+            pre_signed: preSign.pre_signed,
+            field_values: preSign.field_values,
         };
+    }
 
-        if (p.pre_signed) {
-            const container = document.getElementById('preSignFields_' + role.key);
-            if (container) {
-                container.querySelectorAll('.sign-field-item').forEach(item => {
-                    const idx = parseInt(item.dataset.fieldIdx);
-                    const textInput = item.querySelector('input[type="text"][data-vidx]');
-                    const dateInput = item.querySelector('input[type="date"][data-vidx]');
-                    const sigImg = item.querySelector('img.sig-preview[data-vidx]');
-                    const checkInput = item.querySelector('input[type="checkbox"][data-vidx]');
-                    const fileInput = item.querySelector('input[type="file"][data-vidx]');
+    /* 근로자 정보 수집 */
+    const workers = [];
+    for (const wr of workerRows) {
+        const nameEl = document.getElementById('name_worker_' + wr.id);
+        const phoneEl = document.getElementById('phone_worker_' + wr.id);
+        const name = nameEl ? nameEl.value.trim() : '';
+        if (!name) { showToast('근로자 이름을 모두 입력하세요.'); return; }
 
-                    let value = '';
-                    if (textInput) value = textInput.value;
-                    else if (dateInput) value = dateInput.value;
-                    else if (sigImg && sigImg.src && sigImg.style.display !== 'none') value = sigImg.src;
-                    else if (checkInput) value = checkInput.checked ? 'Y' : '';
-                    else if (fileInput && fileInput.dataset.uploadedUrl) value = fileInput.dataset.uploadedUrl;
+        workers.push({
+            role_key: 'worker',
+            name,
+            phone: phoneEl ? phoneEl.value.trim() : '',
+            pre_signed: false,
+            field_values: [],
+        });
+    }
 
-                    p.field_values.push({ field_idx: idx, value });
-                });
-            }
-        }
-        participants.push(p);
+    if (workers.length === 0) {
+        showToast('근로자를 최소 1명 추가하세요.');
+        return;
     }
 
     /* expires_at + scheduled_at */
@@ -681,30 +812,51 @@ async function submitContract() {
         }
     }
 
-    const empSel = document.getElementById('empSelect_worker');
-    const body = {
-        template_id: parseInt(tid),
-        title: document.getElementById('contractTitle').value.trim(),
-        employee_id: empSel ? empSel.value || null : null,
-        expires_at: document.getElementById('expiresAt').value || null,
-        scheduled_at: scheduledAt,
-        participants,
-    };
+    const title = document.getElementById('contractTitle').value.trim();
+    const expiresAt = document.getElementById('expiresAt').value || null;
 
     const btn = document.getElementById('createBtn');
     setButtonLoading(btn, true);
 
     try {
-        const res = await fetch('/api/contracts', {
-            method: 'POST', headers: apiHeaders, body: JSON.stringify(body)
-        });
-        const data = await res.json();
-        if (data.success) {
-            const msg = scheduledAt ? '예약발송이 설정되었습니다.' : '계약이 생성되었습니다.';
+        let successCount = 0;
+        let lastError = '';
+
+        for (const worker of workers) {
+            const participants = [];
+            if (employer) participants.push(employer);
+            participants.push(worker);
+
+            const body = {
+                template_id: parseInt(tid),
+                title: title,
+                expires_at: expiresAt,
+                scheduled_at: scheduledAt,
+                participants,
+            };
+
+            const res = await fetch('/api/contracts', {
+                method: 'POST', headers: apiHeaders, body: JSON.stringify(body)
+            });
+            const data = await res.json();
+            if (data.success) {
+                successCount++;
+            } else {
+                lastError = data.error || '생성 실패';
+            }
+        }
+
+        if (successCount === workers.length) {
+            const msg = scheduledAt
+                ? successCount + '건 예약발송이 설정되었습니다.'
+                : successCount + '건 계약이 생성되었습니다.';
             showToast(msg);
             setTimeout(() => { location.href = '/admin/contracts'; }, 800);
+        } else if (successCount > 0) {
+            showToast(successCount + '건 성공, ' + (workers.length - successCount) + '건 실패: ' + lastError);
+            setTimeout(() => { location.href = '/admin/contracts'; }, 1500);
         } else {
-            showToast(data.error || '생성 실패');
+            showToast(lastError || '생성 실패');
         }
     } finally {
         setButtonLoading(btn, false);
