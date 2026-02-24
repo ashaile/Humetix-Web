@@ -593,8 +593,14 @@ body {
                 {% if participant.signed_at %}
                 <div class="banner-sub">서명일시: {{ participant.signed_at.strftime('%Y-%m-%d %H:%M') }}</div>
                 {% endif %}
-                <div class="banner-sub">계약서 사본은 관리자에게 요청하시거나, 완료 후 전달됩니다.</div>
             </div>
+            {% if contract.final_pdf_path %}
+            <a href="/sign/{{ participant.sign_token }}/download"
+               style="display:block;margin-top:16px;padding:14px;background:var(--primary);color:#fff;
+                      border-radius:10px;text-align:center;text-decoration:none;font-size:15px;font-weight:600;">
+                &#128196; 완성된 계약서 다운로드
+            </a>
+            {% endif %}
         </div>
     </div>
 
@@ -809,6 +815,8 @@ async function loadPdf() {
             data: arr,
             cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
             cMapPacked: true,
+            standardFontDataUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/',
+            useSystemFonts: true,
         }).promise;
 
         const container = document.getElementById('pdfScrollContainer');

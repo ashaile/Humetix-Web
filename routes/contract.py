@@ -1256,7 +1256,14 @@ def sign_page(token):
 
     pdf_base64 = ""
     template = contract.template
-    if template and os.path.exists(template.file_path):
+
+    # 서명 완료 + 최종 PDF가 있으면 최종 PDF 표시
+    if participant.status == "signed" and contract.final_pdf_path and os.path.exists(
+        contract.final_pdf_path
+    ):
+        with open(contract.final_pdf_path, "rb") as f:
+            pdf_base64 = base64.b64encode(f.read()).decode("ascii")
+    elif template and os.path.exists(template.file_path):
         with open(template.file_path, "rb") as f:
             pdf_base64 = base64.b64encode(f.read()).decode("ascii")
 
@@ -1333,3 +1340,21 @@ def submit_sign(token):
     db.session.commit()
 
     return jsonify({"success": True, "message": "서명이 완료되었습니다."})
+
+
+@contract_bp.route("/sign/<token>/download")
+def download_signed_pdf(token):
+    """서명 완료된 계약서 PDF 다운로드."""
+    participant = ContractParticipant.query.filter_by(sign_token=token).first()
+    if not participant or participant.status != "signed":
+        return "잘못된 요청입니다.", 404
+
+    contract = participant.contract
+    if not contract.final_pdf_path or not os.path.exists(contract.final_pdf_path):
+        return "완성된 계약서가 아직 준비되지 않았습니다.", 404
+
+    return send_file(
+        contract.final_pdf_path,
+        as_attachment=True,
+        download_name=f"{contract.title}_계약서.pdf",
+    )
