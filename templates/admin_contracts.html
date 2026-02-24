@@ -185,7 +185,7 @@ th.sortable.desc::after { content: '\2193'; opacity: 1; color: var(--accent); }
     <div class="form-group search-input-wrap">
         <label class="form-label">검색</label>
         <input type="text" class="form-input" id="searchInput"
-               placeholder="계약명 또는 직원명 검색..."
+               placeholder="계약명 또는 참여자명 검색..."
                value="{{ q|default('') }}">
     </div>
     <div class="form-group">
@@ -270,10 +270,9 @@ th.sortable.desc::after { content: '\2193'; opacity: 1; color: var(--accent); }
                 <tr>
                     <th class="sortable" data-col="0" data-type="text">계약명</th>
                     <th class="sortable" data-col="1" data-type="text">서식</th>
-                    <th class="sortable" data-col="2" data-type="text">직원</th>
                     <th>참여자</th>
-                    <th class="sortable" data-col="4" data-type="text">상태</th>
-                    <th class="sortable" data-col="5" data-type="date">생성일</th>
+                    <th class="sortable" data-col="3" data-type="text">상태</th>
+                    <th class="sortable" data-col="4" data-type="date">생성일</th>
                     <th>만료</th>
                     <th>관리</th>
                 </tr>
@@ -282,13 +281,12 @@ th.sortable.desc::after { content: '\2193'; opacity: 1; color: var(--accent); }
                 {% for c in contracts %}
                 <tr id="contract-row-{{ c.id }}" class="contract-row"
                     data-title="{{ c.title }}"
-                    data-employee="{{ c.employee.name if c.employee else '' }}"
+                    data-participants="{{ c.participants|map(attribute='name')|join(' ') }}"
                     data-status="{{ c.status }}">
                     <td class="emp-name">
                         <a href="/admin/contracts/{{ c.id }}" class="contract-title-link">{{ c.title }}</a>
                     </td>
                     <td>{{ c.template.name if c.template else '-' }}</td>
-                    <td>{{ c.employee.name if c.employee else '-' }}</td>
                     <td>
                         <div class="participants-list">
                             {% for p in c.participants %}
@@ -373,7 +371,7 @@ th.sortable.desc::after { content: '\2193'; opacity: 1; color: var(--accent); }
                 {% endfor %}
                 {% if not contracts %}
                 <tr id="emptyRow">
-                    <td colspan="8" style="text-align:center;padding:24px;color:var(--text2);">
+                    <td colspan="7" style="text-align:center;padding:24px;color:var(--text2);">
                         등록된 계약이 없습니다.
                     </td>
                 </tr>
@@ -515,8 +513,8 @@ function filterTableLocal(keyword) {
             return;
         }
         const title = (row.dataset.title || '').toLowerCase();
-        const employee = (row.dataset.employee || '').toLowerCase();
-        row.style.display = (title.includes(lower) || employee.includes(lower)) ? '' : 'none';
+        const parts = (row.dataset.participants || '').toLowerCase();
+        row.style.display = (title.includes(lower) || parts.includes(lower)) ? '' : 'none';
     });
 }
 
