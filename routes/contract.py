@@ -1173,6 +1173,54 @@ def contract_audit_logs(cid):
     return jsonify({"success": True, "logs": [log.to_dict() for log in logs]})
 
 
+# ── 참여자 이름 수정 ──
+
+
+@contract_bp.route(
+    "/api/contracts/<int:cid>/participants/<int:pid>/rename",
+    methods=["POST"],
+)
+@require_admin
+def rename_participant(cid, pid):
+    """참여자 이름 변경."""
+    contract = db.session.get(Contract, cid)
+    if not contract:
+        return jsonify({"error": "계약을 찾을 수 없습니다."}), 404
+
+    participant = ContractParticipant.query.filter_by(
+        id=pid, contract_id=cid
+    ).first()
+    if not participant:
+        return jsonify({"error": "참여자를 찾을 수 없습니다."}), 404
+
+    data = request.get_json(silent=True) or {}
+    new_name = (data.get("name") or "").strip()
+    if not new_name:
+        return jsonify({"error": "이름을 입력해 주세요."}), 400
+    if len(new_name) > 50:
+        return jsonify({"error": "이름은 50자 이내로 입력해 주세요."}), 400
+
+    old_name = participant.name
+    if old_name == new_name:
+        return jsonify({"success": True, "message": "변경사항 없음"})
+
+    participant.name = new_name
+
+    _audit_log(
+        cid,
+        "참여자 이름 변경",
+        actor="관리자",
+        detail=f"{old_name} → {new_name} (역할: {participant.role_key})",
+        ip=request.remote_addr,
+    )
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "message": f"이름이 '{new_name}'(으)로 변경되었습니다.",
+    })
+
+
 # ── 서명 토큰 재생성 ──
 
 

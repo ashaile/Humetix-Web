@@ -74,6 +74,12 @@
 .role-dot.other { background: var(--success); }
 
 .participant-name { font-weight: 600; font-size: 14px; }
+.btn-edit-name {
+    background: none; border: none; cursor: pointer; padding: 2px 4px;
+    font-size: 13px; color: var(--text2); border-radius: 4px; line-height: 1;
+    transition: color .15s, background .15s;
+}
+.btn-edit-name:hover { color: var(--accent); background: rgba(232,93,38,.08); }
 .participant-role {
     font-size: 11px; color: var(--text2); background: var(--bg3);
     padding: 2px 8px; border-radius: 10px;
@@ -272,7 +278,8 @@
                 <div class="participant-card">
                     <div class="participant-header">
                         <span class="role-dot {{ 'employer' if p.role_key == 'employer' else ('worker' if p.role_key == 'worker' else 'other') }}"></span>
-                        <span class="participant-name">{{ p.name }}</span>
+                        <span class="participant-name" id="pName-{{ p.id }}">{{ p.name }}</span>
+                        <button class="btn-edit-name" onclick="renamePart({{ contract.id }}, {{ p.id }}, '{{ p.name|replace("'", "\\'") }}')" title="이름 수정">&#9998;</button>
                         <span class="participant-role">{{ '사용자' if p.role_key == 'employer' else ('근로자' if p.role_key == 'worker' else p.role_key) }}</span>
                         {% if p.status == 'signed' %}
                         <span class="participant-status signed">&#10003; 서명완료</span>
@@ -450,6 +457,23 @@ async function regenerateToken(cid, pid, btn) {
             setButtonLoading(btn, false);
         }
     });
+}
+
+/* ── 참여자 이름 수정 ── */
+function renamePart(cid, pid, currentName) {
+    const newName = prompt('새 이름을 입력하세요:', currentName);
+    if (!newName || newName.trim() === '' || newName.trim() === currentName) return;
+    fetch('/api/contracts/' + cid + '/participants/' + pid + '/rename', {
+        method: 'POST', headers: headers,
+        body: JSON.stringify({ name: newName.trim() })
+    }).then(r => r.json()).then(data => {
+        if (data.success) {
+            showToast(data.message || '이름이 변경되었습니다.');
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showToast(data.error || '이름 변경 실패');
+        }
+    }).catch(() => showToast('오류가 발생했습니다.'));
 }
 
 /* ── 계약 복제 ── */
