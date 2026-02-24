@@ -96,36 +96,11 @@ body {
     min-height: 70vh;
     position: relative;
 }
-.pdf-embed-wrap object,
 .pdf-embed-wrap iframe {
     width: 100%;
-    height: 75vh;
+    height: 80vh;
     border: none;
     display: block;
-}
-.pdf-loading {
-    padding: 60px 20px;
-    text-align: center;
-    color: var(--text2);
-    font-size: 14px;
-}
-.pdf-fallback {
-    padding: 24px;
-    text-align: center;
-    color: var(--text2);
-    font-size: 14px;
-    line-height: 1.8;
-}
-.pdf-fallback a {
-    display: inline-block;
-    margin-top: 12px;
-    padding: 10px 20px;
-    background: var(--primary);
-    color: #fff;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 14px;
 }
 
 /* ============================================
@@ -538,13 +513,8 @@ body {
         <div class="card-header">
             <span>완성된 계약서</span>
         </div>
-        <div class="pdf-embed-wrap">
-            <object data="{{ pdf_url }}" type="application/pdf">
-                <div class="pdf-fallback">
-                    PDF를 표시할 수 없습니다.<br>
-                    <a href="{{ pdf_url }}" target="_blank">PDF 열기</a>
-                </div>
-            </object>
+        <div class="pdf-embed-wrap" id="pdfWrap">
+            <iframe src="{{ pdf_url }}" id="pdfFrame"></iframe>
         </div>
     </div>
 
@@ -574,13 +544,8 @@ body {
         <div class="card-header">
             <span>계약서 문서</span>
         </div>
-        <div class="pdf-embed-wrap">
-            <object data="{{ pdf_url }}" type="application/pdf">
-                <div class="pdf-fallback">
-                    PDF를 표시할 수 없습니다.<br>
-                    <a href="{{ pdf_url }}" target="_blank">PDF 열기</a>
-                </div>
-            </object>
+        <div class="pdf-embed-wrap" id="pdfWrap">
+            <iframe src="{{ pdf_url }}" id="pdfFrame"></iframe>
         </div>
     </div>
 
