@@ -1,0 +1,757 @@
+{% extends "base_admin.html" %}
+
+{% block admin_title %}HUMETIX - 계약관리{% endblock %}
+{% block page_title %}계약관리{% endblock %}
+{% block page_desc %}계약 현황을 확인하고 새 계약을 생성합니다.{% endblock %}
+
+{% block page_css %}
+/* ── 검색/필터 바 ── */
+.filter-section {
+    display: flex; gap: 12px; align-items: flex-end;
+    flex-wrap: wrap; margin-bottom: 20px;
+}
+.filter-section .form-group { min-width: 0; }
+.search-input-wrap {
+    position: relative; flex: 1; min-width: 200px;
+}
+.search-input-wrap input {
+    width: 100%; padding-left: 36px;
+}
+.search-input-wrap::before {
+    content: '\1F50D'; position: absolute;
+    left: 10px; top: 50%; transform: translateY(-50%);
+    font-size: 14px; pointer-events: none;
+}
+.date-range { display: flex; gap: 6px; align-items: center; }
+.date-range span { font-size: 12px; color: var(--text2); white-space: nowrap; }
+
+/* ── 미서명 알림 배너 ── */
+.reminder-banner {
+    background: #fef3c7; border: 1px solid #fbbf24;
+    border-radius: var(--radius-sm); padding: 12px 16px;
+    font-size: 14px; font-weight: 600; color: #92400e;
+    margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+}
+.reminder-banner .banner-icon { font-size: 18px; }
+
+/* ── 통계 카드 ── */
+.stat-row {
+    display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap;
+}
+.stat-card {
+    flex: 1; min-width: 110px; background: var(--bg2);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px; text-align: center; transition: box-shadow .2s;
+}
+.stat-card:hover { box-shadow: var(--shadow); }
+.stat-card .stat-value { font-size: 28px; font-weight: 700; color: var(--primary, var(--accent)); }
+.stat-card .stat-label { font-size: 12px; color: var(--text2); margin-top: 4px; }
+.stat-card.stat-expired .stat-value { color: var(--danger); }
+
+/* ── 상태 배지 ── */
+.badge-draft { background: var(--bg3); color: var(--text2); }
+.badge-pending { background: #fef3c7; color: #b45309; }
+.badge-in_progress { background: #dbeafe; color: #1d4ed8; }
+.badge-completed { background: #dcfce7; color: #16a34a; }
+.badge-cancelled { background: var(--bg3); color: var(--text2); text-decoration: line-through; }
+.badge-expired { background: #fee2e2; color: var(--danger); }
+.badge-scheduled { background: #e0e7ff; color: #4338ca; }
+
+/* ── 참여자 목록 ── */
+.participants-list { font-size: 12px; color: var(--text2); }
+.participants-list .signed { color: var(--success); font-weight: 600; }
+.participants-list .pending-sign { color: #b45309; }
+.participants-list > div { margin-bottom: 4px; }
+.participants-list > div:last-child { margin-bottom: 0; }
+
+/* ── 서명 링크 복사 영역 ── */
+.sign-link-box {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; margin-top: 2px;
+}
+
+/* ── 액션 버튼 ── */
+.action-btns { display: flex; gap: 4px; flex-wrap: wrap; }
+
+/* ── 계약명 링크 ── */
+.contract-title-link {
+    color: var(--text); text-decoration: none; font-weight: 600;
+    transition: color .15s;
+}
+.contract-title-link:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── 정렬 가능 열 ── */
+th.sortable {
+    cursor: pointer; user-select: none;
+    position: relative; padding-right: 24px;
+}
+th.sortable::after {
+    content: '\2195'; position: absolute;
+    right: 8px; top: 50%; transform: translateY(-50%);
+    font-size: 11px; color: var(--text2); opacity: .4;
+}
+th.sortable.asc::after { content: '\2191'; opacity: 1; color: var(--accent); }
+th.sortable.desc::after { content: '\2193'; opacity: 1; color: var(--accent); }
+
+/* ── 만료일 표시 ── */
+.expiry-info { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+/* ── 예약 관리 모달 ── */
+.schedule-modal {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.45); z-index: 2000;
+    justify-content: center; align-items: center;
+}
+.schedule-modal.show { display: flex; }
+.schedule-modal-card {
+    background: var(--bg2); border-radius: var(--radius); padding: 24px;
+    width: 90%; max-width: 400px; box-shadow: var(--shadow-lg, 0 8px 24px rgba(0,0,0,.2));
+}
+.schedule-modal-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+.schedule-modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; flex-wrap: wrap; }
+.schedule-info { font-size: 13px; color: var(--text2); margin-bottom: 12px; padding: 10px; background: #e0e7ff; border-radius: var(--radius-sm); }
+
+/* ── 만료일 수정 모달 ── */
+.expiry-modal {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.45); z-index: 2000;
+    justify-content: center; align-items: center;
+}
+.expiry-modal.show { display: flex; }
+.expiry-modal-card {
+    background: var(--bg2); border-radius: var(--radius); padding: 24px;
+    width: 90%; max-width: 380px; box-shadow: var(--shadow-lg, 0 8px 24px rgba(0,0,0,.2));
+}
+.expiry-modal-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+.expiry-modal-card .form-group { margin-bottom: 14px; }
+.expiry-modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+
+/* ── 새 계약 버튼 그룹 ── */
+.new-contract-group {
+    display: flex; gap: 8px; align-items: flex-end;
+}
+
+/* ── PDF 미리보기 모달 ── */
+.pdf-preview-modal {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.6); z-index: 3000;
+    justify-content: center; align-items: center;
+}
+.pdf-preview-modal.show { display: flex; }
+.pdf-preview-card {
+    background: var(--bg2); border-radius: var(--radius);
+    width: 95%; max-width: 900px; height: 90vh;
+    display: flex; flex-direction: column;
+    box-shadow: 0 12px 40px rgba(0,0,0,.3);
+}
+.pdf-preview-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+}
+.pdf-preview-title { font-size: 15px; font-weight: 700; }
+.pdf-preview-close {
+    background: none; border: none; font-size: 28px; cursor: pointer;
+    color: var(--text2); line-height: 1; padding: 0 4px;
+    transition: color .15s;
+}
+.pdf-preview-close:hover { color: var(--danger); }
+.pdf-preview-body { flex: 1; overflow: hidden; }
+
+/* ── 반응형 ── */
+@media (max-width: 768px) {
+    .filter-section { flex-direction: column; align-items: stretch; }
+    .search-input-wrap { min-width: 100%; }
+    .stat-row { flex-direction: column; }
+    .action-btns { flex-direction: column; }
+    .date-range { flex-wrap: wrap; }
+    .new-contract-group { flex-direction: column; }
+    .pdf-preview-card { width: 100%; height: 100vh; border-radius: 0; }
+}
+{% endblock %}
+
+{% block content %}
+{# ── 미서명 경고 배너 (3일 이상 대기 중인 계약) ── #}
+{% set unsigned_old = contracts|selectattr('status','equalto','pending')|list + contracts|selectattr('status','equalto','in_progress')|list %}
+{% if unsigned_old %}
+<div class="reminder-banner">
+    <span class="banner-icon">&#9888;&#65039;</span>
+    서명 대기 중인 계약이 <strong>{{ unsigned_old|length }}건</strong> 있습니다.
+    <span style="font-weight:400;font-size:13px;margin-left:8px;">빠른 처리를 권장합니다.</span>
+</div>
+{% endif %}
+
+{# ── 검색/필터 바 ── #}
+<div class="filter-section">
+    <div class="form-group search-input-wrap">
+        <label class="form-label">검색</label>
+        <input type="text" class="form-input" id="searchInput"
+               placeholder="계약명 또는 직원명 검색..."
+               value="{{ q|default('') }}">
+    </div>
+    <div class="form-group">
+        <label class="form-label">상태 필터</label>
+        <select class="form-input" id="statusFilter" onchange="applyServerFilter()">
+            <option value="">전체</option>
+            <option value="draft" {{ 'selected' if status_filter=='draft' }}>초안</option>
+            <option value="scheduled" {{ 'selected' if status_filter=='scheduled' }}>예약</option>
+            <option value="pending" {{ 'selected' if status_filter=='pending' }}>대기</option>
+            <option value="in_progress" {{ 'selected' if status_filter=='in_progress' }}>서명중</option>
+            <option value="completed" {{ 'selected' if status_filter=='completed' }}>완료</option>
+            <option value="cancelled" {{ 'selected' if status_filter=='cancelled' }}>취소</option>
+        </select>
+    </div>
+    <div class="form-group date-range">
+        <div class="form-group">
+            <label class="form-label">생성일 (부터)</label>
+            <input type="date" class="form-input" id="dateFrom" value="{{ date_from|default('') }}">
+        </div>
+        <span style="margin-top:18px;">~</span>
+        <div class="form-group">
+            <label class="form-label">생성일 (까지)</label>
+            <input type="date" class="form-input" id="dateTo" value="{{ date_to|default('') }}">
+        </div>
+    </div>
+    <div class="new-contract-group">
+        <div class="form-group">
+            <label class="form-label">서식 선택</label>
+            <select class="form-input" id="newContractTemplate">
+                <option value="">서식을 선택하세요</option>
+                {% for t in templates %}
+                <option value="{{ t.id }}">{{ t.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <button class="btn btn-primary" onclick="createNewContract()">새 계약 만들기</button>
+        </div>
+    </div>
+</div>
+
+{# ── 통계 카드 ── #}
+{% set draft_count = contracts|selectattr('status','equalto','draft')|list|length %}
+{% set scheduled_count = contracts|selectattr('status','equalto','scheduled')|list|length %}
+{% set pending_count = contracts|selectattr('status','equalto','pending')|list|length %}
+{% set progress_count = contracts|selectattr('status','equalto','in_progress')|list|length %}
+{% set complete_count = contracts|selectattr('status','equalto','completed')|list|length %}
+{% set expired_count = contracts|selectattr('is_expired')|list|length %}
+<div class="stat-row">
+    <div class="stat-card">
+        <div class="stat-value">{{ contracts|length }}</div>
+        <div class="stat-label">전체 계약</div>
+    </div>
+    {% if scheduled_count > 0 %}
+    <div class="stat-card">
+        <div class="stat-value" style="color:#4338ca;">{{ scheduled_count }}</div>
+        <div class="stat-label">예약발송</div>
+    </div>
+    {% endif %}
+    <div class="stat-card">
+        <div class="stat-value">{{ pending_count + progress_count }}</div>
+        <div class="stat-label">서명 대기/진행</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ complete_count }}</div>
+        <div class="stat-label">완료</div>
+    </div>
+    <div class="stat-card stat-expired">
+        <div class="stat-value">{{ expired_count }}</div>
+        <div class="stat-label">만료</div>
+    </div>
+</div>
+
+{# ── 계약 목록 테이블 ── #}
+<div class="table-wrap">
+    <div class="table-header">
+        <div class="table-title">계약 목록 ({{ contracts|length }}건)</div>
+    </div>
+    <div class="table-scroll">
+        <table id="contractTable">
+            <thead>
+                <tr>
+                    <th class="sortable" data-col="0" data-type="text">계약명</th>
+                    <th class="sortable" data-col="1" data-type="text">서식</th>
+                    <th class="sortable" data-col="2" data-type="text">직원</th>
+                    <th>참여자</th>
+                    <th class="sortable" data-col="4" data-type="text">상태</th>
+                    <th class="sortable" data-col="5" data-type="date">생성일</th>
+                    <th>만료</th>
+                    <th>관리</th>
+                </tr>
+            </thead>
+            <tbody id="contractTbody">
+                {% for c in contracts %}
+                <tr id="contract-row-{{ c.id }}" class="contract-row"
+                    data-title="{{ c.title }}"
+                    data-employee="{{ c.employee.name if c.employee else '' }}"
+                    data-status="{{ c.status }}">
+                    <td class="emp-name">
+                        <a href="/admin/contracts/{{ c.id }}" class="contract-title-link">{{ c.title }}</a>
+                    </td>
+                    <td>{{ c.template.name if c.template else '-' }}</td>
+                    <td>{{ c.employee.name if c.employee else '-' }}</td>
+                    <td>
+                        <div class="participants-list">
+                            {% for p in c.participants %}
+                            <div>
+                                {% if p.status == 'signed' %}
+                                <span class="signed">&#10003;</span>
+                                {% else %}
+                                <span class="pending-sign">&#9711;</span>
+                                {% endif %}
+                                {{ p.name }}{% if p.phone %} <span class="mono" style="font-size:11px;color:var(--text2);">{{ p.phone }}</span>{% endif %}
+                                <span style="font-size:10px;margin-left:2px;">
+                                    {% if p.status == 'signed' %}<span style="color:var(--success);">서명완료</span>
+                                    {% elif c.status == 'cancelled' %}<span style="color:var(--text2);">취소</span>
+                                    {% else %}<span style="color:#b45309;">서명필요</span>{% endif %}
+                                </span>
+                                {% if p.status != 'signed' and c.status != 'cancelled' %}
+                                <div class="sign-link-box">
+                                    <button class="btn btn-outline btn-sm" style="padding:2px 6px;min-height:auto;font-size:11px;" onclick="copySignLink('{{ p.sign_token }}', this)">링크복사</button>
+                                    {% if p.phone %}
+                                    <button class="btn btn-outline btn-sm" style="padding:2px 6px;min-height:auto;font-size:11px;color:var(--accent);border-color:var(--accent);"
+                                            onclick="resendSms({{ c.id }}, {{ p.id }}, this)">재전송</button>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </td>
+                    <td>
+                        {% if c.status == 'draft' %}
+                        <span class="badge badge-draft">초안</span>
+                        {% elif c.status == 'scheduled' %}
+                        <span class="badge badge-scheduled">예약</span>
+                        {% if c.scheduled_at %}
+                        <div style="font-size:11px;color:#4338ca;margin-top:2px;">{{ c.scheduled_at.strftime('%m/%d %H:%M') }}</div>
+                        {% endif %}
+                        {% elif c.status == 'pending' %}
+                        <span class="badge badge-pending">대기</span>
+                        {% elif c.status == 'in_progress' %}
+                        <span class="badge badge-in_progress">서명중</span>
+                        {% elif c.status == 'completed' %}
+                        <span class="badge badge-completed">완료</span>
+                        {% elif c.status == 'cancelled' %}
+                        <span class="badge badge-cancelled">취소</span>
+                        {% endif %}
+                    </td>
+                    <td class="mono" style="white-space:nowrap;font-size:12px;">{{ c.created_at.strftime('%Y-%m-%d %H:%M:%S') if c.created_at else '-' }}</td>
+                    <td>
+                        {% if c.status == 'completed' %}
+                            {# 완료된 계약은 만료일 읽기 전용 #}
+                            {% if c.expires_at %}
+                            <span class="mono" style="font-size:11px;color:var(--text2);">{{ c.expires_at.strftime('%m/%d %H:%M') }}</span>
+                            {% else %}
+                            <span style="color:var(--text2);">-</span>
+                            {% endif %}
+                        {% else %}
+                            {% if c.expires_at %}
+                            <span class="badge {{ 'badge-expired' if c.is_expired else 'badge-pending' }}"
+                                  title="만료: {{ c.expires_at.strftime('%Y-%m-%d %H:%M') }}">
+                                {% if c.is_expired %}만료{% else %}{{ c.expires_at.strftime('%m/%d') }}까지{% endif %}
+                            </span>
+                            {% endif %}
+                            <button class="btn btn-outline btn-sm" style="padding:1px 6px;min-height:auto;font-size:10px;margin-top:2px;"
+                                    onclick="editExpiry({{ c.id }}, '{{ c.expires_at.strftime('%Y-%m-%dT%H:%M') if c.expires_at else '' }}')"
+                                    title="만료일 수정">{{ '연장' if c.is_expired else '수정' if c.expires_at else '설정' }}</button>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="action-btns">
+                            {% if c.status == 'scheduled' %}
+                            <button class="btn btn-sm" style="background:#4338ca;color:#fff;" onclick="openScheduleModal({{ c.id }}, '{{ c.scheduled_at.strftime('%Y-%m-%dT%H:%M') if c.scheduled_at else '' }}')" title="예약 관리">예약관리</button>
+                            {% endif %}
+                            <button class="btn btn-outline btn-sm" onclick="openPdfPreview({{ c.id }}, '{{ c.title|replace("'", "\\'") }}')" title="문서 미리보기">문서열람</button>
+                            <a href="/admin/contracts/{{ c.id }}/pdf" class="btn btn-success btn-sm" title="PDF 다운로드">PDF</a>
+                            {% if c.status != 'cancelled' %}
+                            <button class="btn btn-danger btn-sm" onclick="cancelContract({{ c.id }}, '{{ c.title|replace("'", "\\'") }}')" title="계약 취소">취소</button>
+                            {% endif %}
+                            <button class="btn btn-sm" style="background:#6b7280;color:#fff;" onclick="hardDeleteContract({{ c.id }}, '{{ c.title|replace("'", "\\'") }}')" title="완전 삭제">삭제</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not contracts %}
+                <tr id="emptyRow">
+                    <td colspan="8" style="text-align:center;padding:24px;color:var(--text2);">
+                        등록된 계약이 없습니다.
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<!-- 만료일 수정 모달 -->
+<div class="expiry-modal" id="expiryModal">
+    <div class="expiry-modal-card">
+        <h3>만료일 수정</h3>
+        <div class="form-group">
+            <label class="form-label">만료일시</label>
+            <input type="datetime-local" class="form-input" id="expiryInput">
+        </div>
+        <div style="font-size:12px;color:var(--text2);margin-top:-8px;">비워두면 무기한으로 설정됩니다.</div>
+        <div class="expiry-modal-actions">
+            <button class="btn btn-outline" onclick="closeExpiryModal()">취소</button>
+            <button class="btn btn-outline" onclick="clearExpiry()" style="color:var(--danger);border-color:var(--danger);">무기한</button>
+            <button class="btn btn-primary" onclick="saveExpiry()">저장</button>
+        </div>
+    </div>
+</div>
+
+<!-- 예약 관리 모달 -->
+<div class="schedule-modal" id="scheduleModal">
+    <div class="schedule-modal-card">
+        <h3>예약발송 관리</h3>
+        <div class="schedule-info" id="scheduleInfo"></div>
+        <div class="form-group">
+            <label class="form-label">예약 시각 변경</label>
+            <input type="datetime-local" class="form-input" id="scheduleInput">
+        </div>
+        <div class="schedule-modal-actions">
+            <button class="btn btn-outline" onclick="closeScheduleModal()">닫기</button>
+            <button class="btn btn-outline" style="color:var(--danger);border-color:var(--danger);" onclick="cancelSchedule()">예약취소</button>
+            <button class="btn btn-sm" style="background:#f59e0b;color:#fff;" onclick="sendNow()">즉시발송</button>
+            <button class="btn btn-primary" onclick="saveSchedule()">시각변경</button>
+        </div>
+    </div>
+</div>
+
+<!-- PDF 미리보기 모달 -->
+<div class="pdf-preview-modal" id="pdfPreviewModal">
+    <div class="pdf-preview-card">
+        <div class="pdf-preview-header">
+            <span class="pdf-preview-title" id="pdfPreviewTitle">문서 미리보기</span>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <a id="pdfDownloadBtn" href="#" class="btn btn-outline btn-sm" download>다운로드</a>
+                <button class="pdf-preview-close" onclick="closePdfPreview()">&times;</button>
+            </div>
+        </div>
+        <div class="pdf-preview-body">
+            <iframe id="pdfPreviewFrame" src="" style="width:100%;height:100%;border:none;"></iframe>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+const csrfToken = window.csrfToken;
+const headers = { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken };
+
+/* ── PDF 미리보기 모달 ── */
+function openPdfPreview(cid, title) {
+    document.getElementById('pdfPreviewTitle').textContent = title + '.pdf';
+    document.getElementById('pdfPreviewFrame').src = '/admin/contracts/' + cid + '/view-pdf';
+    document.getElementById('pdfDownloadBtn').href = '/admin/contracts/' + cid + '/pdf';
+    document.getElementById('pdfPreviewModal').classList.add('show');
+}
+
+function closePdfPreview() {
+    document.getElementById('pdfPreviewModal').classList.remove('show');
+    document.getElementById('pdfPreviewFrame').src = '';
+}
+
+document.getElementById('pdfPreviewModal').addEventListener('click', function(e) {
+    if (e.target === this) closePdfPreview();
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.getElementById('pdfPreviewModal').classList.contains('show')) closePdfPreview();
+});
+
+/* ── 새 계약 생성 ── */
+function createNewContract() {
+    const tid = document.getElementById('newContractTemplate').value;
+    if (!tid) { showToast('서식을 선택하세요.'); return; }
+    location.href = '/admin/contracts/new?template_id=' + tid;
+}
+
+/* ── 서버 필터 적용 (상태/날짜) ── */
+function applyServerFilter() {
+    const params = new URLSearchParams();
+    const status = document.getElementById('statusFilter').value;
+    const q = document.getElementById('searchInput').value.trim();
+    const dateFrom = document.getElementById('dateFrom').value;
+    const dateTo = document.getElementById('dateTo').value;
+
+    if (status) params.set('status', status);
+    if (q) params.set('q', q);
+    if (dateFrom) params.set('date_from', dateFrom);
+    if (dateTo) params.set('date_to', dateTo);
+
+    location.href = '/admin/contracts' + (params.toString() ? '?' + params.toString() : '');
+}
+
+/* ── 날짜 필터 변경 시 서버 필터 적용 ── */
+document.getElementById('dateFrom').addEventListener('change', applyServerFilter);
+document.getElementById('dateTo').addEventListener('change', applyServerFilter);
+
+/* ── 클라이언트 사이드 검색 (실시간) ── */
+(function() {
+    const searchInput = document.getElementById('searchInput');
+    let debounceTimer;
+
+    searchInput.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => filterTableLocal(this.value.trim()), 200);
+    });
+
+    /* Enter 키로 서버 검색 */
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            applyServerFilter();
+        }
+    });
+})();
+
+function filterTableLocal(keyword) {
+    const rows = document.querySelectorAll('.contract-row');
+    const lower = keyword.toLowerCase();
+
+    rows.forEach(row => {
+        if (!keyword) {
+            row.style.display = '';
+            return;
+        }
+        const title = (row.dataset.title || '').toLowerCase();
+        const employee = (row.dataset.employee || '').toLowerCase();
+        row.style.display = (title.includes(lower) || employee.includes(lower)) ? '' : 'none';
+    });
+}
+
+/* ── SMS 재전송 ── */
+function resendSms(cid, pid, btn) {
+    showConfirm('이 참여자에게 서명 링크 SMS를 재전송하시겠습니까?', async () => {
+        setButtonLoading(btn, true);
+        try {
+            const res = await fetch('/api/contracts/' + cid + '/participants/' + pid + '/resend-sms', {
+                method: 'POST', headers: headers
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast(data.message || 'SMS가 재전송되었습니다.');
+            } else {
+                showToast(data.error || 'SMS 재전송 실패');
+            }
+        } catch(e) {
+            showToast('오류가 발생했습니다.');
+        } finally {
+            setButtonLoading(btn, false);
+        }
+    });
+}
+
+/* ── 서명 링크 복사 ── */
+async function copySignLink(token, btn) {
+    const url = location.origin + '/sign/' + token;
+    try {
+        await navigator.clipboard.writeText(url);
+        btn.textContent = '복사됨!';
+        setTimeout(() => { btn.textContent = '링크복사'; }, 1500);
+    } catch(e) {
+        /* fallback */
+        const ta = document.createElement('textarea');
+        ta.value = url; document.body.appendChild(ta);
+        ta.select(); document.execCommand('copy');
+        document.body.removeChild(ta);
+    }
+    showToast('서명 링크가 복사되었습니다.');
+}
+
+/* ── 계약 취소 ── */
+function cancelContract(cid, title) {
+    showConfirm('"' + title + '" 계약을 취소하시겠습니까?', async () => {
+        const res = await fetch('/api/contracts/' + cid, { method: 'DELETE', headers });
+        const data = await res.json();
+        if (data.success) {
+            showToast('계약이 취소되었습니다.');
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showToast(data.error || '취소 실패');
+        }
+    });
+}
+
+/* ── 계약 삭제 (완전 삭제) ── */
+function hardDeleteContract(cid, title) {
+    showConfirm('"' + title + '" 계약을 완전히 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.', async () => {
+        const res = await fetch('/api/contracts/' + cid + '/hard-delete', { method: 'DELETE', headers });
+        const data = await res.json();
+        if (data.success) {
+            showToast('계약이 삭제되었습니다.');
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showToast(data.error || '삭제 실패');
+        }
+    });
+}
+
+/* ── 만료일 수정 (모달) ── */
+let expiryTargetCid = null;
+
+function editExpiry(cid, currentVal) {
+    expiryTargetCid = cid;
+    document.getElementById('expiryInput').value = currentVal || '';
+    document.getElementById('expiryModal').classList.add('show');
+}
+
+function closeExpiryModal() {
+    document.getElementById('expiryModal').classList.remove('show');
+    expiryTargetCid = null;
+}
+
+function clearExpiry() {
+    document.getElementById('expiryInput').value = '';
+    saveExpiry();
+}
+
+function saveExpiry() {
+    if (!expiryTargetCid) return;
+    const val = document.getElementById('expiryInput').value;
+
+    fetch('/api/contracts/' + expiryTargetCid + '/update-expiry', {
+        method: 'PUT',
+        headers: headers,
+        body: JSON.stringify({ expires_at: val || null })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showToast('만료일이 변경되었습니다.');
+            closeExpiryModal();
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showToast(data.error || '변경 실패');
+        }
+    })
+    .catch(() => showToast('오류가 발생했습니다.'));
+}
+
+/* ── 예약발송 관리 모달 ── */
+let scheduleTargetCid = null;
+
+function openScheduleModal(cid, currentVal) {
+    scheduleTargetCid = cid;
+    document.getElementById('scheduleInput').value = currentVal || '';
+    const info = document.getElementById('scheduleInfo');
+    if (currentVal) {
+        const dt = new Date(currentVal);
+        info.textContent = '현재 예약: ' + dt.toLocaleString('ko-KR');
+    } else {
+        info.textContent = '예약 시각이 설정되어 있지 않습니다.';
+    }
+    document.getElementById('scheduleModal').classList.add('show');
+}
+
+function closeScheduleModal() {
+    document.getElementById('scheduleModal').classList.remove('show');
+    scheduleTargetCid = null;
+}
+
+async function saveSchedule() {
+    if (!scheduleTargetCid) return;
+    const val = document.getElementById('scheduleInput').value;
+    if (!val) { showToast('예약 시각을 입력하세요.'); return; }
+
+    const res = await fetch('/api/contracts/' + scheduleTargetCid + '/update-schedule', {
+        method: 'PUT', headers: headers,
+        body: JSON.stringify({ scheduled_at: val, action: 'update' })
+    });
+    const data = await res.json();
+    if (data.success) {
+        showToast('예약 시각이 변경되었습니다.');
+        closeScheduleModal();
+        setTimeout(() => location.reload(), 500);
+    } else {
+        showToast(data.error || '변경 실패');
+    }
+}
+
+function sendNow() {
+    if (!scheduleTargetCid) return;
+    showConfirm('예약을 취소하고 지금 즉시 발송하시겠습니까?', async () => {
+        const res = await fetch('/api/contracts/' + scheduleTargetCid + '/update-schedule', {
+            method: 'PUT', headers: headers,
+            body: JSON.stringify({ action: 'send_now' })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message || '즉시 발송되었습니다.');
+            closeScheduleModal();
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showToast(data.error || '발송 실패');
+        }
+    });
+}
+
+function cancelSchedule() {
+    if (!scheduleTargetCid) return;
+    showConfirm('예약발송을 취소하시겠습니까?', async () => {
+        const res = await fetch('/api/contracts/' + scheduleTargetCid + '/update-schedule', {
+            method: 'PUT', headers: headers,
+            body: JSON.stringify({ action: 'cancel' })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message || '예약이 취소되었습니다.');
+            closeScheduleModal();
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showToast(data.error || '취소 실패');
+        }
+    });
+}
+
+/* ── 테이블 컬럼 정렬 (클라이언트 사이드) ── */
+(function() {
+    const table = document.getElementById('contractTable');
+    if (!table) return;
+
+    const headers = table.querySelectorAll('th.sortable');
+    let currentSort = { col: -1, dir: 'none' };
+
+    headers.forEach(th => {
+        th.addEventListener('click', function() {
+            const colIdx = parseInt(this.dataset.col);
+            const dataType = this.dataset.type || 'text';
+
+            /* 정렬 방향 토글 */
+            if (currentSort.col === colIdx) {
+                currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.col = colIdx;
+                currentSort.dir = 'asc';
+            }
+
+            /* 헤더 클래스 갱신 */
+            headers.forEach(h => h.classList.remove('asc', 'desc'));
+            this.classList.add(currentSort.dir);
+
+            /* 행 정렬 */
+            const tbody = document.getElementById('contractTbody');
+            const rows = Array.from(tbody.querySelectorAll('.contract-row'));
+
+            rows.sort((a, b) => {
+                let aVal = a.children[colIdx]?.textContent?.trim() || '';
+                let bVal = b.children[colIdx]?.textContent?.trim() || '';
+
+                if (dataType === 'date') {
+                    aVal = aVal === '-' ? '' : aVal;
+                    bVal = bVal === '-' ? '' : bVal;
+                    return currentSort.dir === 'asc'
+                        ? aVal.localeCompare(bVal)
+                        : bVal.localeCompare(aVal);
+                }
+
+                return currentSort.dir === 'asc'
+                    ? aVal.localeCompare(bVal, 'ko')
+                    : bVal.localeCompare(aVal, 'ko');
+            });
+
+            rows.forEach(row => tbody.appendChild(row));
+        });
+    });
+})();
+{% endblock %}

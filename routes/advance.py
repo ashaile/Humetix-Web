@@ -12,7 +12,7 @@ from flask import (
 )
 from sqlalchemy.exc import IntegrityError
 
-from models import AdvanceRequest, Employee, db
+from models import AdvanceRequest, Employee, Site, db
 from routes.utils import require_admin, validate_month as _validate_month
 from extensions import limiter
 
@@ -140,7 +140,20 @@ def admin_advance():
         query = query.filter(AdvanceRequest.status == status)
 
     items = query.order_by(AdvanceRequest.created_at.desc()).all()
-    return render_template("admin_advance.html", items=items, month=month, filter_status=status)
+
+    # 고객사 매핑
+    emp_ids = list({item.employee_id for item in items})
+    site_map = {}
+    if emp_ids:
+        rows = (
+            db.session.query(Employee.id, Site.name)
+            .outerjoin(Site, Employee.site_id == Site.id)
+            .filter(Employee.id.in_(emp_ids))
+            .all()
+        )
+        site_map = {eid: sname or "-" for eid, sname in rows}
+
+    return render_template("admin_advance.html", items=items, month=month, filter_status=status, site_map=site_map)
 
 
 @advance_bp.route("/admin/advance/<int:adv_id>/approve", methods=["POST"])

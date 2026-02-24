@@ -415,11 +415,22 @@ def import_attendance_to_db(parsed_data: dict, dry_run: bool = False) -> dict:
             ).first()
 
             if existing:
+                # 우선순위: admin > employee > excel
+                # 상위 source의 기록은 엑셀로 덮어쓰지 않음
+                if existing.source in ("admin", "employee"):
+                    result["skipped"] += 1
+                    result["warnings"].append(
+                        f"건너뜀: {name} {work_date} — 기존 "
+                        f"{'관리자' if existing.source == 'admin' else '직원'} "
+                        f"입력 기록 보호"
+                    )
+                    continue
                 existing.total_work_hours = total_hours
                 existing.overtime_hours = overtime
                 existing.night_hours = night
                 existing.holiday_work_hours = holiday
                 existing.work_type = work_type
+                existing.source = "excel"
                 result["updated"] += 1
             else:
                 record = AttendanceRecord(
@@ -433,6 +444,7 @@ def import_attendance_to_db(parsed_data: dict, dry_run: bool = False) -> dict:
                     overtime_hours=overtime,
                     night_hours=night,
                     holiday_work_hours=holiday,
+                    source="excel",
                 )
                 db.session.add(record)
                 result["created"] += 1

@@ -7,47 +7,85 @@
 {% endblock %}
 
 {% block body_content %}
-<!-- Sidebar toggle (mobile) -->
-<button class="sidebar-toggle" id="sidebarToggle" aria-label="메뉴 열기">&#9776;</button>
+
+{# ══════════════════════════════════════════════════
+   상단 네비게이션 바 (Top Navigation)
+   ══════════════════════════════════════════════════ #}
+<header class="topbar" id="topbar">
+    <a href="/humetix_master_99" class="topbar-brand">Hume<span>tix</span></a>
+
+    <nav class="topbar-categories">
+        {% set categories = [
+            ('hr',       '인력관리',  '/admin/applications'),
+            ('work',     '근무현황·급여', '/admin/attendance'),
+            ('contract', '계약',      '/admin/contract-templates'),
+            ('ops',      '운영',      '/admin/sites'),
+        ] %}
+        {% for cat_key, cat_label, cat_url in categories %}
+        <a href="{{ cat_url }}"
+           class="topbar-tab{% if active_cat == cat_key %} active{% endif %}"
+           data-cat="{{ cat_key }}">{{ cat_label }}</a>
+        {% endfor %}
+    </nav>
+
+    <div class="topbar-utils">
+        <a href="/admin/dashboard" class="topbar-icon-btn{% if current_ep == 'dashboard.admin_dashboard' %} active{% endif %}"
+           title="대시보드">&#128200;</a>
+        <button type="button" class="topbar-icon-btn" id="openPasswordModalBtn" title="비밀번호 변경">&#128274;</button>
+        <a href="/logout" class="topbar-icon-btn" title="로그아웃">&#128275;</a>
+        <button class="topbar-hamburger" id="sidebarToggle" aria-label="메뉴 열기">&#9776;</button>
+    </div>
+</header>
+
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
+{# ══════════════════════════════════════════════════
+   사이드바 (Sub Navigation)
+   ══════════════════════════════════════════════════ #}
 <div class="admin-layout">
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-brand">Hume<span>tix</span></div>
+    <aside class="sidebar{% if not active_cat %} hidden{% endif %}" id="sidebar">
         <nav class="sidebar-nav">
-            {% set nav_items = [
-                ('admin.master_view', '/humetix_master_99', 'icon', '&#127968;', '홈'),
-                ('admin.applications', '/admin/applications', 'icon', '&#128196;', '지원자관리'),
-                ('dashboard.admin_dashboard', '/admin/dashboard', 'icon', '&#128200;', '대시보드'),
-                ('attendance.admin_attendance', '/admin/attendance', 'icon', '&#128203;', '근태관리'),
-                ('attendance.import_attendance', '/admin/attendance/import', 'icon', '&#128228;', '근태업로드'),
-                ('attendance.admin_attendance_calendar', '/admin/attendance-calendar', 'icon', '&#128197;', '운영캘린더'),
-                ('payslip.admin_payslip', '/admin/payslip', 'icon', '&#128176;', '급여명세서'),
-                ('advance.admin_advance', '/admin/advance', 'icon', '&#127974;', '가불관리'),
-                ('employee.admin_employees', '/admin/employees', 'icon', '&#128101;', '사원명부'),
-                ('site.admin_sites', '/admin/sites', 'icon', '&#127959;', '현장관리'),
-                ('notice.admin_notices', '/admin/notices', 'icon', '&#128227;', '공지사항'),
-                ('admin.inquiries', '/inquiries', 'icon', '&#128232;', '문의목록'),
+            {% set nav_groups = [
+                ('hr', '인력관리', [
+                    ('admin.applications',       '/admin/applications',       '&#128196;', '지원자관리'),
+                    ('employee.admin_employees',  '/admin/employees',          '&#128101;', '사원명부'),
+                ]),
+                ('work', '근무현황·급여', [
+                    ('attendance.admin_attendance',          '/admin/attendance',          '&#128203;', '근무현황'),
+                    ('attendance.import_attendance',         '/admin/attendance/import',    '&#128228;', '근무현황 업로드'),
+                    ('attendance.admin_attendance_calendar', '/admin/attendance-calendar',  '&#128197;', '운영캘린더'),
+                    ('payslip.admin_payslip',               '/admin/payslip',             '&#128176;', '급여명세서'),
+                    ('advance.admin_advance',               '/admin/advance',             '&#127974;', '가불관리'),
+                ]),
+                ('contract', '계약', [
+                    ('contract.admin_templates',  '/admin/contract-templates', '&#128196;', '서식관리'),
+                    ('contract.admin_contracts',  '/admin/contracts',          '&#128220;', '계약관리'),
+                    ('contract.bulk_send_page',   '/admin/bulk-send',          '&#128232;', '대량전송'),
+                ]),
+                ('ops', '운영', [
+                    ('site.admin_sites',    '/admin/sites',      '&#127959;', '고객사관리'),
+                    ('notice.admin_notices', '/admin/notices',    '&#128227;', '공지사항'),
+                    ('admin.inquiries',     '/inquiries',        '&#128232;', '문의목록'),
+                    ('leave.admin_leave',   '/admin/leave',      '&#127796;', '연차관리'),
+                    ('leave.admin_severance', '/admin/severance', '&#128178;', '퇴직금'),
+                ]),
             ] %}
-            {% for endpoint, url, _type, icon_html, label in nav_items %}
-            <a href="{{ url }}" class="sidebar-link{% if request.endpoint == endpoint %} active{% endif %}">
-                <span class="icon">{{ icon_html|safe }}</span> {{ label }}
-            </a>
+
+            {% for cat_key, cat_label, items in nav_groups %}
+            <div class="sidebar-group{% if active_cat == cat_key %} show{% endif %}" data-cat="{{ cat_key }}">
+                <div class="sidebar-group-title">{{ cat_label }}</div>
+                {% for endpoint, url, icon_html, label in items %}
+                <a href="{{ url }}"
+                   class="sidebar-link{% if current_ep == endpoint or (endpoint == 'contract.admin_contracts' and current_ep and current_ep.startswith('contract.contract_detail')) %} active{% endif %}">
+                    <span class="icon">{{ icon_html|safe }}</span> {{ label }}
+                </a>
+                {% endfor %}
+            </div>
             {% endfor %}
-            <button type="button" class="sidebar-link sidebar-action-link" id="openPasswordModalBtn">
-                <span class="icon">&#128274;</span> 비밀번호 변경
-            </button>
         </nav>
-        <div class="sidebar-footer">
-            <a href="/logout" class="sidebar-link">
-                <span class="icon">&#128275;</span> 로그아웃
-            </a>
-        </div>
     </aside>
 
-    <!-- Main content -->
-    <main class="admin-main">
+    <main class="admin-main{% if not active_cat %} full-width{% endif %}">
         <div class="page-header">
             <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
             <p class="page-desc">{% block page_desc %}{% endblock %}</p>
@@ -56,22 +94,24 @@
     </main>
 </div>
 
-<!-- Mobile bottom nav -->
+{# ══════════════════════════════════════════════════
+   모바일 하단 네비게이션 (4그룹 탭)
+   ══════════════════════════════════════════════════ #}
 <nav class="mobile-bottom-nav" aria-label="모바일 하단 네비">
-    {% set bottom_items = [
-        ('admin.master_view', '/humetix_master_99', '&#127968;', '홈'),
-        ('attendance.admin_attendance', '/admin/attendance', '&#128203;', '근태'),
-        ('payslip.admin_payslip', '/admin/payslip', '&#128176;', '급여'),
-        ('employee.admin_employees', '/admin/employees', '&#128101;', '사원'),
-        ('admin.applications', '/admin/applications', '&#128196;', '지원자'),
+    {% set mobile_tabs = [
+        ('hr',       '/admin/applications',       '&#128101;', '인력'),
+        ('work',     '/admin/attendance',          '&#128203;', '근무현황·급여'),
+        ('contract', '/admin/contract-templates',  '&#128220;', '계약'),
+        ('ops',      '/admin/sites',               '&#127959;', '운영'),
     ] %}
-    {% for endpoint, url, icon_html, label in bottom_items %}
-    <a href="{{ url }}" class="{% if request.endpoint == endpoint %}active{% endif %}">
+    {% for cat_key, url, icon_html, label in mobile_tabs %}
+    <a href="{{ url }}" class="{% if active_cat == cat_key %}active{% endif %}" data-cat="{{ cat_key }}">
         <span class="icon">{{ icon_html|safe }}</span>{{ label }}
     </a>
     {% endfor %}
 </nav>
 
+{# ── 모달: 비밀번호 변경 ── #}
 <div class="modal-overlay" id="passwordModal">
     <div class="modal-card">
         <h3>관리자 비밀번호 변경</h3>
@@ -96,6 +136,7 @@
     </div>
 </div>
 
+{# ── 모달: 확인/프롬프트 ── #}
 <div id="confirmModal" class="modal-overlay">
     <div class="modal-card">
         <div class="confirm-modal-msg" id="confirmMsg"></div>
@@ -114,21 +155,25 @@
 <script>
     window.csrfToken = '{{ csrf_token() }}';
 
-    /* Sidebar toggle */
+    /* ── Sidebar toggle (mobile) ── */
     const sidebar = document.getElementById('sidebar');
     const sidebarToggle = document.getElementById('sidebarToggle');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
 
-    sidebarToggle.addEventListener('click', () => {
-        sidebar.classList.toggle('open');
-        sidebarOverlay.classList.toggle('show');
-    });
-    sidebarOverlay.addEventListener('click', () => {
-        sidebar.classList.remove('open');
-        sidebarOverlay.classList.remove('show');
-    });
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            sidebarOverlay.classList.toggle('show');
+        });
+    }
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+            sidebarOverlay.classList.remove('show');
+        });
+    }
 
-    /* Toast helper */
+    /* ── Toast helper ── */
     function showToast(msg, duration) {
         const el = document.getElementById('toast');
         el.textContent = msg;
@@ -136,7 +181,7 @@
         setTimeout(() => el.style.display = 'none', duration || 3000);
     }
 
-    /* Password change modal */
+    /* ── Password change modal ── */
     const passwordModal = document.getElementById('passwordModal');
     const passwordForm = document.getElementById('passwordChangeModalForm');
     const openPasswordModalBtn = document.getElementById('openPasswordModalBtn');
@@ -147,23 +192,19 @@
         passwordModal.classList.remove('show');
     }
 
-    openPasswordModalBtn.addEventListener('click', () => {
+    if (openPasswordModalBtn) openPasswordModalBtn.addEventListener('click', () => {
         passwordForm.reset();
         passwordModal.classList.add('show');
     });
 
-    cancelPasswordModalBtn.addEventListener('click', closePasswordModal);
+    if (cancelPasswordModalBtn) cancelPasswordModalBtn.addEventListener('click', closePasswordModal);
 
     passwordModal.addEventListener('click', (event) => {
-        if (event.target === passwordModal) {
-            closePasswordModal();
-        }
+        if (event.target === passwordModal) closePasswordModal();
     });
 
     document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && passwordModal.classList.contains('show')) {
-            closePasswordModal();
-        }
+        if (event.key === 'Escape' && passwordModal.classList.contains('show')) closePasswordModal();
     });
 
     /* ── Confirm / Prompt / Alert helpers ── */
@@ -206,7 +247,6 @@
         confirmCancelBtn.style.display = '';
         confirmOkBtn.textContent = '확인';
         confirmModal.classList.add('show');
-
         _confirmResolve = null;
         confirmOkBtn.onclick = () => {
             _closeConfirmModal();
@@ -218,7 +258,6 @@
         confirmMsg.textContent = message;
         confirmCancelBtn.style.display = '';
         confirmOkBtn.textContent = '확인';
-
         const inputType = (options && options.type) || 'text';
         const placeholder = (options && options.placeholder) || '';
         let inputEl;
@@ -232,13 +271,11 @@
         }
         inputEl.placeholder = placeholder;
         if (options && options.value) inputEl.value = options.value;
-
         confirmInputWrap.innerHTML = '';
         confirmInputWrap.appendChild(inputEl);
         confirmInputWrap.style.display = 'block';
         confirmModal.classList.add('show');
         setTimeout(() => inputEl.focus(), 50);
-
         _confirmResolve = null;
         confirmOkBtn.onclick = () => {
             const val = inputEl.value;
@@ -254,7 +291,6 @@
         confirmCancelBtn.style.display = 'none';
         confirmOkBtn.textContent = '확인';
         confirmModal.classList.add('show');
-
         return new Promise((resolve) => {
             _confirmResolve = resolve;
             confirmOkBtn.onclick = () => {
@@ -278,7 +314,6 @@
 
     passwordForm.addEventListener('submit', async (event) => {
         event.preventDefault();
-
         const formData = new FormData();
         formData.append('current_password', document.getElementById('modalCurrentPassword').value);
         formData.append('new_password', document.getElementById('modalNewPassword').value);
@@ -290,12 +325,8 @@
         changePasswordModalBtn.innerText = '처리중...';
 
         try {
-            const response = await fetch('/admin/change-password', {
-                method: 'POST',
-                body: formData
-            });
+            const response = await fetch('/admin/change-password', { method: 'POST', body: formData });
             const result = await response.json();
-
             if (result.success) {
                 showToast(result.message || '비밀번호가 변경되었습니다.');
                 passwordForm.reset();

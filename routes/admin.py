@@ -1,10 +1,10 @@
-import hmac
 import logging
 import os
 import re
 from datetime import date, datetime
 from io import BytesIO
 
+import bcrypt
 from flask import (
     Blueprint,
     jsonify,
@@ -246,29 +246,33 @@ def applications():
 @admin_bp.route('/admin/change-password', methods=['POST'])
 @require_admin
 def change_admin_password():
+    from routes.auth import _get_admin_password, _verify_password
+
     current_password = request.form.get('current_password', '')
     new_password = request.form.get('new_password', '')
     confirm_password = request.form.get('confirm_password', '')
-    existing_password = os.environ.get("ADMIN_PASSWORD", "")
+    existing_password = _get_admin_password()
 
     if not existing_password:
         logger.error("ADMIN_PASSWORD environment variable is not set")
         return jsonify({"success": False, "message": "서버 설정 오류가 발생했습니다."}), 500
-    if not current_password or not hmac.compare_digest(current_password, existing_password):
+    if not current_password or not _verify_password(current_password, existing_password):
         return jsonify({"success": False, "message": "현재 비밀번호가 올바르지 않습니다."}), 400
     if len(new_password) < 8:
         return jsonify({"success": False, "message": "새 비밀번호는 8자 이상이어야 합니다."}), 400
     if "\n" in new_password or "\r" in new_password:
         return jsonify({"success": False, "message": "새 비밀번호 형식이 올바르지 않습니다."}), 400
-    if not hmac.compare_digest(new_password, confirm_password):
+    if new_password != confirm_password:
         return jsonify({"success": False, "message": "새 비밀번호 확인이 일치하지 않습니다."}), 400
-    if hmac.compare_digest(new_password, existing_password):
+    if _verify_password(new_password, existing_password):
         return jsonify({"success": False, "message": "기존과 다른 비밀번호를 입력해 주세요."}), 400
 
+    # 새 비밀번호를 bcrypt 해시로 저장
+    hashed = bcrypt.hashpw(new_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
     try:
-        _update_env_value(ENV_FILE_PATH, "ADMIN_PASSWORD", new_password)
-        os.environ["ADMIN_PASSWORD"] = new_password
-        logger.info("Admin password updated from admin page")
+        _update_env_value(ENV_FILE_PATH, "ADMIN_PASSWORD", hashed)
+        os.environ["ADMIN_PASSWORD"] = hashed
+        logger.info("Admin password updated from admin page (bcrypt)")
     except Exception:
         logger.exception("Failed to update ADMIN_PASSWORD")
         return jsonify({"success": False, "message": "비밀번호 저장 중 오류가 발생했습니다."}), 500
@@ -588,10 +592,17 @@ def update_inquiry(inquiry_id):
     if not item:
         return redirect(url_for('admin.inquiries'))
 
-    item.status = request.form.get('status', item.status)
-    item.assignee = request.form.get('assignee', item.assignee)
-    item.admin_memo = request.form.get('admin_memo', item.admin_memo)
-    db.session.commit()
+    new_status = request.form.get('status', item.status)
+    allowed_statuses = {'new', 'in_progress', 'done'}
+    if new_status not in allowed_statuses:
+        return redirect(url_for('admin.inquiries'))
+    item.status = new_status
+    item.assignee = (request.form.get('assignee', item.assignee) or "")[:100]
+    item.admin_memo = (request.form.get('admin_memo', item.admin_memo) or "")[:2000]
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
 
     return redirect(url_for('admin.inquiries'))
 
@@ -611,7 +622,10 @@ def delete_selected():
             except Exception as e:
                 logger.error(f"Error deleting photo {app.photo}: {e}")
         db.session.delete(app)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
 
     return redirect(url_for('admin.applications'))
 @admin_bp.route('/view_photo/<filename>')

@@ -281,13 +281,44 @@
             <input type="month" class="form-input" id="gen-month" value="{{ month }}">
         </div>
         <div class="form-group">
-            <label class="form-label">산정 방식</label>
+            <label class="form-label">산정 방식 (기본)</label>
             <select class="form-select" id="gen-mode">
                 <option value="standard" {{ 'selected' if salary_mode=='standard' else '' }}>209h 고정 (주휴포함)</option>
+                <option value="daily_build" {{ 'selected' if salary_mode=='daily_build' else '' }}>일급제 (0→쌓기)</option>
                 <option value="actual" {{ 'selected' if salary_mode=='actual' else '' }}>실근무시간 기준</option>
             </select>
         </div>
-        <button class="btn btn-success" onclick="generatePayslips()">생성/재생성</button>
+        <button class="btn btn-success" onclick="generatePayslips()">전체 생성/재생성</button>
+    </div>
+</div>
+
+<!-- 개별 급여 생성 -->
+<div class="generate-card">
+    <h3>개별 급여 생성</h3>
+    <div id="single-gen-msg"></div>
+    <div class="generate-row">
+        <div class="form-group">
+            <label class="form-label">대상 월</label>
+            <input type="month" class="form-input" id="single-month" value="{{ month }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label">직원 선택</label>
+            <select class="form-select" id="single-emp">
+                <option value="">-- 직원 선택 --</option>
+                {% for emp in employees %}
+                <option value="{{ emp.id }}">{{ emp.name }} ({{ emp.birth_date }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">산정 방식 (기본)</label>
+            <select class="form-select" id="single-mode">
+                <option value="standard" {{ 'selected' if salary_mode=='standard' else '' }}>209h 고정</option>
+                <option value="daily_build" {{ 'selected' if salary_mode=='daily_build' else '' }}>일급제</option>
+                <option value="actual" {{ 'selected' if salary_mode=='actual' else '' }}>실근무시간</option>
+            </select>
+        </div>
+        <button class="btn btn-primary" onclick="generateSinglePayslip()">개별 생성</button>
     </div>
 </div>
 
@@ -302,6 +333,8 @@
     <div class="table-header">
         <div class="table-title">{{ month }} 급여명세서 ({{ payslips|length }}건)</div>
         <div class="table-actions">
+            <button type="button" class="btn btn-danger btn-sm" id="deleteSelectedBtn"
+                onclick="deleteSelectedPayslips()" style="display:none;">선택 삭제 (<span id="selectedCount">0</span>건)</button>
             <button type="button" class="btn btn-danger btn-sm" onclick="deleteMonthPayslips()">해당 월 전체 삭제</button>
             <a href="/admin/payslip/excel?month={{ month }}" class="btn btn-outline btn-sm">엑셀 다운로드</a>
             <a href="/admin/payslip/pdf?month={{ month }}" class="btn btn-outline btn-sm">PDF 다운로드</a>
@@ -311,14 +344,19 @@
         <table>
             <thead>
                 <tr>
+                    <th style="width:36px;"><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)"></th>
                     <th>이름</th>
-                    <th>부서</th>
+                    <th>고객사</th>
+                    <th>부서/현장</th>
                     <th>방식</th>
                     <th>총근무(h)</th>
                     <th>기본급</th>
+                    <th>주휴수당</th>
                     <th>잔업수당</th>
                     <th>심야수당</th>
                     <th>휴일수당</th>
+                    <th>결근</th>
+                    <th>주휴공제</th>
                     <th>총지급</th>
                     <th>소득세</th>
                     <th>4대보험</th>
@@ -329,18 +367,23 @@
             </thead>
             <tbody>
                 {% for ps in payslips %}
-                <tr data-ps='{{ ps.to_dict()|tojson }}'>
+                <tr data-ps='{{ ps.to_dict()|tojson }}' data-id="{{ ps.id }}">
+                    <td><input type="checkbox" class="ps-check" value="{{ ps.id }}" onchange="updateSelectedCount()"></td>
                     <td class="emp-name">
                         {{ ps.emp_name }}
                         {% if ps.is_manual %}<span class="badge-manual">수정됨</span>{% endif %}
                     </td>
+                    <td>{{ site_map.get(ps.employee_id, '-') }}</td>
                     <td>{{ ps.dept }}</td>
-                    <td>{{ '고정' if ps.salary_mode == 'standard' else '실근무' }}</td>
+                    <td>{% if ps.salary_mode == 'standard' %}209h{% elif ps.salary_mode == 'daily_build' %}일급제{% elif ps.salary_mode == 'daily' %}공수제{% else %}실근무{% endif %}</td>
                     <td class="mono">{{ ps.total_work_hours }}</td>
                     <td class="mono">{{ '{:,}'.format(ps.base_salary) }}</td>
+                    <td class="mono"{% if ps.weekly_holiday_pay > 0 %} style="color:#059669"{% endif %}>{% if ps.weekly_holiday_pay > 0 %}+{{ '{:,}'.format(ps.weekly_holiday_pay) }}{% else %}0{% endif %}</td>
                     <td class="mono">{{ '{:,}'.format(ps.ot_pay) }}</td>
                     <td class="mono">{{ '{:,}'.format(ps.night_pay) }}</td>
                     <td class="mono">{{ '{:,}'.format(ps.holiday_pay) }}</td>
+                    <td class="mono" style="color:#dc2626">{% if ps.absent_deduction > 0 %}-{{ '{:,}'.format(ps.absent_deduction) }}<br><span style="font-size:11px;color:var(--text2);">({{ ps.absent_days|int }}일)</span>{% else %}0{% endif %}</td>
+                    <td class="mono" style="color:#dc2626">{% if ps.weekly_holiday_deduction > 0 %}-{{ '{:,}'.format(ps.weekly_holiday_deduction) }}{% else %}0{% endif %}</td>
                     <td class="mono" style="font-weight:600">{{ '{:,}'.format(ps.gross) }}</td>
                     <td class="mono" style="color:#dc2626">-{{ '{:,}'.format(ps.tax) }}</td>
                     <td class="mono" style="color:#dc2626">-{{ '{:,}'.format(ps.insurance) }}</td>
@@ -360,7 +403,7 @@
                 {% endfor %}
                 {% if not payslips %}
                 <tr>
-                    <td colspan="14" style="text-align:center;padding:24px;color:var(--text2);">급여 데이터가 없습니다. 먼저 급여를 생성해 주세요.</td>
+                    <td colspan="19" style="text-align:center;padding:24px;color:var(--text2);">급여 데이터가 없습니다. 먼저 급여를 생성해 주세요.</td>
                 </tr>
                 {% endif %}
             </tbody>
@@ -382,6 +425,10 @@
                     <input type="number" id="edit-base_salary" oninput="recalcEdit()">
                 </div>
                 <div class="edit-field">
+                    <label>주휴수당</label>
+                    <input type="number" id="edit-weekly_holiday_pay" oninput="recalcEdit()">
+                </div>
+                <div class="edit-field">
                     <label>잔업수당</label>
                     <input type="number" id="edit-ot_pay" oninput="recalcEdit()">
                 </div>
@@ -393,6 +440,15 @@
                     <label>휴일수당</label>
                     <input type="number" id="edit-holiday_pay" oninput="recalcEdit()">
                 </div>
+            </div>
+        </div>
+
+        <div class="edit-section" id="editAbsenceSection" style="display:none;">
+            <div class="edit-section-title">결근/주휴 공제 (자동 계산)</div>
+            <div style="font-size:13px;color:var(--text2);padding:8px 0;">
+                <span id="editAbsentInfo"></span>
+                | 결근공제: <span id="editAbsentDed" style="color:#dc2626;">0</span>원
+                | 주휴공제: <span id="editWeeklyHolDed" style="color:#dc2626;">0</span>원
             </div>
         </div>
 
@@ -508,10 +564,11 @@ function openPreview(d) {
     const [year, mon] = d.month.split('-');
     document.getElementById('pvTitle').textContent = `${year}년 ${parseInt(mon)}월 급여명세서`;
 
-    const modeLabel = d.salary_mode === 'standard' ? '209h 고정' : '실근무시간';
+    const modeLabels = {standard: '209h 고정', daily_build: '일급제', actual: '실근무시간', daily: '공수제'};
+    const modeLabel = modeLabels[d.salary_mode] || d.salary_mode;
     document.getElementById('pvInfo').innerHTML = `
         <span class="lbl">성명</span><span class="val">${d.emp_name}</span>
-        <span class="lbl">부서</span><span class="val">${d.dept || '-'}</span>
+        <span class="lbl">부서/현장</span><span class="val">${d.dept || '-'}</span>
         <span class="lbl">시급</span><span class="val">${hourlyWage.toLocaleString()}원</span>
         <span class="lbl">계산방식</span><span class="val">${modeLabel}</span>
         <span class="lbl">총근무</span><span class="val">${d.total_work_hours}h</span>
@@ -522,13 +579,17 @@ function openPreview(d) {
 
     // 지급 테이블
     const earnBody = document.querySelector('#pvEarnTable tbody');
-    earnBody.innerHTML = `
-        <tr><td>기본급</td><td>${fmt(d.base_salary)}</td></tr>
+    let earnRows = `<tr><td>기본급</td><td>${fmt(d.base_salary)}</td></tr>`;
+    if (d.weekly_holiday_pay > 0) earnRows += `<tr><td>주휴수당</td><td style="color:#059669">${fmt(d.weekly_holiday_pay)}</td></tr>`;
+    earnRows += `
         <tr><td>잔업수당 (${d.ot_hours}h)</td><td>${fmt(d.ot_pay)}</td></tr>
         <tr><td>심야수당 (${d.night_hours}h)</td><td>${fmt(d.night_pay)}</td></tr>
         <tr><td>휴일수당 (${d.holiday_hours}h)</td><td>${fmt(d.holiday_pay)}</td></tr>
-        <tr class="total-row"><td>총지급액</td><td>${fmt(d.gross)}</td></tr>
     `;
+    if (d.absent_deduction > 0) earnRows += `<tr><td>결근공제 (${Math.floor(d.absent_days)}일)</td><td style="color:#dc2626">-${fmt(d.absent_deduction)}</td></tr>`;
+    if (d.weekly_holiday_deduction > 0) earnRows += `<tr><td>주휴공제</td><td style="color:#dc2626">-${fmt(d.weekly_holiday_deduction)}</td></tr>`;
+    earnRows += `<tr class="total-row"><td>총지급액</td><td>${fmt(d.gross)}</td></tr>`;
+    earnBody.innerHTML = earnRows;
 
     // 공제 테이블
     const dedRows = [];
@@ -565,10 +626,20 @@ function openEditModal(id, data) {
     document.getElementById('editTitle').textContent = `${data.emp_name} — 급여명세서 수정`;
     document.getElementById('editTitle').dataset.name = data.emp_name;
 
-    const fields = ['base_salary','ot_pay','night_pay','holiday_pay','tax','pension','health_ins','longterm_care','employment_ins','advance_deduction'];
+    const fields = ['base_salary','weekly_holiday_pay','ot_pay','night_pay','holiday_pay','tax','pension','health_ins','longterm_care','employment_ins','advance_deduction'];
     fields.forEach(f => {
         document.getElementById('edit-' + f).value = data[f] || 0;
     });
+
+    // 결근/주휴 공제 표시
+    const absEl = document.getElementById('editAbsentDed');
+    const whEl = document.getElementById('editWeeklyHolDed');
+    const absInfoEl = document.getElementById('editAbsentInfo');
+    const absSec = document.getElementById('editAbsenceSection');
+    if (absEl) absEl.textContent = (data.absent_deduction || 0).toLocaleString();
+    if (whEl) whEl.textContent = (data.weekly_holiday_deduction || 0).toLocaleString();
+    if (absInfoEl) absInfoEl.textContent = data.absent_days ? `결근 ${Math.floor(data.absent_days)}일` : '';
+    if (absSec) absSec.style.display = (data.absent_deduction || data.weekly_holiday_deduction) ? '' : 'none';
 
     // 수동수정 초기화 버튼 표시
     document.getElementById('editResetBtn').style.display = data.is_manual ? '' : 'none';
@@ -583,7 +654,10 @@ function closeEditModal() {
 
 function recalcEdit() {
     const v = f => parseInt(document.getElementById('edit-' + f).value) || 0;
-    const gross = v('base_salary') + v('ot_pay') + v('night_pay') + v('holiday_pay');
+    const rawGross = v('base_salary') + v('weekly_holiday_pay') + v('ot_pay') + v('night_pay') + v('holiday_pay');
+    const absDed = parseInt(document.getElementById('editAbsentDed')?.textContent?.replace(/[^0-9]/g,'')) || 0;
+    const whDed = parseInt(document.getElementById('editWeeklyHolDed')?.textContent?.replace(/[^0-9]/g,'')) || 0;
+    const gross = Math.max(0, rawGross - absDed - whDed);
     const insurance = v('pension') + v('health_ins') + v('longterm_care') + v('employment_ins');
     const totalDeduct = v('tax') + insurance + v('advance_deduction');
     const net = gross - totalDeduct;
@@ -595,7 +669,7 @@ function recalcEdit() {
 
 async function savePayslip() {
     const id = document.getElementById('editId').value;
-    const fields = ['base_salary','ot_pay','night_pay','holiday_pay','tax','pension','health_ins','longterm_care','employment_ins','advance_deduction'];
+    const fields = ['base_salary','weekly_holiday_pay','ot_pay','night_pay','holiday_pay','tax','pension','health_ins','longterm_care','employment_ins','advance_deduction'];
     const body = {};
     fields.forEach(f => { body[f] = parseInt(document.getElementById('edit-' + f).value) || 0; });
 
@@ -622,7 +696,7 @@ async function resetPayslip() {
     const id = document.getElementById('editId').value;
     const name = document.getElementById('editTitle').dataset.name;
 
-    showConfirm(`${name} 급여명세서를 근태 데이터 기준으로 초기화하시겠습니까?`, async () => {
+    showConfirm(`${name} 급여명세서를 근무 데이터 기준으로 초기화하시겠습니까?`, async () => {
         try {
             const r = await fetch(`/admin/payslip/${id}/reset`, {
                 method: 'POST',
@@ -687,6 +761,84 @@ function deletePayslip(payslipId, empName) {
             return;
         }
         location.reload();
+    });
+}
+
+/* ── 개별 급여 생성 ── */
+async function generateSinglePayslip() {
+    const month = document.getElementById('single-month').value;
+    const empId = document.getElementById('single-emp').value;
+    const mode = document.getElementById('single-mode').value;
+
+    if (!month) { showToast('월을 선택하세요.'); return; }
+    if (!empId) { showToast('직원을 선택하세요.'); return; }
+
+    const btn = document.querySelector('.generate-card:nth-child(3) .btn-primary');
+    setButtonLoading(btn, true);
+
+    try {
+        const r = await fetch('/admin/payslip/generate-single', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            credentials: 'same-origin',
+            body: JSON.stringify({ month, employee_id: parseInt(empId), salary_mode: mode }),
+        });
+        const res = await r.json();
+        const el = document.getElementById('single-gen-msg');
+        if (res.success) {
+            const actionLabel = res.action === 'created' ? '생성' : '갱신';
+            el.innerHTML = `<div class="success-msg">${res.emp_name} ${actionLabel} 완료</div>`;
+            setTimeout(() => location.reload(), 1200);
+        } else {
+            el.innerHTML = `<div class="error-msg">${res.error}</div>`;
+        }
+    } catch {
+        document.getElementById('single-gen-msg').innerHTML = '<div class="error-msg">서버 연결 실패</div>';
+    } finally {
+        setButtonLoading(btn, false);
+    }
+}
+
+/* ── 체크박스 선택 ── */
+function toggleSelectAll(masterCb) {
+    document.querySelectorAll('.ps-check').forEach(cb => { cb.checked = masterCb.checked; });
+    updateSelectedCount();
+}
+
+function updateSelectedCount() {
+    const checked = document.querySelectorAll('.ps-check:checked');
+    const count = checked.length;
+    document.getElementById('selectedCount').textContent = count;
+    document.getElementById('deleteSelectedBtn').style.display = count > 0 ? '' : 'none';
+
+    // 전체선택 체크박스 상태 동기화
+    const all = document.querySelectorAll('.ps-check');
+    document.getElementById('selectAll').checked = all.length > 0 && count === all.length;
+}
+
+async function deleteSelectedPayslips() {
+    const checked = document.querySelectorAll('.ps-check:checked');
+    const ids = Array.from(checked).map(cb => parseInt(cb.value));
+    if (!ids.length) { showToast('삭제할 항목을 선택하세요.'); return; }
+
+    showConfirm(`선택한 ${ids.length}건의 급여명세서를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`, async () => {
+        try {
+            const r = await fetch('/admin/payslip/delete-selected', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                credentials: 'same-origin',
+                body: JSON.stringify({ ids }),
+            });
+            const res = await r.json();
+            if (res.success) {
+                showToast(`${res.deleted}건 삭제 완료`);
+                setTimeout(() => location.reload(), 800);
+            } else {
+                showToast(res.error || '삭제 실패');
+            }
+        } catch {
+            showToast('서버 연결 실패');
+        }
     });
 }
 

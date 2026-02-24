@@ -78,7 +78,9 @@
                 if (!data.has_new) return;
                 const banner = document.createElement('div');
                 banner.className = 'notice-alert-banner';
-                banner.innerHTML = '<a href="/notices">\uD83D\uDD14 ' + data.title + '</a>'
+                const _e = document.createElement('span');
+                _e.textContent = data.title;
+                banner.innerHTML = '<a href="/notices">\uD83D\uDD14 ' + _e.innerHTML + '</a>'
                     + '<button type="button" class="notice-alert-close">&times;</button>';
                 document.body.prepend(banner);
                 banner.querySelector('.notice-alert-close').addEventListener('click', () => {

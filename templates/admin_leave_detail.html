@@ -1,0 +1,630 @@
+{% extends "base_admin.html" %}
+
+{% block admin_title %}HUMETIX - {{ employee.name }} 연차 상세{% endblock %}
+{% block page_title %}{{ employee.name }} 연차 상세{% endblock %}
+{% block page_desc %}월별 발생/사용 내역을 관리합니다. ({{ year }}년){% endblock %}
+
+{% block page_css %}
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text2);
+    text-decoration: none;
+    margin-bottom: 16px;
+}
+.back-link:hover { color: var(--accent); }
+.stat-row { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+.stat-card {
+    flex: 1; min-width: 120px;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px; text-align: center;
+}
+.stat-card .stat-value { font-size: 28px; font-weight: 700; color: var(--primary); }
+.stat-card .stat-label { font-size: 12px; color: var(--text2); margin-top: 4px; }
+/* 2단 레이아웃 */
+.detail-layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; margin-bottom: 24px; }
+.info-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+}
+.info-card .card-title { font-size: 16px; font-weight: 700; margin-bottom: 14px; }
+.info-row {
+    display: flex; justify-content: space-between; padding: 6px 0;
+    border-bottom: 1px solid var(--bg3); font-size: 13px;
+}
+.info-row:last-child { border-bottom: none; }
+.info-row .label { color: var(--text2); }
+.info-row .value { font-weight: 600; }
+.info-actions {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border);
+}
+/* 12개월 그리드 */
+.month-grid-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+}
+.month-grid-title { font-size: 16px; font-weight: 700; margin-bottom: 14px; }
+.month-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.month-cell {
+    background: var(--bg); border: 2px solid var(--border);
+    border-radius: 8px; padding: 10px 6px; text-align: center;
+    cursor: pointer; transition: all .15s; position: relative;
+}
+.month-cell:hover { border-color: var(--accent); transform: translateY(-1px); }
+.month-cell.active { border-color: var(--accent); background: rgba(232,93,38,.06); }
+.month-cell.active .month-days { color: var(--accent); }
+.month-cell.has-usage .month-days { color: var(--danger); }
+.month-cell .month-label {
+    font-size: 11px; font-weight: 600; color: var(--text2); margin-bottom: 2px;
+}
+.month-cell .month-days { font-size: 18px; font-weight: 700; color: var(--text2); }
+.month-cell .month-sub { font-size: 10px; color: var(--text2); margin-top: 1px; }
+.month-cell .check-icon {
+    position: absolute; top: 4px; right: 6px; font-size: 10px; color: var(--success);
+}
+/* 일괄 발생 카드 */
+.bulk-card {
+    grid-column: 1 / -1; background: var(--bg);
+    border: 2px dashed var(--accent); border-radius: 8px;
+    padding: 12px; text-align: center; margin-bottom: 4px;
+}
+.bulk-card .bulk-days { font-size: 22px; font-weight: 700; color: var(--accent); }
+.bulk-card .bulk-label { font-size: 12px; color: var(--text2); }
+/* FIFO 출처 뱃지 */
+.fifo-source {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;
+    background: #fef3c7; color: #b45309;
+}
+.fifo-source.overflow { background: #fee2e2; color: #dc2626; }
+.fifo-source.carryover { background: #fed7aa; color: #c2410c; }
+/* 이월 카드 */
+.carryover-card {
+    grid-column: 1 / -1; background: var(--bg);
+    border: 2px dashed #f59e0b; border-radius: 8px;
+    padding: 12px; text-align: center; margin-bottom: 4px;
+}
+.carryover-card .carry-days { font-size: 22px; font-weight: 700; color: #f59e0b; }
+.carryover-card .carry-label { font-size: 12px; color: var(--text2); }
+.stat-card.carryover-stat { border-color: #f59e0b; }
+.stat-card.carryover-stat .stat-value { color: #f59e0b; }
+/* 이월 내역 테이블 행 */
+.carryover-row { background: #fffbeb; border-left: 3px solid #f59e0b; }
+.carry-badge {
+    display: inline-block; padding: 1px 6px; border-radius: 8px;
+    font-size: 10px; font-weight: 600; background: #fef3c7; color: #b45309;
+}
+/* 모달 */
+.modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.5); z-index: 1500;
+    justify-content: center; align-items: center;
+}
+.modal-overlay.show { display: flex; }
+.modal-card {
+    background: var(--bg2); border-radius: var(--radius);
+    padding: 28px; width: 380px; max-width: 90vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,.15);
+}
+.modal-title { font-size: 18px; font-weight: 700; margin-bottom: 18px; }
+.modal-field { margin-bottom: 14px; }
+.modal-field label { display: block; font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 4px; }
+.modal-field input, .modal-field select {
+    width: 100%; padding: 8px 12px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-size: 14px; font-family: inherit; background: var(--bg);
+}
+.modal-field input:focus, .modal-field select:focus { outline: none; border-color: var(--accent); }
+.modal-field .hint { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+/* 관리 버튼 */
+.action-btns { display: flex; gap: 4px; }
+.btn-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: var(--bg2);
+    cursor: pointer; font-size: 12px; color: var(--text2); transition: all .15s;
+}
+.btn-icon:hover { background: var(--bg3); color: var(--text); }
+.btn-icon.danger:hover { background: #fef2f2; color: #dc2626; border-color: #fca5a5; }
+@media (max-width: 900px) {
+    .detail-layout { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+    .stat-row { flex-direction: column; }
+    .month-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 480px) {
+    .month-grid { grid-template-columns: repeat(2, 1fr); }
+}
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
+    <a href="/admin/leave?year={{ year }}" class="back-link" style="margin-bottom:0;">&#8592; 연차 관리 목록</a>
+    <button class="btn btn-primary" id="applyBtn" onclick="applyToBalance()">연차관리에 적용</button>
+</div>
+
+<!-- 통계 -->
+<div class="stat-row">
+    <div class="stat-card">
+        <div class="stat-value" id="statEntitled">{{ '%.0f'|format(summary.entitled) }}</div>
+        <div class="stat-label">당해 발생</div>
+    </div>
+    {% if summary.carryover > 0 %}
+    <div class="stat-card carryover-stat">
+        <div class="stat-value">+{{ '%.0f'|format(summary.carryover) }}</div>
+        <div class="stat-label">이월(전년도)</div>
+    </div>
+    {% endif %}
+    <div class="stat-card">
+        <div class="stat-value" id="statUsed">{{ '%.0f'|format(summary.used) }}</div>
+        <div class="stat-label">총 사용</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value" id="statRemaining" style="color:var(--accent);">{{ '%.0f'|format(summary.remaining) }}</div>
+        <div class="stat-label">잔여{% if summary.carryover > 0 %}(이월포함){% endif %}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ summary.pct }}%</div>
+        <div class="stat-label">사용률</div>
+    </div>
+</div>
+
+<!-- 2단 레이아웃 -->
+<div class="detail-layout">
+    <!-- 좌측: 직원 정보 -->
+    <div class="info-card">
+        <div class="card-title">직원 정보</div>
+        <div class="info-row"><span class="label">이름</span><span class="value">{{ employee.name }}</span></div>
+        <div class="info-row"><span class="label">입사일</span><span class="value">{{ employee.hire_date.strftime('%Y-%m-%d') if employee.hire_date else '-' }}</span></div>
+        <div class="info-row"><span class="label">근속기간</span><span class="value">{{ tenure }}</span></div>
+        <div class="info-row">
+            <span class="label">연도</span>
+            <div style="display:flex;align-items:center;gap:4px;">
+                <button class="btn-icon" onclick="changeDetailYear(-1)" style="width:24px;height:24px;font-size:10px;">&#9664;</button>
+                <input type="number" id="detailYear" class="form-input" value="{{ year }}"
+                       min="2020" max="2040" style="width:72px;padding:4px 6px;font-size:13px;text-align:center;"
+                       onchange="goDetailYear()" onkeydown="if(event.key==='Enter')goDetailYear()">
+                <button class="btn-icon" onclick="changeDetailYear(1)" style="width:24px;height:24px;font-size:10px;">&#9654;</button>
+            </div>
+        </div>
+        <div class="info-actions">
+            <button class="btn btn-primary btn-sm" onclick="openAccrualModal()">발생 등록</button>
+            <button class="btn btn-outline btn-sm" onclick="openUsageModal()">사용 등록</button>
+            <button class="btn btn-outline btn-sm" id="genBtn" onclick="autoGenerate()">자동 생성</button>
+        </div>
+    </div>
+
+    <!-- 우측: 12개월 그리드 -->
+    <div class="month-grid-card">
+        <div class="month-grid-title">{{ year }}년 월별 현황</div>
+
+        {% if carryover_total > 0 %}
+        <div class="carryover-card">
+            <div class="carry-days">+{{ '%.0f'|format(carryover_total) }}일</div>
+            <div class="carry-label">이전 연도 이월분 (FIFO 우선 차감)</div>
+        </div>
+        {% endif %}
+
+        {% if bulk_accrual %}
+        <div class="bulk-card" style="position:relative;">
+            <div class="bulk-days">{{ '%.0f'|format(bulk_accrual.days) }}일</div>
+            <div class="bulk-label">연차 일괄 발생 (잔여 {{ '%.0f'|format(bulk_accrual.remaining) }}일)</div>
+            <div style="position:absolute;top:8px;right:8px;display:flex;gap:4px;">
+                <button class="btn-icon" title="수정" style="width:22px;height:22px;font-size:10px;"
+                    onclick="openEditAccrual({{ bulk_accrual.id }}, {{ bulk_accrual.days }}, '{{ bulk_accrual.description }}')">&#9998;</button>
+                <button class="btn-icon danger" title="삭제" style="width:22px;height:22px;font-size:10px;"
+                    onclick="deleteAccrual({{ bulk_accrual.id }})">&#10005;</button>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="month-grid">
+            {% for m in range(1, 13) %}
+            {% set mg = monthly_grid[m] %}
+            <div class="month-cell {{ 'active' if mg.accrued else '' }}"
+                 onclick="toggleMonth({{ m }})" title="{{ m }}월 만근 토글">
+                <div class="month-label">{{ m }}월</div>
+                {% if mg.accrued %}
+                <div class="month-days">{{ '%.0f'|format(mg.days) }}일</div>
+                <div class="month-sub">잔여 {{ '%.0f'|format(mg.remaining) }}</div>
+                <span class="check-icon">&#10003;</span>
+                {% else %}
+                <div class="month-days">&mdash;</div>
+                <div class="month-sub">미발생</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- 이월 내역 테이블 -->
+{% if carryover_accruals %}
+<div class="table-wrap">
+    <div class="table-header">
+        <div class="table-title">이월 내역 <span class="carry-badge">전년도 이월</span></div>
+    </div>
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>출처 연도</th>
+                    <th>유형</th>
+                    <th>원래 발생</th>
+                    <th>이월 잔여</th>
+                    <th>비고</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in carryover_accruals %}
+                <tr class="carryover-row">
+                    <td class="mono">{{ a.year }}년 {% if a.month == 0 %}일괄{% else %}{{ a.month }}월{% endif %}</td>
+                    <td>
+                        {% if a.accrual_type == 'monthly' %}만근 월차
+                        {% elif a.accrual_type == 'annual_bulk' %}연차 일괄
+                        {% else %}수동{% endif %}
+                    </td>
+                    <td class="mono">{{ '%.1f'|format(a.days) }}일</td>
+                    <td class="mono" style="font-weight:600;color:#f59e0b;">{{ '%.1f'|format(a.remaining) }}일</td>
+                    <td style="font-size:12px;color:var(--text2);">{{ a.description }}</td>
+                </tr>
+                {% endfor %}
+                <tr class="carryover-row" style="font-weight:600;">
+                    <td colspan="3" style="text-align:right;">이월 합계</td>
+                    <td class="mono" style="color:#f59e0b;">{{ '%.1f'|format(carryover_total) }}일</td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- 발생 내역 테이블 -->
+<div class="table-wrap">
+    <div class="table-header">
+        <div class="table-title">발생 내역</div>
+    </div>
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>발생월</th>
+                    <th>유형</th>
+                    <th>발생일수</th>
+                    <th>잔여</th>
+                    <th>비고</th>
+                    <th style="width:80px;">관리</th>
+                </tr>
+            </thead>
+            <tbody id="accrualBody">
+                {% for a in accruals %}
+                <tr id="accrual-{{ a.id }}">
+                    <td class="mono">{% if a.month == 0 %}일괄{% else %}{{ a.month }}월{% endif %}</td>
+                    <td>
+                        {% if a.accrual_type == 'monthly' %}만근 월차
+                        {% elif a.accrual_type == 'annual_bulk' %}연차 일괄
+                        {% else %}수동{% endif %}
+                    </td>
+                    <td class="mono">{{ '%.1f'|format(a.days) }}일</td>
+                    <td class="mono" style="font-weight:600;">{{ '%.1f'|format(a.remaining) }}일</td>
+                    <td style="font-size:12px;color:var(--text2);">{{ a.description }}</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="btn-icon" title="수정"
+                                onclick="openEditAccrual({{ a.id }}, {{ a.days }}, '{{ a.description }}')">&#9998;</button>
+                            <button class="btn-icon danger" title="삭제"
+                                onclick="deleteAccrual({{ a.id }})">&#10005;</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not accruals %}
+                <tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text2);">
+                    발생 기록이 없습니다. '자동 생성' 또는 '발생 등록'을 사용하세요.
+                </td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 사용 내역 테이블 -->
+<div class="table-wrap">
+    <div class="table-header">
+        <div class="table-title">사용 내역</div>
+    </div>
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>사용일</th>
+                    <th>사용일수</th>
+                    <th>차감출처</th>
+                    <th>비고</th>
+                    <th style="width:50px;">관리</th>
+                </tr>
+            </thead>
+            <tbody id="usageBody">
+                {% for u in usages %}
+                <tr id="usage-{{ u.id }}">
+                    <td class="mono">{{ u.use_date.strftime('%Y-%m-%d') if u.use_date else '-' }}</td>
+                    <td class="mono">{{ '%.1f'|format(u.days) }}일</td>
+                    <td>
+                        {% if u.accrual %}
+                        <span class="fifo-source{% if u.accrual.year < year %} carryover{% endif %}">
+                            &#8592; {% if u.accrual.month == 0 %}{{ u.accrual.year }}년 일괄{% else %}{{ u.accrual.year }}년 {{ u.accrual.month }}월분{% endif %}
+                            {% if u.accrual.year < year %}(이월){% endif %}
+                        </span>
+                        {% else %}
+                        <span class="fifo-source overflow">초과사용</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:12px;color:var(--text2);">{{ u.description }}</td>
+                    <td>
+                        <button class="btn-icon danger" title="삭제"
+                            onclick="deleteUsage({{ u.id }})">&#10005;</button>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not usages %}
+                <tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text2);">
+                    사용 기록이 없습니다.
+                </td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 발생 등록/수정 모달 -->
+<div class="modal-overlay" id="accrualModal">
+    <div class="modal-card">
+        <div class="modal-title" id="accrualModalTitle">발생 등록</div>
+        <input type="hidden" id="accrualEditId" value="">
+        <div class="modal-field">
+            <label>발생 월</label>
+            <select id="accrualMonth">
+                <option value="0">일괄 발생 (연초)</option>
+                {% for m in range(1, 13) %}
+                <option value="{{ m }}">{{ m }}월</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="modal-field">
+            <label>발생 일수</label>
+            <input type="number" id="accrualDays" min="0.5" max="25" step="0.5" value="1">
+        </div>
+        <div class="modal-field">
+            <label>비고</label>
+            <input type="text" id="accrualDesc" placeholder="만근 월차, 보상 등">
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeAccrualModal()">취소</button>
+            <button class="btn btn-primary" id="accrualSaveBtn" onclick="saveAccrual()">저장</button>
+        </div>
+    </div>
+</div>
+
+<!-- 사용 등록 모달 -->
+<div class="modal-overlay" id="usageModal">
+    <div class="modal-card">
+        <div class="modal-title">사용 등록</div>
+        <div class="modal-field">
+            <label>사용일</label>
+            <input type="date" id="useDate">
+        </div>
+        <div class="modal-field">
+            <label>사용일수</label>
+            <select id="useDays">
+                <option value="1">1일 (종일)</option>
+                <option value="0.5">0.5일 (반차)</option>
+            </select>
+        </div>
+        <div class="modal-field">
+            <label>비고</label>
+            <input type="text" id="useDesc" placeholder="사유 (선택)">
+        </div>
+        <div class="modal-field">
+            <div class="hint">가장 오래된 발생분부터 자동 차감(FIFO)됩니다.</div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeUsageModal()">취소</button>
+            <button class="btn btn-primary" id="usageSaveBtn" onclick="saveUsage()">등록</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+const EMP_ID = {{ employee.id }};
+const YEAR = {{ year }};
+
+/* ── 연도 이동 ── */
+function goDetailYear() {
+    const y = document.getElementById('detailYear').value;
+    if (y >= 2020 && y <= 2040) location.href = '/admin/leave/' + EMP_ID + '/detail?year=' + y;
+}
+function changeDetailYear(delta) {
+    document.getElementById('detailYear').value = YEAR + delta;
+    goDetailYear();
+}
+
+/* ── 모달 제어 ── */
+function openAccrualModal() {
+    document.getElementById('accrualEditId').value = '';
+    document.getElementById('accrualModalTitle').textContent = '발생 등록';
+    document.getElementById('accrualMonth').value = '1';
+    document.getElementById('accrualMonth').disabled = false;
+    document.getElementById('accrualDays').value = '1';
+    document.getElementById('accrualDesc').value = '';
+    document.getElementById('accrualModal').classList.add('show');
+}
+function closeAccrualModal() { document.getElementById('accrualModal').classList.remove('show'); }
+
+function openEditAccrual(id, days, desc) {
+    document.getElementById('accrualEditId').value = id;
+    document.getElementById('accrualModalTitle').textContent = '발생 수정';
+    document.getElementById('accrualMonth').disabled = true;
+    document.getElementById('accrualDays').value = days;
+    document.getElementById('accrualDesc').value = desc;
+    document.getElementById('accrualModal').classList.add('show');
+}
+
+function openUsageModal() {
+    const today = new Date().toISOString().slice(0, 10);
+    document.getElementById('useDate').value = today;
+    document.getElementById('useDays').value = '1';
+    document.getElementById('useDesc').value = '';
+    document.getElementById('usageModal').classList.add('show');
+}
+function closeUsageModal() { document.getElementById('usageModal').classList.remove('show'); }
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { closeAccrualModal(); closeUsageModal(); }
+});
+document.getElementById('accrualModal').addEventListener('click', function(e) { if (e.target === this) closeAccrualModal(); });
+document.getElementById('usageModal').addEventListener('click', function(e) { if (e.target === this) closeUsageModal(); });
+
+/* ── 발생 저장 (등록/수정) ── */
+async function saveAccrual() {
+    const editId = document.getElementById('accrualEditId').value;
+    const btn = document.getElementById('accrualSaveBtn');
+    setButtonLoading(btn, true);
+    try {
+        if (editId) {
+            const res = await fetch('/api/leave/accruals/' + editId, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': window.csrfToken },
+                body: JSON.stringify({
+                    days: parseFloat(document.getElementById('accrualDays').value),
+                    description: document.getElementById('accrualDesc').value,
+                })
+            });
+            const data = await res.json();
+            if (data.success) { showToast(data.message); closeAccrualModal(); location.reload(); }
+            else showToast(data.error || '수정 실패');
+        } else {
+            const res = await fetch('/api/leave/accruals', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': window.csrfToken },
+                body: JSON.stringify({
+                    employee_id: EMP_ID,
+                    year: YEAR,
+                    month: parseInt(document.getElementById('accrualMonth').value),
+                    days: parseFloat(document.getElementById('accrualDays').value),
+                    description: document.getElementById('accrualDesc').value,
+                    accrual_type: document.getElementById('accrualMonth').value === '0' ? 'annual_bulk' : 'monthly',
+                })
+            });
+            const data = await res.json();
+            if (data.success) { showToast(data.message); closeAccrualModal(); location.reload(); }
+            else showToast(data.error || '등록 실패');
+        }
+    } finally { setButtonLoading(btn, false); }
+}
+
+/* ── 발생 삭제 ── */
+async function deleteAccrual(id) {
+    const ok = await showConfirm('발생 기록을 삭제하시겠습니까? 연결된 사용 기록의 출처가 해제됩니다.'); if (!ok) return;
+    const res = await fetch('/api/leave/accruals/' + id, {
+        method: 'DELETE',
+        headers: { 'X-CSRFToken': window.csrfToken }
+    });
+    const data = await res.json();
+    if (data.success) { showToast(data.message); location.reload(); }
+    else showToast(data.error || '삭제 실패');
+}
+
+/* ── 사용 등록 ── */
+async function saveUsage() {
+    const btn = document.getElementById('usageSaveBtn');
+    const useDate = document.getElementById('useDate').value;
+    if (!useDate) { showToast('사용일을 선택하세요.'); return; }
+    setButtonLoading(btn, true);
+    try {
+        const res = await fetch('/api/leave/usages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': window.csrfToken },
+            body: JSON.stringify({
+                employee_id: EMP_ID,
+                use_date: useDate,
+                days: parseFloat(document.getElementById('useDays').value),
+                description: document.getElementById('useDesc').value,
+            })
+        });
+        const data = await res.json();
+        if (data.success) { showToast(data.message); closeUsageModal(); location.reload(); }
+        else showToast(data.error || '등록 실패');
+    } finally { setButtonLoading(btn, false); }
+}
+
+/* ── 사용 삭제 ── */
+async function deleteUsage(id) {
+    const ok2 = await showConfirm('사용 기록을 삭제하시겠습니까? 발생분 잔여가 복원됩니다.'); if (!ok2) return;
+    const res = await fetch('/api/leave/usages/' + id, {
+        method: 'DELETE',
+        headers: { 'X-CSRFToken': window.csrfToken }
+    });
+    const data = await res.json();
+    if (data.success) { showToast(data.message); location.reload(); }
+    else showToast(data.error || '삭제 실패');
+}
+
+/* ── 월 토글 ── */
+async function toggleMonth(m) {
+    const res = await fetch('/api/leave/accruals/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': window.csrfToken },
+        body: JSON.stringify({ employee_id: EMP_ID, year: YEAR, month: m })
+    });
+    const data = await res.json();
+    if (data.success) {
+        showToast(m + '월 ' + (data.action === 'on' ? '발생 등록' : '발생 해제'));
+        location.reload();
+    } else {
+        showToast(data.error || '변경 실패');
+    }
+}
+
+/* ── 연차관리에 적용 ── */
+async function applyToBalance() {
+    const btn = document.getElementById('applyBtn');
+    setButtonLoading(btn, true);
+    try {
+        const res = await fetch('/api/leave/' + EMP_ID + '/apply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': window.csrfToken },
+            body: JSON.stringify({ year: YEAR })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message);
+        } else {
+            showToast(data.error || '적용 실패');
+        }
+    } finally { setButtonLoading(btn, false); }
+}
+
+/* ── 자동 생성 ── */
+async function autoGenerate() {
+    const btn = document.getElementById('genBtn');
+    setButtonLoading(btn, true);
+    try {
+        const res = await fetch('/api/leave/' + EMP_ID + '/generate-accruals', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': window.csrfToken },
+            body: JSON.stringify({ year: YEAR })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message);
+            if (data.created > 0) setTimeout(() => location.reload(), 500);
+        } else showToast(data.error || '생성 실패');
+    } finally { setButtonLoading(btn, false); }
+}
+{% endblock %}

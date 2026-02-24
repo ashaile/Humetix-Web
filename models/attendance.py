@@ -28,6 +28,7 @@ class AttendanceRecord(db.Model):
     overtime_hours = db.Column(db.Float, nullable=False, default=0.0)
     night_hours = db.Column(db.Float, nullable=False, default=0.0)
     holiday_work_hours = db.Column(db.Float, nullable=False, default=0.0)
+    source = db.Column(db.String(20), nullable=False, default="employee")
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
@@ -49,6 +50,7 @@ class AttendanceRecord(db.Model):
             "overtime_hours": self.overtime_hours,
             "night_hours": self.night_hours,
             "holiday_work_hours": self.holiday_work_hours,
+            "source": self.source or "employee",
         }
 
 

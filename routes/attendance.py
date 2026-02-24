@@ -16,7 +16,8 @@ from flask import (
 )
 from sqlalchemy.exc import IntegrityError, OperationalError
 
-from models import AttendanceRecord, Employee, OperationCalendarDay, db
+from extensions import limiter
+from models import AttendanceRecord, Employee, OperationCalendarDay, Site, db
 from routes.utils import require_admin
 from services.attendance_service import (
     ALLOWED_WORK_TYPES,
@@ -70,6 +71,7 @@ def _db_not_ready_page():
 
 
 @attendance_bp.route("/api/attendance", methods=["POST"])
+@limiter.limit("10 per minute")
 def create_attendance():
     data = request.get_json(silent=True)
     if not data:
@@ -114,8 +116,12 @@ def create_attendance():
         logger.error("Attendance duplicate-check query failed: %s", exc)
         return _db_not_ready_json()
 
+    # 우선순위: admin > employee > excel
+    # 관리자/직원 기록이 있으면 거부, 엑셀 기록이면 직원 입력으로 덮어쓰기
     if exists:
-        return jsonify({"error": "같은 날짜의 근태 기록이 이미 존재합니다."}), 409
+        if exists.source in ("admin", "employee"):
+            return jsonify({"error": "같은 날짜의 근태 기록이 이미 존재합니다."}), 409
+        # exists.source == "excel" → 직원 입력이 우선이므로 덮어씀
 
     clock_in = None
     clock_out = None
@@ -143,6 +149,27 @@ def create_attendance():
             calendar_day_type=day_type,
         )
 
+    if exists and exists.source == "excel":
+        # 엑셀 기록을 직원 입력으로 덮어씀
+        exists.birth_date = employee.birth_date
+        exists.emp_name = employee.name
+        exists.dept = str(data.get("dept", "")).strip()
+        exists.clock_in = clock_in
+        exists.clock_out = clock_out
+        exists.work_type = work_type
+        exists.total_work_hours = total_hours
+        exists.overtime_hours = ot_hours
+        exists.night_hours = night_hours
+        exists.holiday_work_hours = holiday_hours
+        exists.source = "employee"
+        try:
+            db.session.commit()
+            return jsonify({"success": True, "record": exists.to_dict()}), 200
+        except Exception as exc:
+            db.session.rollback()
+            logger.error("Attendance overwrite error: %s", exc)
+            return jsonify({"error": "서버 오류가 발생했습니다."}), 500
+
     record = AttendanceRecord(
         employee_id=employee.id,
         birth_date=employee.birth_date,
@@ -156,6 +183,7 @@ def create_attendance():
         overtime_hours=ot_hours,
         night_hours=night_hours,
         holiday_work_hours=holiday_hours,
+        source="employee",
     )
 
     try:
@@ -172,6 +200,7 @@ def create_attendance():
 
 
 @attendance_bp.route("/api/attendance", methods=["GET"])
+@require_admin
 def list_attendance():
     query = AttendanceRecord.query
 
@@ -388,6 +417,18 @@ def admin_attendance():
 
     today = date.today()
 
+    # 고객사 매핑 (employee_id → site_name)
+    emp_ids = list({r.employee_id for r in pagination.items})
+    site_map = {}
+    if emp_ids:
+        rows = (
+            db.session.query(Employee.id, Site.name)
+            .outerjoin(Site, Employee.site_id == Site.id)
+            .filter(Employee.id.in_(emp_ids))
+            .all()
+        )
+        site_map = {eid: sname or "-" for eid, sname in rows}
+
     return render_template(
         "admin_attendance.html",
         records=pagination.items,
@@ -398,6 +439,7 @@ def admin_attendance():
         work_type=work_type,
         stats=stats,
         today=today,
+        site_map=site_map,
     )
 
 
@@ -450,6 +492,7 @@ def attendance_excel():
         "잔업(h)",
         "야간(h)",
         "휴일(h)",
+        "출처",
     ]
     bold = Font(bold=True)
     for col, header in enumerate(headers, 1):
@@ -481,6 +524,8 @@ def attendance_excel():
         ws.cell(row=i, column=9, value=rec.overtime_hours)
         ws.cell(row=i, column=10, value=rec.night_hours)
         ws.cell(row=i, column=11, value=rec.holiday_work_hours or 0)
+        source_labels = {"employee": "직원", "excel": "엑셀", "admin": "관리자"}
+        ws.cell(row=i, column=12, value=source_labels.get(rec.source, rec.source or "직원"))
 
     buf = BytesIO()
     wb.save(buf)
@@ -491,6 +536,122 @@ def attendance_excel():
         download_name=f"근태기록_{start or 'all'}_{end or 'all'}.xlsx",
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
+
+
+@attendance_bp.route("/api/attendance/admin", methods=["POST"])
+@require_admin
+def admin_create_attendance():
+    """관리자가 수동으로 근태 기록을 추가한다.
+
+    충돌 정책:
+    - 같은 직원+날짜에 이미 기록이 있으면 덮어쓰기(overwrite) 옵션 지원.
+    - overwrite=true 이면 기존 기록을 갱신, false(기본)이면 409 반환.
+    """
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"error": "JSON body required"}), 400
+
+    emp_name = str(data.get("emp_name", "")).strip()
+    birth_date = str(data.get("birth_date", "")).strip()
+    if not emp_name or not birth_date:
+        return jsonify({"error": "이름과 생년월일은 필수입니다."}), 400
+    if not re.fullmatch(r"\d{6}", birth_date):
+        return jsonify({"error": "생년월일은 YYMMDD 6자리 숫자여야 합니다."}), 400
+
+    employee = Employee.query.filter_by(
+        name=emp_name, birth_date=birth_date, is_active=True
+    ).first()
+    if not employee:
+        return jsonify({"error": "등록된 재직 직원을 찾을 수 없습니다."}), 404
+
+    try:
+        work_date = _parse_date(str(data.get("work_date", "")).strip())
+    except ValueError:
+        return jsonify({"error": "날짜 형식이 올바르지 않습니다. (YYYY-MM-DD)"}), 400
+
+    work_type = str(data.get("work_type", "normal")).strip()
+    if work_type not in ALLOWED_WORK_TYPES:
+        return jsonify({"error": f"잘못된 근무 유형: {work_type}"}), 400
+
+    clock_in = str(data.get("clock_in", "")).strip() or None
+    clock_out = str(data.get("clock_out", "")).strip() or None
+
+    total_hours = 0.0
+    ot_hours = 0.0
+    night_h = 0.0
+    holiday_h = 0.0
+
+    if work_type in TIME_REQUIRED_TYPES:
+        if not (_validate_hhmm(clock_in or "") and _validate_hhmm(clock_out or "")):
+            return jsonify({"error": "출퇴근 시간을 정확히 입력해주세요. (HH:MM)"}), 400
+        cfg = _get_cfg()
+        try:
+            day_type = _effective_day_type(work_date, cfg)
+        except OperationalError:
+            return _db_not_ready_json()
+        total_hours, ot_hours, night_h, holiday_h = calc_work_hours(
+            clock_in, clock_out, cfg,
+            work_date=work_date,
+            calendar_day_type=day_type,
+        )
+
+    # 충돌 확인
+    existing = AttendanceRecord.query.filter_by(
+        employee_id=employee.id, work_date=work_date
+    ).first()
+
+    overwrite = str(data.get("overwrite", "")).lower() in ("true", "1", "yes")
+
+    if existing and not overwrite:
+        source_label = {"employee": "직원 입력", "excel": "엑셀 업로드", "admin": "관리자 입력"}
+        return jsonify({
+            "error": "같은 날짜의 근태 기록이 이미 존재합니다.",
+            "conflict": True,
+            "existing_source": source_label.get(existing.source, existing.source),
+            "existing_id": existing.id,
+        }), 409
+
+    try:
+        if existing and overwrite:
+            existing.emp_name = employee.name
+            existing.birth_date = employee.birth_date
+            existing.dept = str(data.get("dept", existing.dept or "")).strip()
+            existing.clock_in = clock_in
+            existing.clock_out = clock_out
+            existing.work_type = work_type
+            existing.total_work_hours = total_hours
+            existing.overtime_hours = ot_hours
+            existing.night_hours = night_h
+            existing.holiday_work_hours = holiday_h
+            existing.source = "admin"
+            db.session.commit()
+            return jsonify({"success": True, "record": existing.to_dict(), "overwritten": True})
+        else:
+            record = AttendanceRecord(
+                employee_id=employee.id,
+                birth_date=employee.birth_date,
+                emp_name=employee.name,
+                dept=str(data.get("dept", "")).strip(),
+                work_date=work_date,
+                clock_in=clock_in,
+                clock_out=clock_out,
+                work_type=work_type,
+                total_work_hours=total_hours,
+                overtime_hours=ot_hours,
+                night_hours=night_h,
+                holiday_work_hours=holiday_h,
+                source="admin",
+            )
+            db.session.add(record)
+            db.session.commit()
+            return jsonify({"success": True, "record": record.to_dict()}), 201
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"error": "중복 근태 기록입니다."}), 409
+    except Exception as exc:
+        db.session.rollback()
+        logger.error("Admin attendance create error: %s", exc)
+        return jsonify({"error": "서버 오류가 발생했습니다."}), 500
 
 
 @attendance_bp.route("/api/attendance/<int:record_id>", methods=["PUT"])
@@ -632,6 +793,10 @@ def bulk_delete_attendance():
         emp_name = filt.get("emp_name", "")
         work_type = filt.get("work_type", "")
 
+        # 최소 하나의 필터 조건 필수 (전체 삭제 방지)
+        if not any([start, end, emp_name, work_type]):
+            return jsonify({"error": "최소 하나의 필터 조건을 지정해야 합니다."}), 400
+
         if start:
             try:
                 query = query.filter(AttendanceRecord.work_date >= _parse_date(start))
@@ -654,7 +819,7 @@ def bulk_delete_attendance():
     except Exception as exc:
         db.session.rollback()
         logger.error("Bulk delete error: %s", exc)
-        return jsonify({"error": f"삭제 실패: {exc}"}), 500
+        return jsonify({"error": "삭제 처리 중 오류가 발생했습니다."}), 500
 
 
 # ── 근태 엑셀 업로드 ──────────────────────────────────

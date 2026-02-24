@@ -1,8 +1,8 @@
 {% extends "base_admin.html" %}
 
-{% block admin_title %}HUMETIX - 근태 엑셀 업로드{% endblock %}
-{% block page_title %}근태 엑셀 업로드{% endblock %}
-{% block page_desc %}고객사에서 받은 근태 엑셀 파일을 업로드하여 근태 데이터를 일괄 등록합니다.{% endblock %}
+{% block admin_title %}HUMETIX - 근무현황 엑셀 업로드{% endblock %}
+{% block page_title %}근무현황 엑셀 업로드{% endblock %}
+{% block page_desc %}고객사에서 받은 근무현황 엑셀 파일을 업로드하여 근무 데이터를 일괄 등록합니다.{% endblock %}
 
 {% block page_css %}
 .upload-card {
@@ -130,7 +130,7 @@
 
 <!-- 업로드 카드 -->
 <div class="upload-card">
-    <h3>&#128196; 근태 엑셀 파일 업로드</h3>
+    <h3>&#128196; 근무현황 엑셀 파일 업로드</h3>
     <form method="POST" action="{{ url_for('attendance.import_attendance') }}" enctype="multipart/form-data" class="upload-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="file-input-wrap">
@@ -142,10 +142,10 @@
 
     <div class="help-text">
         <strong>사용 방법:</strong>
-        1) 고객사에서 받은 근태 엑셀 파일을 선택합니다.<br>
+        1) 고객사에서 받은 근무현황 엑셀 파일을 선택합니다.<br>
         2) <strong>미리보기</strong>를 클릭하면 파싱 결과를 먼저 확인할 수 있습니다.<br>
         3) 결과 확인 후 <strong>업로드 실행</strong>을 클릭하면 실제로 DB에 저장됩니다.<br>
-        &#8226; 이미 등록된 동일 날짜/직원 근태는 자동으로 갱신됩니다.<br>
+        &#8226; 이미 등록된 동일 날짜/직원 기록은 자동으로 갱신됩니다.<br>
         &#8226; 미등록 직원은 자동 등록됩니다 (생년월일은 직원관리에서 수정 필요).
     </div>
 </div>
@@ -248,7 +248,7 @@
 
     {% if executed is defined and executed and not result.errors %}
     <div class="action-bar">
-        <a href="{{ url_for('attendance.admin_attendance') }}" class="btn-upload btn-preview">근태 관리로 이동</a>
+        <a href="{{ url_for('attendance.admin_attendance') }}" class="btn-upload btn-preview">근무현황으로 이동</a>
         <a href="{{ url_for('attendance.import_attendance') }}" class="btn-upload btn-back">추가 업로드</a>
     </div>
     {% endif %}

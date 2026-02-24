@@ -28,10 +28,24 @@ instance/
 __pycache__/
 *.pyc
 *.pyo
+venv/
+.venv/
+env/
+.pytest_cache/
+.coverage
+htmlcov/
 
 # OS
 .DS_Store
 Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Test/debug files
+test_*.pdf
+*.pdf.tmp
 
 # Frontend dependency cache
 node_modules/

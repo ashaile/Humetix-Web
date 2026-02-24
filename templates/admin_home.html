@@ -71,7 +71,7 @@
 .stat-value.accent { color: var(--accent); }
 .stat-value.success { color: var(--success); }
 
-/* ── 현장별 인원 ── */
+/* ── 고객사별 인원 ── */
 .site-section { margin-bottom: 28px; }
 .site-grid {
     display: grid;
@@ -190,7 +190,7 @@
             </div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">근태 기록</div>
+            <div class="stat-label">근무 기록</div>
             <div class="stat-main">
                 <div class="stat-value">{{ snapshot.att_records }}</div>
                 <div class="stat-unit">건</div>
@@ -227,10 +227,10 @@
     </div>
 </div>
 
-<!-- 현장별 인원 -->
+<!-- 고객사별 인원 -->
 {% if site_stats or unassigned > 0 %}
 <div class="site-section">
-    <h3 class="section-title">&#127959; 현장별 인원</h3>
+    <h3 class="section-title">&#127959; 고객사별 인원</h3>
     <div class="site-grid">
         {% for sname, cnt in site_stats %}
         <div class="site-chip">

@@ -1,0 +1,488 @@
+{% extends "base_admin.html" %}
+
+{% block admin_title %}HUMETIX - 계약 상세{% endblock %}
+{% block page_title %}계약 상세{% endblock %}
+{% block page_desc %}계약 정보, 참여자 현황, 감사 로그를 확인합니다.{% endblock %}
+
+{% block page_css %}
+/* ── 뒤로가기 링크 ── */
+.back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 14px; font-weight: 500; color: var(--text2);
+    text-decoration: none; margin-bottom: 16px; transition: color .15s;
+}
+.back-link:hover { color: var(--accent); }
+.back-link .arrow { font-size: 18px; }
+
+/* ── 레이아웃: 좌측 정보 + 우측 참여자 ── */
+.detail-layout {
+    display: grid; grid-template-columns: 340px 1fr;
+    gap: 24px; margin-bottom: 24px;
+}
+
+/* ── 공통 카드 ── */
+.detail-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+}
+.detail-card-title {
+    font-size: 15px; font-weight: 700; margin-bottom: 16px;
+    padding-bottom: 12px; border-bottom: 1px solid var(--border);
+}
+
+/* ── 정보 행 ── */
+.detail-info-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px;
+}
+.detail-info-row:last-child { border-bottom: none; }
+.detail-info-label { color: var(--text2); font-weight: 500; min-width: 80px; }
+.detail-info-value { font-weight: 500; text-align: right; word-break: break-all; }
+
+/* ── 상태 배지 ── */
+.badge-draft { background: var(--bg3); color: var(--text2); }
+.badge-pending { background: #fef3c7; color: #b45309; }
+.badge-in_progress { background: #dbeafe; color: #1d4ed8; }
+.badge-completed { background: #dcfce7; color: #16a34a; }
+.badge-cancelled { background: var(--bg3); color: var(--text2); text-decoration: line-through; }
+.badge-expired { background: #fee2e2; color: var(--danger); }
+.badge-scheduled { background: #e0e7ff; color: #4338ca; }
+
+/* ── 액션 버튼 그룹 ── */
+.detail-actions {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);
+}
+
+/* ── 참여자 카드 ── */
+.participant-card {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px; margin-bottom: 12px;
+    transition: box-shadow .2s;
+}
+.participant-card:last-child { margin-bottom: 0; }
+.participant-card:hover { box-shadow: var(--shadow); }
+
+.participant-header {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+}
+.role-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+.role-dot.employer { background: var(--accent); }
+.role-dot.worker { background: var(--night); }
+.role-dot.other { background: var(--success); }
+
+.participant-name { font-weight: 600; font-size: 14px; }
+.participant-role {
+    font-size: 11px; color: var(--text2); background: var(--bg3);
+    padding: 2px 8px; border-radius: 10px;
+}
+.participant-status {
+    margin-left: auto; font-size: 12px; font-weight: 600;
+}
+.participant-status.signed { color: var(--success); }
+.participant-status.pending-sign { color: #b45309; }
+
+.participant-meta {
+    font-size: 12px; color: var(--text2); margin-bottom: 8px;
+}
+.participant-meta span { margin-right: 12px; }
+
+/* ── 서명 링크 영역 ── */
+.sign-link-area {
+    display: flex; align-items: center; gap: 6px;
+    margin-top: 8px; padding: 8px; background: var(--bg3);
+    border-radius: 6px; font-size: 12px;
+}
+.sign-link-area input {
+    flex: 1; font-size: 12px; padding: 4px 8px;
+    border: 1px solid var(--border); border-radius: 4px;
+    background: var(--bg2); color: var(--text); min-width: 0;
+}
+.sign-link-area .btn { white-space: nowrap; }
+
+/* ── 필드 값 미리보기 ── */
+.field-values-preview {
+    margin-top: 10px; padding: 10px; background: var(--bg3);
+    border-radius: 6px; font-size: 12px;
+}
+.field-values-preview .fv-title {
+    font-weight: 600; font-size: 11px; color: var(--text2);
+    text-transform: uppercase; letter-spacing: .5px;
+    margin-bottom: 6px;
+}
+.field-value-row {
+    display: flex; justify-content: space-between;
+    padding: 3px 0; border-bottom: 1px solid rgba(0,0,0,.04);
+    font-size: 12px;
+}
+.field-value-row:last-child { border-bottom: none; }
+.fv-label { color: var(--text2); }
+.fv-val { font-weight: 500; max-width: 60%; text-align: right; word-break: break-all; }
+
+/* ── 타임라인 (감사 로그) ── */
+.timeline-section {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+}
+.timeline-section-title {
+    font-size: 15px; font-weight: 700; margin-bottom: 16px;
+    padding-bottom: 12px; border-bottom: 1px solid var(--border);
+}
+.timeline { position: relative; padding-left: 24px; }
+.timeline-item {
+    position: relative; padding-bottom: 16px; padding-left: 16px;
+    border-left: 2px solid var(--border); font-size: 13px;
+}
+.timeline-item:last-child { border-left: 2px solid transparent; padding-bottom: 0; }
+.timeline-dot {
+    position: absolute; left: -7px; top: 4px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--accent); border: 2px solid var(--bg2);
+}
+/* 이벤트별 타임라인 도트 색상 */
+.timeline-dot.created { background: var(--night); }
+.timeline-dot.signed { background: var(--success); }
+.timeline-dot.completed { background: #16a34a; }
+.timeline-dot.cancelled { background: var(--danger); }
+.timeline-dot.token { background: #b45309; }
+.timeline-dot.duplicated { background: var(--accent); }
+
+.timeline-time { font-size: 11px; color: var(--text2); font-family: 'JetBrains Mono', monospace; }
+.timeline-action { font-weight: 600; margin-top: 2px; }
+.timeline-detail { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.timeline-actor { font-size: 12px; color: var(--text2); }
+.timeline-ip { font-size: 11px; color: var(--text2); font-family: 'JetBrains Mono', monospace; }
+
+/* ── 빈 상태 ── */
+.empty-state {
+    text-align: center; padding: 24px; color: var(--text2); font-size: 13px;
+}
+
+/* ── 반응형 ── */
+@media (max-width: 900px) {
+    .detail-layout {
+        grid-template-columns: 1fr;
+    }
+}
+@media (max-width: 480px) {
+    .detail-actions { flex-direction: column; }
+    .sign-link-area { flex-direction: column; align-items: stretch; }
+    .sign-link-area .btn { justify-content: center; }
+}
+{% endblock %}
+
+{% block content %}
+{# ── 뒤로가기 ── #}
+<a href="/admin/contracts" class="back-link">
+    <span class="arrow">&#8592;</span> 계약 목록으로 돌아가기
+</a>
+
+{# ── 상단 2단 레이아웃: 정보 + 참여자 ── #}
+<div class="detail-layout">
+    {# ── 좌측: 계약 정보 카드 ── #}
+    <div class="detail-card">
+        <div class="detail-card-title">계약 정보</div>
+
+        <div class="detail-info-row">
+            <span class="detail-info-label">제목</span>
+            <span class="detail-info-value">{{ contract.title }}</span>
+        </div>
+        <div class="detail-info-row">
+            <span class="detail-info-label">서식</span>
+            <span class="detail-info-value">{{ contract.template.name if contract.template else '-' }}</span>
+        </div>
+        <div class="detail-info-row">
+            <span class="detail-info-label">직원</span>
+            <span class="detail-info-value">{{ contract.employee.name if contract.employee else '-' }}</span>
+        </div>
+        <div class="detail-info-row">
+            <span class="detail-info-label">상태</span>
+            <span class="detail-info-value">
+                {% if contract.status == 'draft' %}
+                <span class="badge badge-draft">초안</span>
+                {% elif contract.status == 'scheduled' %}
+                <span class="badge badge-scheduled">예약</span>
+                {% elif contract.status == 'pending' %}
+                <span class="badge badge-pending">대기</span>
+                {% elif contract.status == 'in_progress' %}
+                <span class="badge badge-in_progress">서명중</span>
+                {% elif contract.status == 'completed' %}
+                <span class="badge badge-completed">완료</span>
+                {% elif contract.status == 'cancelled' %}
+                <span class="badge badge-cancelled">취소</span>
+                {% endif %}
+            </span>
+        </div>
+        {% if contract.scheduled_at %}
+        <div class="detail-info-row">
+            <span class="detail-info-label">예약발송</span>
+            <span class="detail-info-value mono" style="color:#4338ca;">{{ contract.scheduled_at.strftime('%Y-%m-%d %H:%M') }}</span>
+        </div>
+        {% endif %}
+        <div class="detail-info-row">
+            <span class="detail-info-label">만료일</span>
+            <span class="detail-info-value">
+                {% if contract.expires_at %}
+                    {{ contract.expires_at.strftime('%Y-%m-%d %H:%M') }}
+                    {% if contract.is_expired %}
+                    <span class="badge badge-expired" style="margin-left:4px;">만료</span>
+                    {% endif %}
+                {% else %}
+                    <span style="color:var(--text2);">설정 안됨</span>
+                {% endif %}
+            </span>
+        </div>
+        <div class="detail-info-row">
+            <span class="detail-info-label">생성일</span>
+            <span class="detail-info-value mono">{{ contract.created_at.strftime('%Y-%m-%d %H:%M') if contract.created_at else '-' }}</span>
+        </div>
+        {% if contract.completed_at %}
+        <div class="detail-info-row">
+            <span class="detail-info-label">완료일</span>
+            <span class="detail-info-value mono">{{ contract.completed_at.strftime('%Y-%m-%d %H:%M') }}</span>
+        </div>
+        {% endif %}
+        <div class="detail-info-row">
+            <span class="detail-info-label">참여자</span>
+            <span class="detail-info-value">{{ contract.participants|length }}명</span>
+        </div>
+
+        {# ── 액션 버튼 ── #}
+        <div class="detail-actions">
+            <a href="/admin/contracts/{{ contract.id }}/view-pdf" target="_blank" class="btn btn-outline btn-sm">문서열람</a>
+            {% if contract.status == 'completed' and contract.final_pdf_path %}
+            <a href="/admin/contracts/{{ contract.id }}/pdf" class="btn btn-success btn-sm">PDF 다운로드</a>
+            {% endif %}
+            <button class="btn btn-outline btn-sm" onclick="duplicateContract({{ contract.id }})">복제</button>
+            {% if contract.status not in ['cancelled', 'completed'] %}
+            <button class="btn btn-danger btn-sm" onclick="cancelContract({{ contract.id }}, '{{ contract.title|replace("'", "\\'") }}')">취소</button>
+            {% endif %}
+        </div>
+    </div>
+
+    {# ── 우측: 참여자 현황 ── #}
+    <div>
+        <div class="detail-card">
+            <div class="detail-card-title">참여자 현황 ({{ contract.participants|length }}명)</div>
+
+            {% if contract.participants %}
+                {% for p in contract.participants %}
+                <div class="participant-card">
+                    <div class="participant-header">
+                        <span class="role-dot {{ 'employer' if p.role_key == 'employer' else ('worker' if p.role_key == 'worker' else 'other') }}"></span>
+                        <span class="participant-name">{{ p.name }}</span>
+                        <span class="participant-role">{{ '사용자' if p.role_key == 'employer' else ('근로자' if p.role_key == 'worker' else p.role_key) }}</span>
+                        {% if p.status == 'signed' %}
+                        <span class="participant-status signed">&#10003; 서명완료</span>
+                        {% else %}
+                        <span class="participant-status pending-sign">&#9711; 서명대기</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="participant-meta">
+                        {% if p.phone %}
+                        <span>&#128222; {{ p.phone }}</span>
+                        {% endif %}
+                        {% if p.signed_at %}
+                        <span>&#128197; {{ p.signed_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                        {% endif %}
+                        {% if p.sign_ip %}
+                        <span>IP: {{ p.sign_ip }}</span>
+                        {% endif %}
+                    </div>
+
+                    {# 미서명 참여자: 서명 링크 + 토큰 재발급 #}
+                    {% if p.status != 'signed' and contract.status not in ['cancelled', 'completed'] %}
+                    <div class="sign-link-area">
+                        <input type="text" value="{{ request.host_url }}sign/{{ p.sign_token }}" readonly onclick="this.select()" id="signLink-{{ p.id }}">
+                        <button class="btn btn-outline btn-sm" style="padding:4px 10px;font-size:12px;" onclick="copyLink(this)">복사</button>
+                        <button class="btn btn-outline btn-sm" style="padding:4px 10px;font-size:12px;" onclick="regenerateToken({{ contract.id }}, {{ p.id }}, this)" title="새 서명 링크 발급">토큰 재발급</button>
+                        {% if p.phone %}
+                        <button class="btn btn-primary btn-sm" style="padding:4px 10px;font-size:12px;" onclick="resendSms({{ contract.id }}, {{ p.id }}, this)">문자 재전송</button>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    {# 서명 완료 참여자: 필드 값 미리보기 #}
+                    {% if p.status == 'signed' and p._enriched_field_values %}
+                    <div class="field-values-preview">
+                        <div class="fv-title">입력 필드 값</div>
+                        {% for fv in p._enriched_field_values %}
+                        {% if fv.value %}
+                        <div class="field-value-row">
+                            <span class="fv-label">{{ fv.label }}</span>
+                            <span class="fv-val">
+                                {% if fv.type in ('signature', 'stamp') %}
+                                <em style="color:var(--success);">[{{ '서명' if fv.type == 'signature' else '도장' }} 완료]</em>
+                                {% elif fv.type == 'image' %}
+                                <em style="color:var(--night);">[이미지]</em>
+                                {% elif fv.type == 'checkbox' %}
+                                {{ '동의' if fv.value == 'Y' else '-' }}
+                                {% else %}
+                                {{ fv.value }}
+                                {% endif %}
+                            </span>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+            <div class="empty-state">등록된 참여자가 없습니다.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{# ── 감사 로그 타임라인 ── #}
+<div class="timeline-section">
+    <div class="timeline-section-title">감사 로그</div>
+
+    {% if audit_logs %}
+    <div class="timeline">
+        {% for log in audit_logs %}
+        <div class="timeline-item">
+            {# 이벤트별 도트 색상 결정 #}
+            {% if '생성' in log.action %}
+            <div class="timeline-dot created"></div>
+            {% elif '서명' in log.action or '완료' in log.action %}
+            <div class="timeline-dot signed"></div>
+            {% elif '취소' in log.action %}
+            <div class="timeline-dot cancelled"></div>
+            {% elif '토큰' in log.action %}
+            <div class="timeline-dot token"></div>
+            {% elif '복제' in log.action %}
+            <div class="timeline-dot duplicated"></div>
+            {% else %}
+            <div class="timeline-dot"></div>
+            {% endif %}
+
+            <div class="timeline-time">{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') if log.created_at else '' }}</div>
+            <div class="timeline-action">{{ log.action }}</div>
+            {% if log.detail %}
+            <div class="timeline-detail">{{ log.detail }}</div>
+            {% endif %}
+            <div class="timeline-actor">
+                {% if log.actor %}
+                실행: {{ log.actor }}
+                {% endif %}
+                {% if log.ip_address %}
+                <span class="timeline-ip">({{ log.ip_address }})</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">기록된 감사 로그가 없습니다.</div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block page_js %}
+const csrfToken = window.csrfToken;
+const headers = { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken };
+
+/* ── SMS 재전송 ── */
+function resendSms(cid, pid, btn) {
+    showConfirm('이 참여자에게 서명 링크 SMS를 재전송하시겠습니까?', async () => {
+        setButtonLoading(btn, true);
+        try {
+            const res = await fetch('/api/contracts/' + cid + '/participants/' + pid + '/resend-sms', {
+                method: 'POST', headers: headers
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast(data.message || 'SMS가 재전송되었습니다.');
+            } else {
+                showToast(data.error || 'SMS 재전송 실패');
+            }
+        } catch(e) {
+            showToast('오류가 발생했습니다.');
+        } finally {
+            setButtonLoading(btn, false);
+        }
+    });
+}
+
+/* ── Clipboard API 링크 복사 ── */
+async function copyLink(btn) {
+    const input = btn.parentElement.querySelector('input');
+    try {
+        await navigator.clipboard.writeText(input.value);
+        btn.textContent = '복사됨!';
+        setTimeout(() => { btn.textContent = '복사'; }, 1500);
+    } catch(e) {
+        /* Clipboard API 미지원 시 fallback */
+        input.select();
+        document.execCommand('copy');
+    }
+    showToast('링크가 복사되었습니다.');
+}
+
+/* ── 서명 토큰 재발급 ── */
+async function regenerateToken(cid, pid, btn) {
+    showConfirm('이 참여자의 서명 토큰을 재발급하시겠습니까?\n기존 링크는 무효화됩니다.', async () => {
+        setButtonLoading(btn, true);
+        try {
+            const res = await fetch('/api/contracts/' + cid + '/participants/' + pid + '/regenerate-token', {
+                method: 'POST', headers: headers
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast('토큰이 재발급되었습니다.');
+                /* 링크 입력창 갱신 */
+                const linkInput = document.getElementById('signLink-' + pid);
+                if (linkInput && data.participant && data.participant.sign_token) {
+                    linkInput.value = location.origin + '/sign/' + data.participant.sign_token;
+                }
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showToast(data.error || '토큰 재발급 실패');
+            }
+        } catch(e) {
+            showToast('오류가 발생했습니다.');
+        } finally {
+            setButtonLoading(btn, false);
+        }
+    });
+}
+
+/* ── 계약 복제 ── */
+function duplicateContract(cid) {
+    showConfirm('이 계약을 복제하시겠습니까?', async () => {
+        const res = await fetch('/api/contracts/' + cid + '/duplicate', {
+            method: 'POST', headers: headers
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast('계약이 복제되었습니다.');
+            if (data.contract && data.contract.id) {
+                setTimeout(() => { location.href = '/admin/contracts/' + data.contract.id; }, 500);
+            } else {
+                setTimeout(() => location.reload(), 500);
+            }
+        } else {
+            showToast(data.error || '복제 실패');
+        }
+    });
+}
+
+/* ── 계약 취소 ── */
+function cancelContract(cid, title) {
+    showConfirm('"' + title + '" 계약을 취소하시겠습니까?\n이 작업은 되돌릴 수 없습니다.', async () => {
+        const res = await fetch('/api/contracts/' + cid, { method: 'DELETE', headers: headers });
+        const data = await res.json();
+        if (data.success) {
+            showToast('계약이 취소되었습니다.');
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showToast(data.error || '취소 실패');
+        }
+    });
+}
+{% endblock %}

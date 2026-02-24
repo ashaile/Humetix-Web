@@ -1,6 +1,6 @@
 {% extends "base_public.html" %}
 
-{% block public_title %}HUMETIX - 근태관리{% endblock %}
+{% block public_title %}HUMETIX - 근무현황{% endblock %}
 
 {% block page_css %}
 :root {
@@ -341,7 +341,7 @@ td.col-holiday { font-weight: 700; color: #d946ef; }
 <div class="attendance-container">
     <div class="tab-row">
         <button class="tab-btn active" type="button" onclick="showTab('input')">근무 입력</button>
-        <button class="tab-btn" type="button" onclick="showTab('records')">근태 기록</button>
+        <button class="tab-btn" type="button" onclick="showTab('records')">근무 기록</button>
     </div>
 
     <div id="tab-input" style="max-width: 540px; margin: 0 auto;">
@@ -368,7 +368,7 @@ td.col-holiday { font-weight: 700; color: #d946ef; }
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">부서</label>
+                    <label class="form-label">부서/현장</label>
                     <input type="text" class="form-input" name="dept">
                 </div>
 
@@ -437,8 +437,8 @@ td.col-holiday { font-weight: 700; color: #d946ef; }
     </div>
 
     <div id="tab-records" style="display:none">
-        <h1 class="page-title">근태 기록</h1>
-        <p class="page-desc">날짜/이름 기준으로 근태 기록을 조회하세요.</p>
+        <h1 class="page-title">근무 기록</h1>
+        <p class="page-desc">날짜/이름 기준으로 근무 기록을 조회하세요.</p>
 
         <form id="filter-form" class="filter-bar" onsubmit="event.preventDefault(); loadRecords();">
             <input type="date" class="form-input" id="f-start" style="width:auto">
@@ -450,7 +450,7 @@ td.col-holiday { font-weight: 700; color: #d946ef; }
 
         <div class="table-wrap">
             <div class="table-header">
-                <div class="table-title">근태 기록 목록</div>
+                <div class="table-title">근무 기록 목록</div>
             </div>
             <div class="table-scroll">
                 <table>

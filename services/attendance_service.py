@@ -69,9 +69,26 @@ def calc_work_hours(clock_in: str, clock_out: str, cfg, work_date=None, calendar
 
     std_hours = cfg.get("STANDARD_WORK_HOURS", 8.0)
 
+    # 유급/무급 휴일 구분
+    is_paid_holiday = False
+    if calendar_day_type == "paid_leave":
+        is_paid_holiday = True
+    elif calendar_day_type not in CALENDAR_DAY_TYPES and work_date:
+        if isinstance(work_date, str):
+            work_date = _parse_date(work_date)
+        holidays_2026 = cfg.get("PUBLIC_HOLIDAYS_2026", [])
+        if work_date.weekday() == 6 or work_date.strftime("%Y-%m-%d") in holidays_2026:
+            is_paid_holiday = True
+
     if is_holiday_work:
-        ot_hours = 0.0
-        holiday_work_hours = total_hours
+        if is_paid_holiday:
+            # 유급휴일: 8시간 이내 → holiday_work_hours, 8시간 초과 → ot_hours
+            holiday_work_hours = round(min(total_hours, std_hours), 2)
+            ot_hours = round(max(0, total_hours - std_hours), 2)
+        else:
+            # 무급휴일: 전체가 동일 배율 → holiday_work_hours
+            holiday_work_hours = total_hours
+            ot_hours = 0.0
     else:
         ot_hours = round(max(0, total_hours - std_hours), 2)
         holiday_work_hours = 0.0

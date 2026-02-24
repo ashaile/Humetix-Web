@@ -8,6 +8,9 @@ from models.payslip import Payslip
 from models.advance import AdvanceRequest
 from models.auth import AdminLoginAttempt
 from models.announcement import Announcement
+from models.contract import Contract, ContractAuditLog, ContractParticipant, ContractTemplate
+from models.leave import LeaveAccrual, LeaveBalance, LeaveUsage
+from models.wage_config import WageConfig
 
 __all__ = [
     "db",
@@ -22,4 +25,12 @@ __all__ = [
     "AdvanceRequest",
     "AdminLoginAttempt",
     "Announcement",
+    "ContractTemplate",
+    "Contract",
+    "ContractParticipant",
+    "ContractAuditLog",
+    "LeaveBalance",
+    "LeaveAccrual",
+    "LeaveUsage",
+    "WageConfig",
 ]

@@ -1,7 +1,7 @@
 {% extends "base_admin.html" %}
 
-{% block admin_title %}HUMETIX - 관리자 근태관리{% endblock %}
-{% block page_title %}근태 관리 (관리자){% endblock %}
+{% block admin_title %}HUMETIX - 근무현황 관리{% endblock %}
+{% block page_title %}근무현황 관리 (관리자){% endblock %}
 {% block page_desc %}아래 통계는 현재 조회 조건의 기록 기준입니다.{% endblock %}
 
 {% block page_css %}
@@ -108,8 +108,9 @@ td.col-holiday { font-weight: 700; color: #d946ef; }
 
 <div class="table-wrap">
     <div class="table-header">
-        <div class="table-title">근태 기록 ({{ stats.total }}건{% if pagination.pages > 1 %} / {{ pagination.page }}페이지{% endif %})</div>
+        <div class="table-title">근무 기록 ({{ stats.total }}건{% if pagination.pages > 1 %} / {{ pagination.page }}페이지{% endif %})</div>
         <div class="table-actions" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <button type="button" class="btn btn-primary btn-sm" onclick="openAddModal()">+ 근무 추가</button>
             <button type="button" id="bulkDeleteBtn" class="btn btn-outline btn-sm" style="color:#dc3545;border-color:#dc3545;display:none;" onclick="bulkDelete()">
                 선택 삭제 (<span id="bulkCount">0</span>건)
             </button>
@@ -125,9 +126,10 @@ td.col-holiday { font-weight: 700; color: #d946ef; }
             <thead>
                 <tr>
                     <th style="width:36px;text-align:center;"><input type="checkbox" id="checkAll" onchange="toggleAll(this)"></th>
-                    <th>이름</th><th>부서</th><th>날짜</th><th>생년월일</th>
+                    <th>이름</th><th>고객사</th><th>부서/현장</th><th>날짜</th><th>생년월일</th>
                     <th>출근</th><th>퇴근</th><th>구분</th>
                     <th>총근무(h)</th><th>잔업(h)</th><th>심야(h)</th><th>특근(h)</th>
+                    <th>출처</th>
                     <th style="text-align:center;">관리</th>
                 </tr>
             </thead>
@@ -136,6 +138,7 @@ td.col-holiday { font-weight: 700; color: #d946ef; }
                 <tr id="row-{{ r.id }}">
                     <td style="text-align:center;"><input type="checkbox" class="row-check" value="{{ r.id }}" onchange="updateBulkBtn()"></td>
                     <td class="emp-name">{{ r.emp_name }}</td>
+                    <td>{{ site_map.get(r.employee_id, '-') }}</td>
                     <td>{{ r.dept }}</td>
                     <td class="mono">{{ r.work_date.strftime('%Y-%m-%d') if r.work_date else '' }}</td>
                     <td class="mono">{{ r.birth_date }}</td>
@@ -162,6 +165,15 @@ td.col-holiday { font-weight: 700; color: #d946ef; }
                     <td class="mono col-ot">{{ r.overtime_hours }}</td>
                     <td class="mono col-night">{{ r.night_hours }}</td>
                     <td class="mono col-holiday">{{ r.holiday_work_hours or 0 }}</td>
+                    <td>
+                        {% if r.source == 'excel' %}
+                        <span class="badge" style="background:#e0f2fe;color:#0369a1;font-size:11px;">엑셀</span>
+                        {% elif r.source == 'admin' %}
+                        <span class="badge" style="background:#fef3c7;color:#92400e;font-size:11px;">관리자</span>
+                        {% else %}
+                        <span class="badge" style="background:#e0e7ff;color:#4338ca;font-size:11px;">직원</span>
+                        {% endif %}
+                    </td>
                     <td style="text-align:center;">
                         <button type="button" class="btn btn-outline btn-sm"
                             onclick='openEditModal({{ r.to_dict()|tojson }})'
@@ -173,7 +185,7 @@ td.col-holiday { font-weight: 700; color: #d946ef; }
                 {% endfor %}
                 {% if not records %}
                 <tr>
-                    <td colspan="13" style="text-align:center;padding:24px;color:var(--text2);">기록이 없습니다.</td>
+                    <td colspan="14" style="text-align:center;padding:24px;color:var(--text2);">기록이 없습니다.</td>
                 </tr>
                 {% endif %}
             </tbody>
@@ -210,7 +222,7 @@ td.col-holiday { font-weight: 700; color: #d946ef; }
 
 <div id="editModal" class="modal-overlay">
     <div class="modal-card">
-        <h3>근태 수정</h3>
+        <h3>근무 수정</h3>
         <form id="editForm" onsubmit="return submitEdit(event)">
             <input type="hidden" name="id">
             <div class="form-grid">
@@ -224,7 +236,7 @@ td.col-holiday { font-weight: 700; color: #d946ef; }
                 </div>
             </div>
             <div class="form-group" style="margin-top:10px;">
-                <label class="form-label-block">부서</label>
+                <label class="form-label-block">부서/현장</label>
                 <input type="text" name="dept" class="form-input" style="width:100%">
             </div>
             <div class="form-group" style="margin-top:10px;">
@@ -255,6 +267,59 @@ td.col-holiday { font-weight: 700; color: #d946ef; }
             <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
                 <button type="button" class="btn btn-outline" onclick="closeEditModal()">취소</button>
                 <button type="submit" class="btn btn-primary">저장</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="addModal" class="modal-overlay">
+    <div class="modal-card">
+        <h3>근무 추가</h3>
+        <form id="addForm" onsubmit="return submitAdd(event)">
+            <div class="form-grid">
+                <div>
+                    <label class="form-label-block">이름 *</label>
+                    <input type="text" name="emp_name" class="form-input" required style="width:100%" placeholder="직원 이름">
+                </div>
+                <div>
+                    <label class="form-label-block">생년월일 *</label>
+                    <input type="text" name="birth_date" class="form-input" required placeholder="YYMMDD" maxlength="6" style="width:100%">
+                </div>
+            </div>
+            <div class="form-group" style="margin-top:10px;">
+                <label class="form-label-block">부서/현장</label>
+                <input type="text" name="dept" class="form-input" style="width:100%">
+            </div>
+            <div class="form-group" style="margin-top:10px;">
+                <label class="form-label-block">날짜 *</label>
+                <input type="date" name="work_date" class="form-input" required style="width:100%" value="{{ today.strftime('%Y-%m-%d') }}">
+            </div>
+            <div class="form-group" style="margin-top:10px;">
+                <label class="form-label-block">근무 유형</label>
+                <select name="work_type" class="form-input" style="width:100%" onchange="toggleAddTimeFields(this.value)">
+                    <option value="normal">주간 근무</option>
+                    <option value="night">야간 근무</option>
+                    <option value="annual">연차</option>
+                    <option value="absent">결근</option>
+                    <option value="holiday">휴무</option>
+                    <option value="early">조퇴</option>
+                </select>
+            </div>
+            <div class="form-grid" style="margin-top:10px;" id="addTimeFields">
+                <div>
+                    <label class="form-label-block">출근</label>
+                    <input type="time" name="clock_in" class="form-input" value="08:30" style="width:100%">
+                </div>
+                <div>
+                    <label class="form-label-block">퇴근</label>
+                    <input type="time" name="clock_out" class="form-input" value="19:00" style="width:100%">
+                </div>
+            </div>
+            <div id="addConflictMsg" style="display:none;margin-top:12px;padding:10px 14px;border-radius:8px;background:#fef3c7;color:#92400e;font-size:13px;">
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+                <button type="button" class="btn btn-outline" onclick="closeAddModal()">취소</button>
+                <button type="submit" class="btn btn-primary" id="addSubmitBtn">추가</button>
             </div>
         </form>
     </div>
@@ -385,4 +450,95 @@ function deleteRecord(id) {
         .catch(err => showToast(err.message || "서버 연결 실패"));
     });
 }
+
+/* ── 근무 추가 모달 ── */
+let addPendingOverwrite = false;
+
+function openAddModal() {
+    const form = document.getElementById("addForm");
+    form.reset();
+    form.work_date.value = "{{ today.strftime('%Y-%m-%d') }}";
+    form.clock_in.value = "08:30";
+    form.clock_out.value = "19:00";
+    document.getElementById("addTimeFields").style.display = "";
+    document.getElementById("addConflictMsg").style.display = "none";
+    document.getElementById("addSubmitBtn").textContent = "추가";
+    addPendingOverwrite = false;
+    document.getElementById("addModal").style.display = "flex";
+}
+
+function closeAddModal() {
+    document.getElementById("addModal").style.display = "none";
+    addPendingOverwrite = false;
+}
+
+function toggleAddTimeFields(workType) {
+    const timeFields = document.getElementById("addTimeFields");
+    const needsTime = ["normal", "night", "early"].includes(workType);
+    timeFields.style.display = needsTime ? "" : "none";
+}
+
+function submitAdd(e) {
+    e.preventDefault();
+    const form = document.getElementById("addForm");
+    const btn = document.getElementById("addSubmitBtn");
+    const conflictEl = document.getElementById("addConflictMsg");
+
+    const payload = {
+        emp_name: form.emp_name.value.trim(),
+        birth_date: form.birth_date.value.trim(),
+        dept: form.dept.value.trim(),
+        work_date: form.work_date.value,
+        work_type: form.work_type.value,
+        clock_in: form.clock_in.value,
+        clock_out: form.clock_out.value,
+    };
+
+    if (addPendingOverwrite) {
+        payload.overwrite = "true";
+    }
+
+    btn.disabled = true;
+    btn.textContent = "처리중...";
+
+    fetch("/api/attendance/admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
+        credentials: "same-origin",
+        body: JSON.stringify(payload),
+    })
+    .then(r => r.json().then(data => ({ status: r.status, data })))
+    .then(({ status, data }) => {
+        if (data.success) {
+            showToast(data.overwritten ? "기존 기록을 덮어썼습니다." : "근무 기록이 추가되었습니다.");
+            closeAddModal();
+            setTimeout(() => location.reload(), 800);
+            return;
+        }
+        if (status === 409 && data.conflict) {
+            conflictEl.textContent = `이미 해당 날짜에 "${data.existing_source}" 기록이 있습니다. 덮어쓰시겠습니까?`;
+            conflictEl.style.display = "block";
+            btn.textContent = "덮어쓰기";
+            btn.disabled = false;
+            addPendingOverwrite = true;
+            return;
+        }
+        throw new Error(data.error || "추가 실패");
+    })
+    .catch(err => {
+        showToast(err.message || "서버 연결 실패");
+        btn.disabled = false;
+        btn.textContent = addPendingOverwrite ? "덮어쓰기" : "추가";
+    });
+
+    return false;
+}
+
+/* 모달 배경 클릭으로 닫기 */
+document.getElementById("addModal").addEventListener("click", function(e) {
+    if (e.target === this) closeAddModal();
+});
+document.getElementById("editModal").addEventListener("click", function(e) {
+    if (e.target === this) closeEditModal();
+});
 {% endblock %}

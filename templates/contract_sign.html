@@ -1,0 +1,874 @@
+{% extends "base.html" %}
+
+{% block title %}계약서 서명 - {{ contract.title }}{% endblock %}
+
+{% block head_extra %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
+{% endblock %}
+
+{% block page_css_block %}
+<style>
+:root {
+    --primary: #e85d26;
+    --bg: #f5f5f5;
+    --card-bg: #fff;
+    --border: #e0e0e0;
+    --text: #1a1a1a;
+    --text2: #888;
+    --success: #16a34a;
+    --danger: #dc2626;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh;
+}
+
+/* ── 헤더 ── */
+.sign-header {
+    background: #1a1f2e; color: #fff; padding: 16px 20px;
+    display: flex; align-items: center; gap: 12px;
+}
+.sign-header .brand { font-size: 18px; font-weight: 700; }
+.sign-header .brand span { color: var(--primary); }
+.sign-header .contract-title {
+    font-size: 14px; color: #9ca3b4; margin-left: auto;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ── 메인 레이아웃 ── */
+.sign-layout {
+    max-width: 1100px; margin: 0 auto;
+    padding: 24px 16px;
+    display: grid; grid-template-columns: 1fr 380px; gap: 24px;
+    align-items: start;
+}
+
+/* ── PDF 뷰어 ── */
+.pdf-viewer {
+    background: var(--card-bg); border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08); overflow: hidden;
+}
+.pdf-viewer-header {
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 14px; font-weight: 600;
+}
+.pdf-viewer-body {
+    padding: 16px; text-align: center;
+    background: #e8e8e8; overflow: auto; max-height: 80vh;
+}
+.pdf-page-container {
+    position: relative; display: inline-block;
+}
+.pdf-page-container canvas {
+    display: block; box-shadow: 0 2px 8px rgba(0,0,0,.1);
+}
+.pdf-nav {
+    display: flex; gap: 8px; align-items: center;
+    justify-content: center; padding: 12px;
+    border-top: 1px solid var(--border);
+}
+.pdf-nav button {
+    padding: 8px 16px; border: 1px solid var(--border);
+    background: var(--card-bg); border-radius: 6px;
+    cursor: pointer; font-family: inherit; font-size: 13px;
+}
+.pdf-nav button:hover { background: #f0f0f0; }
+
+/* ── 필드 오버레이 ── */
+.field-overlay {
+    position: absolute; overflow: hidden;
+    display: flex; align-items: center; justify-content: flex-start;
+    padding: 0 2px;
+}
+/* 미리 입력된 값 (읽기 전용) — 깨끗한 텍스트, 배경/테두리 없음 */
+.field-overlay.prefilled {
+    color: #000; pointer-events: none;
+}
+.field-overlay.prefilled .fo-text {
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.field-overlay.prefilled img {
+    width: 100%; height: 100%; object-fit: contain;
+}
+/* 내가 입력해야 할 필드 — 노란색 강조 (DocuSign 스타일) */
+.field-overlay.my-input {
+    background: rgba(255,213,79,.35); border: 2px solid #f9a825;
+    border-radius: 3px; cursor: pointer;
+}
+.field-overlay.my-input:hover {
+    background: rgba(255,213,79,.5); box-shadow: 0 0 0 2px rgba(249,168,37,.3);
+}
+.field-overlay.my-input .fo-placeholder {
+    color: #b45309; font-weight: 600; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: center;
+}
+/* 내가 이미 입력 완료한 필드 — 초록 체크 */
+.field-overlay.my-filled {
+    background: rgba(22,163,74,.08); border: 1.5px solid #16a34a;
+    border-radius: 3px; pointer-events: none;
+}
+.field-overlay.my-filled .fo-text {
+    color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.field-overlay.my-filled img {
+    width: 100%; height: 100%; object-fit: contain;
+}
+
+/* ── 서명 패널 ── */
+.sign-panel {
+    background: var(--card-bg); border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08); overflow: hidden;
+}
+.sign-panel-header {
+    padding: 16px; border-bottom: 1px solid var(--border);
+}
+.sign-panel-header h2 { font-size: 16px; font-weight: 700; }
+.sign-panel-header .sign-info {
+    font-size: 13px; color: var(--text2); margin-top: 4px;
+}
+.sign-panel-body { padding: 16px; }
+
+.sign-field-group {
+    margin-bottom: 16px; padding-bottom: 16px;
+    border-bottom: 1px solid #f0f0f0;
+}
+.sign-field-group:last-child { border-bottom: none; }
+.sign-field-label {
+    font-size: 12px; font-weight: 600; color: var(--text2);
+    margin-bottom: 6px; display: flex; align-items: center; gap: 4px;
+}
+.sign-field-label .req { color: var(--danger); }
+.sign-field-label .readonly-badge {
+    font-size: 10px; background: #f0f0f0; color: #888;
+    padding: 1px 6px; border-radius: 8px; font-weight: 500;
+}
+.sign-field-input {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+    border-radius: 8px; font-size: 14px; font-family: inherit;
+}
+.sign-field-input:focus { border-color: var(--primary); outline: none; }
+.sign-field-input:disabled {
+    opacity: 0.6; cursor: not-allowed; background: #f5f5f5;
+}
+
+.sig-area {
+    border: 2px dashed var(--border); border-radius: 8px;
+    padding: 8px; text-align: center; cursor: pointer;
+    transition: border-color .2s;
+    min-height: 80px; display: flex; align-items: center; justify-content: center;
+}
+.sig-area:hover { border-color: var(--primary); }
+.sig-area img { max-width: 100%; max-height: 80px; }
+.sig-area .placeholder { color: var(--text2); font-size: 13px; }
+
+.check-field {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px; cursor: pointer;
+}
+.check-field input { width: 20px; height: 20px; }
+
+.image-field-display img {
+    max-width: 100%; max-height: 120px; border: 1px solid var(--border);
+    border-radius: 8px; object-fit: contain;
+}
+
+.submit-btn {
+    width: 100%; padding: 14px; background: var(--primary);
+    color: #fff; border: none; border-radius: 8px;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    font-family: inherit; margin-top: 16px;
+    min-height: 48px;
+}
+.submit-btn:hover { background: #d14e1a; }
+.submit-btn:disabled { opacity: .6; cursor: not-allowed; }
+
+/* ── 이미 서명 완료 배너 ── */
+.signed-banner {
+    background: #dcfce7; border: 1px solid #86efac;
+    border-radius: 12px; padding: 24px; text-align: center;
+    font-size: 15px; color: #166534; font-weight: 500;
+}
+.signed-banner .icon { font-size: 48px; margin-bottom: 12px; display: block; }
+.signed-banner .signed-date {
+    font-size: 13px; color: #15803d; margin-top: 8px; display: block;
+}
+.signed-banner .signed-message {
+    font-size: 14px; color: #166534; margin-top: 4px;
+}
+
+/* ── 만료 배너 ── */
+.expired-banner {
+    background: #fef2f2; border: 1px solid #fca5a5;
+    border-radius: 12px; padding: 24px; text-align: center;
+    font-size: 15px; color: #991b1b; font-weight: 500;
+}
+.expired-banner .icon { font-size: 48px; margin-bottom: 12px; display: block; }
+
+/* ── 서명 확인 모달 ── */
+.confirm-modal {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.5); z-index: 2500;
+    justify-content: center; align-items: center;
+}
+.confirm-modal.show { display: flex; }
+.confirm-modal-card {
+    background: #fff; border-radius: 12px; padding: 28px;
+    width: 90%; max-width: 400px; text-align: center;
+}
+.confirm-modal-card .cm-icon { font-size: 40px; margin-bottom: 12px; }
+.confirm-modal-card .cm-title {
+    font-size: 16px; font-weight: 700; margin-bottom: 8px;
+}
+.confirm-modal-card .cm-desc {
+    font-size: 13px; color: var(--text2); margin-bottom: 20px; line-height: 1.5;
+}
+.confirm-modal-actions {
+    display: flex; gap: 8px; justify-content: center;
+}
+.confirm-modal-actions button {
+    flex: 1; padding: 12px; border-radius: 8px; font-size: 14px;
+    font-weight: 600; cursor: pointer; font-family: inherit; border: none;
+    min-height: 44px;
+}
+.cm-cancel-btn { background: #f0f0f0; color: var(--text); }
+.cm-confirm-btn { background: var(--primary); color: #fff; }
+
+/* ── 서명 모달 ── */
+.sig-modal {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.5); z-index: 2000;
+    justify-content: center; align-items: center;
+}
+.sig-modal.show { display: flex; }
+.sig-modal-card {
+    background: #fff; border-radius: 12px; padding: 24px;
+    width: 90%; max-width: 500px;
+}
+.sig-modal-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
+.sig-canvas-wrap {
+    border: 2px solid #ddd; border-radius: 8px;
+    background: #fff; margin-bottom: 12px;
+}
+.sig-canvas-wrap canvas { width: 100%; height: 200px; display: block; }
+.sig-actions {
+    display: flex; gap: 8px; justify-content: flex-end;
+}
+.sig-actions button {
+    padding: 8px 16px; border-radius: 6px; font-size: 13px;
+    font-weight: 600; cursor: pointer; font-family: inherit; border: none;
+    min-height: 40px;
+}
+.sig-act-clear { background: #f0f0f0; color: var(--text); }
+.sig-act-cancel { background: #f0f0f0; color: var(--text); }
+.sig-act-confirm { background: var(--primary); color: #fff; }
+
+/* ── 가로모드 안내 ── */
+.landscape-hint {
+    display: none; background: #fffbeb; border: 1px solid #fbbf24;
+    border-radius: 8px; padding: 10px 14px; font-size: 12px;
+    color: #92400e; text-align: center; margin-bottom: 12px;
+}
+
+/* ── 토스트 ── */
+.toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #1a1a1a; color: #fff; padding: 14px 24px;
+    border-radius: 8px; font-size: 14px; z-index: 3000;
+    display: none; box-shadow: 0 4px 12px rgba(0,0,0,.2);
+}
+
+/* ── 모바일 최적화 (Task 16) ── */
+@media (max-width: 768px) {
+    .sign-layout {
+        grid-template-columns: 1fr;
+        padding: 12px 8px;
+        gap: 16px;
+    }
+    .pdf-viewer-body {
+        max-height: 45vh;
+        padding: 8px;
+    }
+    .sign-panel { width: 100%; }
+    .sign-panel-body { padding: 12px; }
+    .sign-field-input {
+        padding: 12px 14px; font-size: 16px; /* 모바일 터치 대상 확대 */
+    }
+    .submit-btn {
+        padding: 16px; font-size: 16px; min-height: 52px;
+    }
+    .check-field input { width: 24px; height: 24px; }
+    .sig-area { min-height: 100px; }
+    .sig-modal-card {
+        width: 95%; max-width: none; padding: 16px;
+    }
+    .sig-canvas-wrap canvas { height: 160px; }
+    .sig-actions button { padding: 10px 14px; }
+    .pdf-nav button { padding: 10px 20px; }
+    .landscape-hint { display: block; }
+    .sign-header .contract-title { font-size: 12px; }
+}
+
+/* 세로모드일 때 가로전환 안내 표시 (모바일만) */
+@media (max-width: 768px) and (orientation: portrait) {
+    .landscape-hint { display: block; }
+}
+@media (max-width: 768px) and (orientation: landscape) {
+    .landscape-hint { display: none; }
+}
+</style>
+{% endblock %}
+
+{% block body_content %}
+<div class="sign-header">
+    <div class="brand">Hume<span>tix</span></div>
+    <div class="contract-title">{{ contract.title }}</div>
+</div>
+
+{% if contract.is_expired %}
+{# ── 만료된 계약 ── #}
+<div class="sign-layout">
+    <div></div>
+    <div class="sign-panel">
+        <div class="sign-panel-body">
+            <div class="expired-banner">
+                <span class="icon">&#9200;</span>
+                서명 기한이 만료되었습니다.<br>
+                <span style="font-size:13px;">관리자에게 문의해 주세요.</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% elif contract.status == 'cancelled' %}
+{# ── 취소된 계약 ── #}
+<div class="sign-layout">
+    <div></div>
+    <div class="sign-panel">
+        <div class="sign-panel-body">
+            <div class="expired-banner">
+                <span class="icon">&#10060;</span>
+                이 계약은 취소되었습니다.<br>
+                <span style="font-size:13px;">관리자에게 문의해 주세요.</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="sign-layout">
+    <!-- PDF 뷰어 -->
+    <div class="pdf-viewer">
+        <div class="pdf-viewer-header">
+            <span>계약서 원본</span>
+        </div>
+        <div class="pdf-viewer-body">
+            <div class="pdf-page-container" id="pdfPageContainer">
+                <canvas id="pdfCanvas"></canvas>
+                <!-- 필드 오버레이가 여기에 동적으로 추가됨 -->
+            </div>
+        </div>
+        <div class="pdf-nav">
+            <button onclick="prevPage()">&#9664; 이전</button>
+            <span id="pageInfo">- / -</span>
+            <button onclick="nextPage()">다음 &#9654;</button>
+        </div>
+    </div>
+
+    <!-- 서명 패널 -->
+    <div class="sign-panel">
+        <div class="sign-panel-header">
+            <h2>{{ participant.name }}님 서명</h2>
+            <div class="sign-info">
+                {{ participant.role_key }} / {{ contract.title }}
+            </div>
+        </div>
+        <div class="sign-panel-body">
+            {% if already_signed %}
+            {# ── 이미 서명 완료 ── #}
+            <div class="signed-banner">
+                <span class="icon">&#10004;</span>
+                <strong>서명이 완료되었습니다.</strong>
+                {% if participant.signed_at %}
+                <span class="signed-date">
+                    서명일시: {{ participant.signed_at.strftime('%Y-%m-%d %H:%M') }}
+                </span>
+                {% endif %}
+                <span class="signed-message">
+                    계약서 사본은 관리자에게 요청하시거나, 완료 후 전달됩니다.
+                </span>
+            </div>
+            {% else %}
+            {# ── 서명 입력 필드 ── #}
+            <div class="landscape-hint" id="landscapeHint">
+                &#128257; 가로 모드로 전환하면 서명이 더 편리합니다.
+            </div>
+            <div id="fieldsList"></div>
+            <button class="submit-btn" id="submitBtn" onclick="onSubmitClick()">
+                서명 완료
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- 서명 확인 모달 (Task 15) -->
+<div class="confirm-modal" id="confirmModal">
+    <div class="confirm-modal-card">
+        <div class="cm-icon">&#9997;</div>
+        <div class="cm-title">서명을 완료하시겠습니까?</div>
+        <div class="cm-desc">서명 후에는 수정할 수 없습니다.<br>모든 내용을 확인하셨나요?</div>
+        <div class="confirm-modal-actions">
+            <button class="cm-cancel-btn" onclick="closeConfirmModal()">취소</button>
+            <button class="cm-confirm-btn" onclick="doSubmitSign()">서명 완료</button>
+        </div>
+    </div>
+</div>
+
+<!-- 서명 모달 -->
+<div class="sig-modal" id="sigModal">
+    <div class="sig-modal-card">
+        <h3 id="sigModalTitle">서명</h3>
+        <div class="sig-canvas-wrap">
+            <canvas id="sigCanvas"></canvas>
+        </div>
+        <div class="sig-actions">
+            <button class="sig-act-clear" onclick="clearSig()">지우기</button>
+            <button class="sig-act-cancel" onclick="closeSigModal()">취소</button>
+            <button class="sig-act-confirm" onclick="confirmSig()">확인</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+{% endblock %}
+
+{% block base_js %}
+<script>
+/* ── 기본 데이터 ── */
+const SIGN_TOKEN = '{{ participant.sign_token }}';
+const CSRF_TOKEN = '{{ csrf_token() }}';
+const TEMPLATE_ID = {{ template.id if template else 0 }};
+const MY_ROLE = '{{ participant.role_key }}';
+const ALREADY_SIGNED = {{ 'true' if already_signed else 'false' }};
+
+const FIELDS = {{ template.fields|tojson if template else '[]' }};
+const ALL_FIELDS = FIELDS.map((f, idx) => ({ ...f, _idx: idx }));
+const MY_FIELDS = ALL_FIELDS.filter(f => f.role === MY_ROLE);
+
+/*
+ * Task 9: 다른 참여자의 필드 값
+ * 백엔드에서 other_values 변수를 전달해야 함.
+ * 형태: { field_idx: "값", ... }
+ * 변수가 없으면 빈 객체로 대체.
+ */
+const OTHER_VALUES = {{ other_values|tojson if other_values is defined and other_values else '{}' }};
+
+let pdfDoc = null;
+let currentPage = 1;
+let canvasWidth = 0;
+let canvasHeight = 0;
+let signaturePad = null;
+let sigCallback = null;
+let fieldValues = {};
+
+/* ── 토스트 ── */
+function showToast(msg, duration) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', duration || 3000);
+}
+
+/* HTML 이스케이프 */
+function escHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str || '';
+    return d.innerHTML;
+}
+
+/* ── PDF 로드 (base64 임베드 — IDM 다운로드 매니저 우회) ── */
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const PDF_BASE64 = '{{ pdf_base64 }}';
+
+async function loadPdf() {
+    if (!PDF_BASE64) return;
+    try {
+        const raw = atob(PDF_BASE64);
+        const arr = new Uint8Array(raw.length);
+        for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+        pdfDoc = await pdfjsLib.getDocument({ data: arr }).promise;
+        await showPage(1);
+    } catch (e) {
+        console.error('PDF 로드 오류:', e);
+        const body = document.querySelector('.pdf-viewer-body');
+        if (body) {
+            body.innerHTML = '<p style="padding:40px;color:#999;">PDF를 불러올 수 없습니다.</p>';
+        }
+    }
+}
+
+/* ── 페이지 렌더링 + 필드 오버레이 ── */
+async function showPage(num) {
+    if (!pdfDoc) return;
+    currentPage = num;
+    const page = await pdfDoc.getPage(num);
+    const viewport = page.getViewport({ scale: 1.3 });
+    const canvas = document.getElementById('pdfCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    canvasWidth = viewport.width;
+    canvasHeight = viewport.height;
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    document.getElementById('pageInfo').textContent = num + ' / ' + pdfDoc.numPages;
+
+    /* 필드 오버레이 렌더링 */
+    renderFieldOverlays(num);
+}
+
+/* ── 필드 오버레이 (Task 7) ── */
+function renderFieldOverlays(pageNum) {
+    const container = document.getElementById('pdfPageContainer');
+    if (!container) return;
+    container.querySelectorAll('.field-overlay').forEach(el => el.remove());
+
+    ALL_FIELDS.forEach(f => {
+        if ((f.page || 1) !== pageNum) return;
+
+        const isMine = (f.role === MY_ROLE);
+        const otherValue = OTHER_VALUES[f._idx] || '';
+        const dv = f.default_value || '';
+        const myFilled = fieldValues[f._idx]; /* 사용자가 이미 입력한 값 */
+
+        const x = (f.x_pct || 0) / 100 * canvasWidth;
+        const y = (f.y_pct || 0) / 100 * canvasHeight;
+        const w = (f.w_pct || 10) / 100 * canvasWidth;
+        const h = (f.h_pct || 3) / 100 * canvasHeight;
+        /* 필드에 지정된 font_size를 우선 사용, 없으면 높이 기반 자동 조정 */
+        const rawFs = f.font_size ? (f.font_size * 1.3) : Math.max(Math.min(h * 0.6, 16), 10);
+        const fs = Math.max(Math.min(rawFs, h * 0.85), 8);
+        const bold = f.font_bold ? 'font-weight:700;' : '';
+        const italic = f.font_italic ? 'font-style:italic;' : '';
+
+        const div = document.createElement('div');
+        div.style.cssText = 'left:' + x + 'px;top:' + y + 'px;width:' + w + 'px;height:' + h + 'px;font-size:' + fs + 'px;' + bold + italic;
+
+        if (!isMine) {
+            /* ─── 타인 필드 ─── */
+            const val = otherValue || dv;
+            if (!val) return; /* 값 없으면 숨김 */
+            div.className = 'field-overlay prefilled';
+            if (f.type === 'signature' || f.type === 'stamp' || f.type === 'image') {
+                if (val.startsWith('data:') || val.startsWith('/uploads/')) {
+                    div.innerHTML = '<img src="' + val.replace(/"/g, '&quot;') + '">';
+                }
+            } else if (f.type === 'checkbox') {
+                if (val === 'Y') div.innerHTML = '<span class="fo-text">\u2713</span>';
+            } else {
+                div.innerHTML = '<span class="fo-text">' + escHtml(val) + '</span>';
+            }
+        } else if (f.read_only && dv) {
+            /* ─── 내 읽기전용 필드 (미리 채워진 값) — 깨끗한 텍스트 ─── */
+            div.className = 'field-overlay prefilled';
+            if (f.type === 'signature' || f.type === 'stamp' || f.type === 'image') {
+                if (dv.startsWith('data:') || dv.startsWith('/uploads/')) {
+                    div.innerHTML = '<img src="' + dv.replace(/"/g, '&quot;') + '">';
+                }
+            } else {
+                div.innerHTML = '<span class="fo-text">' + escHtml(dv) + '</span>';
+            }
+        } else if (myFilled) {
+            /* ─── 내 필드: 이미 입력 완료 — 초록 테두리 + 값 표시 ─── */
+            div.className = 'field-overlay my-filled';
+            if (f.type === 'signature' || f.type === 'stamp') {
+                div.innerHTML = '<img src="' + myFilled.replace(/"/g, '&quot;') + '">';
+            } else if (f.type === 'checkbox') {
+                div.innerHTML = '<span class="fo-text">\u2713</span>';
+            } else {
+                div.innerHTML = '<span class="fo-text">' + escHtml(myFilled) + '</span>';
+            }
+        } else {
+            /* ─── 내 필드: 미입력 — 노란색 강조 (클릭 유도) ─── */
+            div.className = 'field-overlay my-input';
+            const typeLabels = { text:'입력', date:'날짜', signature:'서명', stamp:'도장', checkbox:'체크', image:'이미지' };
+            const label = f.label || typeLabels[f.type] || '입력';
+            div.innerHTML = '<span class="fo-placeholder">' + escHtml(label) + '</span>';
+            /* 클릭 시 우측 패널의 해당 필드로 스크롤 */
+            div.addEventListener('click', () => {
+                const el = document.querySelector('[data-idx="' + f._idx + '"]');
+                if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.focus(); }
+            });
+        }
+
+        container.appendChild(div);
+    });
+}
+
+function prevPage() { if (currentPage > 1) showPage(currentPage - 1); }
+function nextPage() { if (pdfDoc && currentPage < pdfDoc.numPages) showPage(currentPage + 1); }
+
+/* ── 필드 렌더링 ── */
+function renderFields() {
+    const container = document.getElementById('fieldsList');
+    if (!container) return;
+    container.innerHTML = '';
+
+    MY_FIELDS.forEach(f => {
+        const div = document.createElement('div');
+        div.className = 'sign-field-group';
+
+        const typeLabel = { text: '텍스트', date: '날짜', signature: '서명',
+                            stamp: '도장', checkbox: '체크', image: '이미지' }[f.type] || f.type;
+        const reqMark = f.required ? '<span class="req">*</span>' : '';
+        const isReadOnly = !!f.read_only;
+        const defaultVal = f.default_value || '';
+
+        let html = '<div class="sign-field-label">' +
+                   escHtml(f.label || typeLabel) + reqMark +
+                   (isReadOnly ? ' <span class="readonly-badge">자동입력</span>' : '') +
+                   '</div>';
+
+        if (f.type === 'text') {
+            html += '<input type="text" class="sign-field-input" data-idx="' + f._idx + '"' +
+                    ' oninput="onFieldInput(' + f._idx + ',this.value)"' +
+                    ' placeholder="입력하세요"' +
+                    ' value="' + escHtml(defaultVal) + '"' +
+                    (isReadOnly ? ' disabled' : '') + '>';
+        } else if (f.type === 'date') {
+            html += '<input type="date" class="sign-field-input" data-idx="' + f._idx + '"' +
+                    ' onchange="onFieldInput(' + f._idx + ',this.value)"' +
+                    ' value="' + escHtml(defaultVal) + '"' +
+                    (isReadOnly ? ' disabled' : '') + '>';
+        } else if (f.type === 'signature' || f.type === 'stamp') {
+            html += '<div class="sig-area" data-idx="' + f._idx + '"' +
+                    ' onclick="openSigModal(' + f._idx + ',\'' + f.type + '\')">';
+            html += '<span class="placeholder">&#9997; 클릭하여 ' +
+                    (f.type === 'signature' ? '서명' : '도장') + '하기</span>';
+            html += '</div>';
+        } else if (f.type === 'checkbox') {
+            html += '<label class="check-field"><input type="checkbox" data-idx="' + f._idx + '"' +
+                    ' onchange="onFieldInput(' + f._idx + ',this.checked?\'Y\':\'\')"' +
+                    '> 동의합니다</label>';
+        } else if (f.type === 'image') {
+            /* Task 7: 이미지 필드 표시 */
+            if (defaultVal) {
+                html += '<div class="image-field-display"><img src="' + escHtml(defaultVal) + '" alt="이미지"></div>';
+            } else {
+                html += '<div class="image-field-display" style="color:#999;font-size:13px;">이미지 없음</div>';
+            }
+        }
+
+        div.innerHTML = html;
+        container.appendChild(div);
+    });
+}
+
+/* ── 필드 입력 시 오버레이 실시간 동기화 + 같은 라벨 자동 기입 ── */
+function onFieldInput(idx, value) {
+    const hasValue = (value === 'Y') || (value && value.trim && value.trim() !== '');
+    if (hasValue) {
+        fieldValues[idx] = value;
+    } else {
+        delete fieldValues[idx];
+    }
+
+    /* 같은 라벨의 다른 필드에도 자동 기입 (Glosign 스타일) */
+    const srcField = ALL_FIELDS.find(f => f._idx === idx);
+    if (srcField && srcField.label && srcField.role === MY_ROLE && !srcField.read_only) {
+        MY_FIELDS.forEach(f => {
+            if (f._idx === idx) return;                /* 자기 자신 제외 */
+            if (f.label !== srcField.label) return;    /* 라벨 다르면 제외 */
+            if (f.type !== srcField.type) return;      /* 타입 다르면 제외 */
+            if (f.read_only) return;                   /* 읽기전용 제외 */
+
+            /* 값 동기화 */
+            if (hasValue) {
+                fieldValues[f._idx] = value;
+            } else {
+                delete fieldValues[f._idx];
+            }
+
+            /* 입력 필드 UI도 동기화 */
+            if (f.type === 'text') {
+                const input = document.querySelector('input[type="text"][data-idx="' + f._idx + '"]');
+                if (input) input.value = value || '';
+            } else if (f.type === 'date') {
+                const input = document.querySelector('input[type="date"][data-idx="' + f._idx + '"]');
+                if (input) input.value = value || '';
+            } else if (f.type === 'checkbox') {
+                const cb = document.querySelector('input[type="checkbox"][data-idx="' + f._idx + '"]');
+                if (cb) cb.checked = (value === 'Y');
+            }
+        });
+    }
+
+    renderFieldOverlays(currentPage);
+}
+
+/* ── 서명 모달 ── */
+function openSigModal(fieldIdx, type) {
+    const modal = document.getElementById('sigModal');
+    document.getElementById('sigModalTitle').textContent =
+        type === 'signature' ? '서명' : '도장 날인';
+    modal.classList.add('show');
+
+    const canvas = document.getElementById('sigCanvas');
+    canvas.width = canvas.parentElement.clientWidth - 4;
+    canvas.height = 200;
+
+    signaturePad = new SignaturePad(canvas, {
+        backgroundColor: 'rgba(255,255,255,0)',
+        penColor: type === 'stamp' ? '#e74c3c' : '#000',
+    });
+
+    sigCallback = (dataUrl) => {
+        fieldValues[fieldIdx] = dataUrl;
+        const area = document.querySelector('.sig-area[data-idx="' + fieldIdx + '"]');
+        if (area) {
+            area.innerHTML = '<img src="' + dataUrl + '">';
+        }
+        /* 같은 라벨의 서명/도장 필드에도 자동 기입 */
+        const srcField = ALL_FIELDS.find(f => f._idx === fieldIdx);
+        if (srcField && srcField.label) {
+            MY_FIELDS.forEach(f => {
+                if (f._idx === fieldIdx) return;
+                if (f.label !== srcField.label) return;
+                if (f.type !== srcField.type) return;
+                if (f.read_only) return;
+                fieldValues[f._idx] = dataUrl;
+                const otherArea = document.querySelector('.sig-area[data-idx="' + f._idx + '"]');
+                if (otherArea) otherArea.innerHTML = '<img src="' + dataUrl + '">';
+            });
+        }
+    };
+}
+
+function clearSig() { if (signaturePad) signaturePad.clear(); }
+
+function closeSigModal() {
+    document.getElementById('sigModal').classList.remove('show');
+    signaturePad = null;
+    sigCallback = null;
+}
+
+function confirmSig() {
+    if (!signaturePad || signaturePad.isEmpty()) {
+        showToast('서명을 입력하세요.');
+        return;
+    }
+    if (sigCallback) sigCallback(signaturePad.toDataURL());
+    closeSigModal();
+    renderFieldOverlays(currentPage);
+}
+
+/* ── 서명 확인 모달 (Task 15) ── */
+function onSubmitClick() {
+    /* 필드 유효성 검사 먼저 수행 */
+    if (!validateFields()) return;
+    /* 확인 모달 표시 */
+    document.getElementById('confirmModal').classList.add('show');
+}
+
+function closeConfirmModal() {
+    document.getElementById('confirmModal').classList.remove('show');
+}
+
+function validateFields() {
+    for (const f of MY_FIELDS) {
+        /* 이미지 필드는 서명자가 직접 입력하지 않으므로 검증 제외 */
+        if (f.type === 'image') continue;
+        /* 읽기전용 필드는 검증 제외 */
+        if (f.read_only) continue;
+
+        let value = '';
+        if (f.type === 'text') {
+            const input = document.querySelector('input[type="text"][data-idx="' + f._idx + '"]');
+            value = input ? input.value.trim() : '';
+        } else if (f.type === 'date') {
+            const input = document.querySelector('input[type="date"][data-idx="' + f._idx + '"]');
+            value = input ? input.value : '';
+        } else if (f.type === 'signature' || f.type === 'stamp') {
+            value = fieldValues[f._idx] || '';
+        } else if (f.type === 'checkbox') {
+            const cb = document.querySelector('input[type="checkbox"][data-idx="' + f._idx + '"]');
+            value = cb && cb.checked ? 'Y' : '';
+        }
+        if (f.required && !value) {
+            showToast((f.label || f.type) + ' 항목을 입력해주세요.');
+            return false;
+        }
+    }
+    return true;
+}
+
+/* ── 서명 제출 ── */
+async function doSubmitSign() {
+    closeConfirmModal();
+
+    const values = [];
+    for (const f of MY_FIELDS) {
+        let value = '';
+        if (f.type === 'text') {
+            const input = document.querySelector('input[type="text"][data-idx="' + f._idx + '"]');
+            value = input ? input.value.trim() : '';
+        } else if (f.type === 'date') {
+            const input = document.querySelector('input[type="date"][data-idx="' + f._idx + '"]');
+            value = input ? input.value : '';
+        } else if (f.type === 'signature' || f.type === 'stamp') {
+            value = fieldValues[f._idx] || '';
+        } else if (f.type === 'checkbox') {
+            const cb = document.querySelector('input[type="checkbox"][data-idx="' + f._idx + '"]');
+            value = cb && cb.checked ? 'Y' : '';
+        } else if (f.type === 'image') {
+            value = f.default_value || '';
+        }
+        values.push({ field_idx: f._idx, value });
+    }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = '처리중...';
+
+    try {
+        const res = await fetch('/api/sign/' + SIGN_TOKEN, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+            body: JSON.stringify({ field_values: values }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast('서명이 완료되었습니다!');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showToast(data.error || '서명 실패');
+            btn.disabled = false;
+            btn.textContent = '서명 완료';
+        }
+    } catch (e) {
+        showToast('오류가 발생했습니다.');
+        btn.disabled = false;
+        btn.textContent = '서명 완료';
+    }
+}
+
+/* ── 초기화 ── */
+if (!ALREADY_SIGNED) {
+    /* 읽기전용 필드의 기본값을 fieldValues에 미리 세팅 (오버레이 반영) */
+    MY_FIELDS.forEach(f => {
+        if (f.default_value) {
+            fieldValues[f._idx] = f.default_value;
+        }
+    });
+    loadPdf();
+    renderFields();
+} else {
+    /* 이미 서명된 경우에도 PDF 는 보여줌 */
+    loadPdf();
+}
+</script>
+{% endblock %}

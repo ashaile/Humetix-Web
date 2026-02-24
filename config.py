@@ -48,7 +48,6 @@ class Config:
     HEALTH_RATE = 0.03595                # 건강보험 3.595% (근로자 부담분, 2026)
     LONGTERM_CARE_RATE = 0.1314          # 장기요양 = 건강보험료의 13.14% (2026)
     EMPLOYMENT_RATE = 0.0115             # 고용보험 1.15% (근로자 부담분)
-    INSURANCE_RATE = 0.097               # (하위호환용, 미사용)
     MAX_ADVANCE_PERCENT = 50
 
     ADVANCE_LIMIT_WEEKLY = 300_000
@@ -57,24 +56,42 @@ class Config:
     LOGIN_MAX_ATTEMPTS = 5
     LOGIN_BLOCK_SECONDS = 300
 
+    PUBLIC_HOLIDAYS_2025 = [
+        "2025-01-01",                        # 신정
+        "2025-01-28", "2025-01-29", "2025-01-30",  # 설날
+        "2025-03-01",                        # 삼일절
+        "2025-05-05", "2025-05-06",          # 어린이날 + 대체
+        "2025-06-06",                        # 현충일
+        "2025-08-15",                        # 광복절
+        "2025-10-03",                        # 개천절
+        "2025-10-06", "2025-10-07", "2025-10-08",  # 추석
+        "2025-10-09",                        # 한글날
+        "2025-12-25",                        # 크리스마스
+    ]
+
     PUBLIC_HOLIDAYS_2026 = [
         "2026-01-01",
-        "2026-02-17",
-        "2026-02-18",
-        "2026-03-01",
-        "2026-03-02",
+        "2026-02-17", "2026-02-18",
+        "2026-03-01", "2026-03-02",
         "2026-05-05",
-        "2026-05-24",
-        "2026-05-25",
+        "2026-05-24", "2026-05-25",
         "2026-06-06",
         "2026-08-15",
-        "2026-09-24",
-        "2026-09-25",
-        "2026-09-26",
+        "2026-09-24", "2026-09-25", "2026-09-26",
         "2026-10-03",
         "2026-10-09",
         "2026-12-25",
     ]
+
+    PUBLIC_HOLIDAYS = {
+        2025: PUBLIC_HOLIDAYS_2025,
+        2026: PUBLIC_HOLIDAYS_2026,
+    }
+
+    @staticmethod
+    def get_public_holidays(year):
+        """연도별 공휴일 리스트 반환. 미등록 연도는 빈 리스트."""
+        return Config.PUBLIC_HOLIDAYS.get(year, [])
 
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
@@ -114,6 +131,7 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG = True
+    SECRET_KEY = Config.SECRET_KEY or "dev-secret-key-change-in-production"
 
 
 class ProductionConfig(Config):

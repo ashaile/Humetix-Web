@@ -77,7 +77,60 @@ def page_not_found(e):
 
 @app.errorhandler(500)
 def internal_server_error(e):
+    import logging
+    logging.getLogger(__name__).exception("500 Internal Server Error: %s", e)
     return render_template('error.html', error_code="500", error_message="서버 내부 오류", error_description="잠시 후 다시 시도해주세요. 문제가 지속되면 관리자에게 문의 바랍니다."), 500
+
+# ── 관리자 네비게이션 context_processor ──
+@app.context_processor
+def inject_nav_context():
+    from flask import request as req
+
+    CATEGORY_MAP = {
+        'hr': [
+            'admin.applications', 'employee.admin_employees',
+        ],
+        'work': [
+            'attendance.admin_attendance', 'attendance.import_attendance',
+            'attendance.admin_attendance_calendar', 'payslip.admin_payslip',
+            'advance.admin_advance',
+        ],
+        'contract': [
+            'contract.admin_templates', 'contract.admin_contracts',
+            'contract.bulk_send_page', 'contract.new_contract',
+            'contract.template_edit',
+        ],
+        'ops': [
+            'site.admin_sites', 'notice.admin_notices', 'admin.inquiries',
+            'leave.admin_leave', 'leave.admin_leave_detail', 'leave.admin_severance',
+        ],
+    }
+    PREFIX_MAP = {
+        'employee.': 'hr', 'admin.applications': 'hr',
+        'attendance.': 'work', 'payslip.': 'work', 'advance.': 'work',
+        'contract.': 'contract',
+        'site.': 'ops', 'notice.': 'ops', 'leave.': 'ops',
+    }
+
+    ep = req.endpoint or ''
+    active_cat = ''
+    for cat, endpoints in CATEGORY_MAP.items():
+        if ep in endpoints:
+            active_cat = cat
+            break
+    if not active_cat:
+        for prefix, cat in PREFIX_MAP.items():
+            if ep.startswith(prefix):
+                active_cat = cat
+                break
+
+    return dict(active_cat=active_cat, current_ep=ep)
+
+
+# ── APScheduler 초기화 (예약발송 등) ──
+from services.scheduler_service import init_scheduler
+init_scheduler(app)
+
 
 if __name__ == '__main__':
     # Nginx가 SSL을 처리하므로 Flask는 보통 5000 포트에서 실행됩니다

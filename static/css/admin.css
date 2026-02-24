@@ -1,24 +1,117 @@
-/* ── Sidebar ── */
-.admin-layout { display: flex; min-height: 100vh; }
-
-.sidebar {
-    position: fixed; top: 0; left: 0; bottom: 0;
-    width: 250px; background: #1a1f2e; color: #c8cdd8;
-    display: flex; flex-direction: column;
-    z-index: 1000; transition: transform .3s ease;
+/* ══════════════ Layout Variables ══════════════ */
+:root {
+    --topbar-h: 56px;
+    --sidebar-w: 200px;
+    --topbar-bg: #1a1f2e;
+    --topbar-text: #c8cdd8;
+    --topbar-text-active: #fff;
 }
-.sidebar-brand {
-    padding: 24px 20px 20px;
-    font-size: 22px; font-weight: 800;
-    color: #fff; letter-spacing: -.5px;
+
+/* ══════════════ Top Navigation Bar ══════════════ */
+.topbar {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: var(--topbar-h);
+    background: var(--topbar-bg);
+    display: flex; align-items: center;
+    padding: 0 20px;
+    z-index: 1100;
     border-bottom: 1px solid rgba(255,255,255,.08);
 }
-.sidebar-brand span { color: var(--accent); }
-.sidebar-nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+.topbar-brand {
+    font-size: 20px; font-weight: 800;
+    color: #fff; text-decoration: none;
+    letter-spacing: -.5px;
+    margin-right: 32px;
+    flex-shrink: 0;
+}
+.topbar-brand span { color: var(--accent); }
+
+.topbar-categories {
+    display: flex; align-items: center;
+    gap: 2px; flex: 1;
+}
+.topbar-tab {
+    padding: 18px 18px 15px;
+    font-size: 14px; font-weight: 600;
+    color: var(--topbar-text);
+    text-decoration: none;
+    border-bottom: 3px solid transparent;
+    transition: all .2s ease;
+    white-space: nowrap;
+}
+.topbar-tab:hover {
+    color: var(--topbar-text-active);
+    background: rgba(255,255,255,.04);
+}
+.topbar-tab.active {
+    color: var(--topbar-text-active);
+    border-bottom-color: var(--accent);
+}
+
+.topbar-utils {
+    display: flex; align-items: center;
+    gap: 6px; flex-shrink: 0; margin-left: auto;
+}
+.topbar-icon-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    background: transparent; border: none;
+    color: var(--topbar-text);
+    font-size: 16px; text-decoration: none;
+    cursor: pointer; transition: all .15s ease;
+    font-family: inherit;
+}
+.topbar-icon-btn:hover {
+    background: rgba(255,255,255,.08);
+    color: var(--topbar-text-active);
+}
+.topbar-icon-btn.active {
+    background: rgba(232,93,38,.15);
+    color: var(--accent);
+}
+.topbar-hamburger {
+    display: none;
+    width: 36px; height: 36px;
+    background: transparent; border: none;
+    color: var(--topbar-text);
+    font-size: 20px; cursor: pointer;
+    border-radius: 8px;
+    align-items: center; justify-content: center;
+}
+
+/* ══════════════ Sidebar (Sub Navigation) ══════════════ */
+.admin-layout {
+    display: flex; min-height: 100vh;
+    padding-top: var(--topbar-h);
+}
+
+.sidebar {
+    position: fixed;
+    top: var(--topbar-h); left: 0; bottom: 0;
+    width: var(--sidebar-w);
+    background: #1e2436;
+    color: #c8cdd8;
+    overflow-y: auto;
+    z-index: 1000;
+    transition: transform .3s ease;
+    border-right: 1px solid rgba(255,255,255,.06);
+}
+.sidebar.hidden { display: none; }
+
+.sidebar-nav { padding: 8px 0; }
+
+.sidebar-group { display: none; }
+.sidebar-group.show { display: block; }
+
+.sidebar-group-title {
+    display: none; /* 데스크톱에서 숨김 — 상단 탭이 카테고리 역할 */
+}
+
 .sidebar-link {
     display: flex; align-items: center; gap: 10px;
-    padding: 11px 20px; margin: 2px 10px;
-    border-radius: 8px; font-size: 14px; font-weight: 500;
+    padding: 11px 16px; margin: 2px 8px;
+    border-radius: 8px; font-size: 13px; font-weight: 500;
     color: #9ca3b4; text-decoration: none;
     transition: all .15s ease;
 }
@@ -26,43 +119,20 @@
 .sidebar-link.active {
     background: var(--accent); color: #fff; font-weight: 700;
 }
-.sidebar-link .icon { font-size: 16px; width: 20px; text-align: center; }
-.sidebar-action-link {
-    width: calc(100% - 20px);
-    border: 0;
-    background: transparent;
-    text-align: left;
-    font-family: inherit;
-}
-.sidebar-divider {
-    height: 1px; background: rgba(255,255,255,.08);
-    margin: 8px 20px;
-}
-.sidebar-footer {
-    padding: 16px 10px; border-top: 1px solid rgba(255,255,255,.08);
-}
-.sidebar-footer .sidebar-link { color: #7a8194; }
-.sidebar-footer .sidebar-link:hover { color: #e74c3c; background: rgba(231,76,60,.1); }
+.sidebar-link .icon { font-size: 15px; width: 18px; text-align: center; }
 
-/* ── Mobile toggle ── */
-.sidebar-toggle {
-    display: none; position: fixed; top: 14px; left: 14px;
-    z-index: 1100; width: 40px; height: 40px;
-    background: var(--accent); color: #fff; border: none;
-    border-radius: 8px; font-size: 20px; cursor: pointer;
-    align-items: center; justify-content: center;
-    box-shadow: 0 2px 8px rgba(0,0,0,.15);
-}
 .sidebar-overlay {
     display: none; position: fixed; inset: 0;
+    top: var(--topbar-h);
     background: rgba(0,0,0,.4); z-index: 999;
 }
 
-/* ── Main content ── */
+/* ══════════════ Main Content ══════════════ */
 .admin-main {
-    flex: 1; margin-left: 250px;
+    flex: 1; margin-left: var(--sidebar-w);
     padding: 32px 28px; max-width: 100%;
 }
+.admin-main.full-width { margin-left: 0; }
 .admin-main .page-header { margin-bottom: 24px; }
 .admin-main .page-title {
     font-size: 26px; font-weight: 800;
@@ -72,7 +142,7 @@
     color: var(--text2); font-size: 14px;
 }
 
-/* ── Shared buttons ── */
+/* ══════════════ Shared Buttons ══════════════ */
 .btn {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 10px 20px; border-radius: var(--radius-sm);
@@ -80,9 +150,7 @@
     cursor: pointer; transition: all .2s;
     font-family: inherit; white-space: nowrap; text-decoration: none;
 }
-.btn:disabled {
-    opacity: .6; cursor: not-allowed;
-}
+.btn:disabled { opacity: .6; cursor: not-allowed; }
 .btn-primary { background: var(--accent); color: #fff; }
 .btn-primary:hover:not(:disabled) { background: #d14e1a; }
 .btn-outline { background: var(--bg2); color: var(--text); border: 1px solid var(--border); }
@@ -93,7 +161,6 @@
 .btn-danger:hover:not(:disabled) { background: #b91c1c; }
 .btn-sm { padding: 7px 14px; font-size: 13px; }
 
-/* ── Loading spinner for buttons ── */
 .btn .spinner {
     display: inline-block; width: 14px; height: 14px;
     border: 2px solid rgba(255,255,255,.3);
@@ -106,7 +173,7 @@
 }
 @keyframes btn-spin { to { transform: rotate(360deg); } }
 
-/* ── Shared tables ── */
+/* ══════════════ Shared Tables ══════════════ */
 .table-wrap {
     background: var(--bg2); border: 1px solid var(--border);
     border-radius: var(--radius); overflow: hidden; margin-bottom: 28px;
@@ -134,7 +201,7 @@ tr:hover td { background: var(--bg3); }
 .mono { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
 .emp-name { font-weight: 600; }
 
-/* ── Shared forms ── */
+/* ══════════════ Shared Forms ══════════════ */
 .filter-bar {
     display: flex; align-items: center; gap: 8px;
     flex-wrap: wrap; margin-bottom: 20px;
@@ -155,7 +222,7 @@ tr:hover td { background: var(--bg3); }
 }
 .form-group { display: flex; flex-direction: column; gap: 4px; }
 
-/* ── Shared badges ── */
+/* ══════════════ Shared Badges ══════════════ */
 .badge {
     display: inline-flex; align-items: center;
     padding: 3px 10px; border-radius: 20px;
@@ -169,7 +236,7 @@ tr:hover td { background: var(--bg3); }
 .badge-paid     { background: #e0e7ff; color: var(--night); }
 .badge-cancelled{ background: var(--bg3); color: var(--text2); }
 
-/* ── Messages ── */
+/* ══════════════ Messages ══════════════ */
 .success-msg {
     background: var(--success-bg); border: 1px solid #86efac;
     border-radius: var(--radius-sm); padding: 14px 16px;
@@ -186,7 +253,7 @@ tr:hover td { background: var(--bg3); }
     font-size: 13px; color: var(--accent); margin-bottom: 16px;
 }
 
-/* ── Toast ── */
+/* ══════════════ Toast ══════════════ */
 .toast {
     position: fixed; bottom: 24px; right: 24px;
     background: #1a1a1a; color: #fff;
@@ -195,7 +262,7 @@ tr:hover td { background: var(--bg3); }
     display: none; box-shadow: 0 4px 12px rgba(0,0,0,.2);
 }
 
-/* ── Modal (shared) ── */
+/* ══════════════ Modal (Shared) ══════════════ */
 .modal-overlay {
     display: none; position: fixed; inset: 0;
     background: rgba(0,0,0,.5); z-index: 1500;
@@ -211,22 +278,11 @@ tr:hover td { background: var(--bg3); }
 .modal-card h3 {
     font-size: 18px; font-weight: 700; margin-bottom: 20px;
 }
-.password-modal-form {
-    display: grid;
-    gap: 12px;
-}
-.password-modal-group {
-    display: grid;
-    gap: 6px;
-}
+.password-modal-form { display: grid; gap: 12px; }
+.password-modal-group { display: grid; gap: 6px; }
 .password-modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-top: 8px;
+    display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px;
 }
-
-/* ── Confirm/Prompt modal ── */
 .confirm-modal-msg {
     font-size: 15px; line-height: 1.6; margin-bottom: 20px;
     word-break: keep-all; white-space: pre-line;
@@ -236,8 +292,7 @@ tr:hover td { background: var(--bg3); }
     border: 1px solid var(--border); border-radius: var(--radius-sm);
     font-size: 14px; font-family: inherit;
     background: var(--bg); color: var(--text);
-    margin-bottom: 16px; outline: none;
-    transition: border-color .2s;
+    margin-bottom: 16px; outline: none; transition: border-color .2s;
 }
 .confirm-modal-input:focus {
     border-color: var(--accent);
@@ -248,7 +303,7 @@ textarea.confirm-modal-input { min-height: 80px; resize: vertical; }
     display: flex; justify-content: flex-end; gap: 8px;
 }
 
-/* ── Mobile bottom nav ── */
+/* ══════════════ Mobile Bottom Nav (4 Groups) ══════════════ */
 .mobile-bottom-nav {
     display: none;
     position: fixed; bottom: 0; left: 0; right: 0;
@@ -269,13 +324,38 @@ textarea.confirm-modal-input { min-height: 80px; resize: vertical; }
 .mobile-bottom-nav a:hover,
 .mobile-bottom-nav a.active { color: var(--accent); }
 
-/* ── Mobile responsive ── */
+/* ══════════════ Responsive: <= 768px ══════════════ */
 @media (max-width: 768px) {
-    .sidebar { transform: translateX(-100%); }
+    .topbar-categories { display: none; }
+    .topbar-hamburger { display: flex; }
+
+    .sidebar {
+        transform: translateX(-100%);
+        width: 260px;
+        display: flex !important;
+        flex-direction: column;
+    }
+    .sidebar.hidden { display: flex !important; }
     .sidebar.open { transform: translateX(0); }
-    .sidebar-toggle { display: flex; }
     .sidebar-overlay.show { display: block; }
-    .admin-main { margin-left: 0; padding: 24px 16px; padding-top: 64px; padding-bottom: 80px; }
+
+    /* 모바일: 모든 그룹 표시 + 그룹 타이틀 */
+    .sidebar-group { display: block; }
+    .sidebar-group-title {
+        display: block;
+        padding: 18px 16px 6px;
+        font-size: 11px; font-weight: 700;
+        color: rgba(255,255,255,.35);
+        letter-spacing: .5px;
+    }
+
+    .admin-main {
+        margin-left: 0 !important;
+        padding: 24px 16px;
+        padding-top: calc(var(--topbar-h) + 16px);
+        padding-bottom: 80px;
+    }
+
     .btn, .btn-sm { min-height: 44px; }
     .mobile-bottom-nav { display: flex; }
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
@@ -289,7 +369,11 @@ textarea.confirm-modal-input { min-height: 80px; resize: vertical; }
 }
 
 @media (max-width: 480px) {
-    .admin-main { padding: 16px 12px; padding-top: 60px; padding-bottom: 76px; }
+    .admin-main {
+        padding: 16px 12px;
+        padding-top: calc(var(--topbar-h) + 12px);
+        padding-bottom: 76px;
+    }
     .admin-main .page-title { font-size: 22px; }
     .stats-grid { grid-template-columns: 1fr; }
     .stat-value { font-size: 22px; }

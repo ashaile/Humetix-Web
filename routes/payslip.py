@@ -11,9 +11,11 @@ from flask import (
     request,
     send_file,
 )
-from models import Employee, Payslip, db
+from models import Employee, Payslip, Site, db
 from routes.utils import require_admin, validate_month as _validate_month
-from services.payslip_service import ALLOWED_SALARY_MODES, compute_payslips
+from services.payslip_service import (
+    ALLOWED_SALARY_MODES, compute_payslips, compute_single_payslip, _effective_salary_mode,
+)
 from extensions import limiter
 
 logger = logging.getLogger(__name__)
@@ -29,12 +31,27 @@ def admin_payslip():
         month = datetime.now().strftime("%Y-%m")
 
     payslips = Payslip.query.filter(Payslip.month == month).order_by(Payslip.emp_name.asc()).all()
+    employees = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
+
+    # 고객사 매핑
+    emp_ids = list({ps.employee_id for ps in payslips})
+    site_map = {}
+    if emp_ids:
+        rows = (
+            db.session.query(Employee.id, Site.name)
+            .outerjoin(Site, Employee.site_id == Site.id)
+            .filter(Employee.id.in_(emp_ids))
+            .all()
+        )
+        site_map = {eid: sname or "-" for eid, sname in rows}
 
     cfg = current_app.config
     return render_template(
         "admin_payslip.html",
         payslips=payslips,
+        employees=employees,
         month=month,
+        site_map=site_map,
         salary_mode=cfg.get("SALARY_MODE", "standard"),
         hourly_wage=cfg.get("HOURLY_WAGE", 10320),
     )
@@ -98,7 +115,7 @@ def update_payslip(payslip_id: int):
 
     data = request.get_json(silent=True) or {}
     editable = [
-        "base_salary", "ot_pay", "night_pay", "holiday_pay",
+        "base_salary", "weekly_holiday_pay", "ot_pay", "night_pay", "holiday_pay",
         "tax", "pension", "health_ins", "longterm_care",
         "employment_ins", "advance_deduction",
     ]
@@ -107,8 +124,12 @@ def update_payslip(payslip_id: int):
             if field in data:
                 setattr(payslip, field, int(data[field]))
 
-        # gross/insurance/net 자동 재계산
-        payslip.gross = payslip.base_salary + payslip.ot_pay + payslip.night_pay + payslip.holiday_pay
+        # gross/insurance/net 자동 재계산 (주휴수당 가산, 결근/주휴 공제 반영)
+        payslip.gross = max(0,
+            payslip.base_salary + payslip.weekly_holiday_pay
+            + payslip.ot_pay + payslip.night_pay + payslip.holiday_pay
+            - payslip.absent_deduction - payslip.weekly_holiday_deduction
+        )
         payslip.insurance = payslip.pension + payslip.health_ins + payslip.longterm_care + payslip.employment_ins
         payslip.net = payslip.gross - payslip.tax - payslip.insurance - payslip.advance_deduction
         payslip.is_manual = True
@@ -132,20 +153,15 @@ def reset_payslip(payslip_id: int):
     if not payslip.is_manual:
         return jsonify({"error": "수동 수정된 명세서가 아닙니다."}), 400
 
-    from services.payslip_service import _month_range
+    from services.payslip_service import (
+        _month_range, _calc_pay, _calc_deductions, _calc_attendance_info,
+        _calc_absence_deductions, _effective_salary_mode,
+    )
+    from services.wage_service import get_wage_config
     from models import AttendanceRecord, AdvanceRequest
     from sqlalchemy import func
 
     cfg = current_app.config
-    hourly = cfg.get("HOURLY_WAGE", 10320)
-    std_monthly_hours = cfg.get("MONTHLY_STANDARD_HOURS", 209)
-    ot_mult = cfg.get("OT_MULTIPLIER", 1.5)
-    night_prem = cfg.get("NIGHT_PREMIUM", 0.5)
-    tax_rate = cfg.get("TAX_RATE", 0.033)
-    pension_rate = cfg.get("PENSION_RATE", 0.045)
-    health_rate = cfg.get("HEALTH_RATE", 0.03545)
-    longterm_rate = cfg.get("LONGTERM_CARE_RATE", 0.1295)
-    employment_rate = cfg.get("EMPLOYMENT_RATE", 0.009)
 
     start_date, end_date = _month_range(payslip.month)
 
@@ -172,33 +188,33 @@ def reset_payslip(payslip_id: int):
     night_h = round(row.night_hours or 0, 2)
     holiday_h = round(row.holiday_hours or 0, 2)
 
-    if payslip.salary_mode == "actual":
-        base_salary = round(hourly * total_h)
-    else:
-        base_salary = hourly * std_monthly_hours
+    # WageConfig 기반 계산
+    wage_cfg = get_wage_config(employee_id=payslip.employee_id)
+    fallback_mode = payslip.salary_mode if payslip.salary_mode in ("standard", "actual", "daily_build") else "standard"
+    effective_mode = _effective_salary_mode(wage_cfg, fallback_mode)
 
-    ot_pay = round(ot_h * hourly * ot_mult)
-    night_pay = round(night_h * hourly * night_prem)
-    holiday_pay = round(holiday_h * hourly * ot_mult)
-    gross = base_salary + ot_pay + night_pay + holiday_pay
+    # 출근/결근 정보
+    absent_days_val, non_full_weeks, attended_days, full_weeks = (
+        _calc_attendance_info(payslip.employee_id, payslip.month, cfg)
+    )
+
+    base_salary, weekly_hol_pay, ot_pay, night_pay, holiday_pay = _calc_pay(
+        wage_cfg, effective_mode, total_h, ot_h, night_h, holiday_h,
+        attended_days, full_weeks,
+    )
+
+    # 결근/주휴 공제 (standard만 해당)
+    absent_ded, weekly_hol_ded = _calc_absence_deductions(
+        wage_cfg, effective_mode, absent_days_val, non_full_weeks
+    )
+
+    gross = max(0, base_salary + weekly_hol_pay + ot_pay + night_pay + holiday_pay
+                 - absent_ded - weekly_hol_ded)
 
     # 직원별 보험 유형 조회
     emp = db.session.get(Employee, payslip.employee_id)
     emp_ins_type = emp.insurance_type if emp else "3.3%"
-
-    if emp_ins_type == "4대보험":
-        tax = 0
-        pension = round(gross * pension_rate)
-        health = round(gross * health_rate)
-        longterm = round(health * longterm_rate)
-        employment = round(gross * employment_rate)
-    else:
-        tax = round(gross * tax_rate)
-        pension = 0
-        health = 0
-        longterm = 0
-        employment = 0
-    insurance = pension + health + longterm + employment
+    tax, pension, health, longterm, employment, insurance = _calc_deductions(gross, emp_ins_type, cfg)
 
     adv_total = (
         db.session.query(func.coalesce(func.sum(AdvanceRequest.amount), 0))
@@ -213,14 +229,19 @@ def reset_payslip(payslip_id: int):
     net = gross - tax - insurance - adv_total
 
     try:
+        payslip.salary_mode = effective_mode
         payslip.total_work_hours = total_h
         payslip.ot_hours = ot_h
         payslip.night_hours = night_h
         payslip.holiday_hours = holiday_h
         payslip.base_salary = base_salary
+        payslip.weekly_holiday_pay = weekly_hol_pay
         payslip.ot_pay = ot_pay
         payslip.night_pay = night_pay
         payslip.holiday_pay = holiday_pay
+        payslip.absent_days = absent_days_val
+        payslip.absent_deduction = absent_ded
+        payslip.weekly_holiday_deduction = weekly_hol_ded
         payslip.gross = gross
         payslip.tax = tax
         payslip.pension = pension
@@ -257,6 +278,64 @@ def delete_payslips_by_month():
         db.session.rollback()
         logger.error("Payslip month delete error: %s", exc)
         return jsonify({"error": "월 급여명세서 삭제 중 오류가 발생했습니다."}), 500
+
+
+@payslip_bp.route("/admin/payslip/generate-single", methods=["POST"])
+@require_admin
+def generate_single_payslip():
+    """특정 직원 1명의 급여명세서를 개별 생성."""
+    payload = request.get_json(silent=True) or {}
+    month = (request.form.get("month") or payload.get("month") or "").strip()
+    employee_id = request.form.get("employee_id") or payload.get("employee_id")
+
+    if not _validate_month(month):
+        return jsonify({"error": "month (YYYY-MM) is required"}), 400
+    if not employee_id or not str(employee_id).isdigit():
+        return jsonify({"error": "employee_id is required"}), 400
+
+    salary_mode = (
+        request.form.get("salary_mode")
+        or payload.get("salary_mode")
+        or current_app.config.get("SALARY_MODE", "standard")
+    )
+    if salary_mode not in ALLOWED_SALARY_MODES:
+        return jsonify({"error": f"invalid salary_mode: {salary_mode}"}), 400
+
+    try:
+        result = compute_single_payslip(int(employee_id), month, salary_mode)
+    except Exception as exc:
+        db.session.rollback()
+        logger.error("Single payslip generate error: %s", exc)
+        return jsonify({"error": "급여 생성 중 오류가 발생했습니다."}), 500
+
+    if isinstance(result, str):
+        return jsonify({"error": result}), 400
+
+    return jsonify({"success": True, **result})
+
+
+@payslip_bp.route("/admin/payslip/delete-selected", methods=["POST"])
+@require_admin
+def delete_selected_payslips():
+    """선택한 급여명세서를 일괄 삭제."""
+    payload = request.get_json(silent=True) or {}
+    ids = payload.get("ids", [])
+    if not ids or not isinstance(ids, list):
+        return jsonify({"error": "삭제할 항목을 선택해주세요."}), 400
+
+    # 숫자만 허용
+    valid_ids = [int(i) for i in ids if str(i).isdigit()]
+    if not valid_ids:
+        return jsonify({"error": "유효한 ID가 없습니다."}), 400
+
+    try:
+        deleted = Payslip.query.filter(Payslip.id.in_(valid_ids)).delete(synchronize_session=False)
+        db.session.commit()
+        return jsonify({"success": True, "deleted": deleted})
+    except Exception as exc:
+        db.session.rollback()
+        logger.error("Selected payslip delete error: %s", exc)
+        return jsonify({"error": "선택 삭제 중 오류가 발생했습니다."}), 500
 
 
 def _generate_payslip_pdf(payslips):
@@ -352,7 +431,8 @@ def _generate_payslip_pdf(payslips):
         elements.append(Spacer(1, 3 * mm))
 
         # ── 직원 정보 박스 ──
-        mode_label = "209h 고정" if payslip.salary_mode == "standard" else "실근무시간"
+        _MODE_LABELS = {"standard": "209h 고정", "daily_build": "일급제", "actual": "실근무시간", "daily": "공수제"}
+        mode_label = _MODE_LABELS.get(payslip.salary_mode, payslip.salary_mode)
         info_data = [
             ["성명", payslip.emp_name, "부서", payslip.dept or "-"],
             ["시급", f"{hourly:,}원", "계산방식", mode_label],
@@ -383,10 +463,18 @@ def _generate_payslip_pdf(payslips):
         earn_header = [["지급 내역", ""]]
         earn_data = [
             ["기본급", f"{payslip.base_salary:,}원"],
+        ]
+        if payslip.weekly_holiday_pay > 0:
+            earn_data.append(["주휴수당", f"{payslip.weekly_holiday_pay:,}원"])
+        earn_data.extend([
             [f"잔업수당 ({payslip.ot_hours}h)", f"{payslip.ot_pay:,}원"],
             [f"심야수당 ({payslip.night_hours}h)", f"{payslip.night_pay:,}원"],
             [f"휴일수당 ({payslip.holiday_hours}h)", f"{payslip.holiday_pay:,}원"],
-        ]
+        ])
+        if payslip.absent_deduction > 0:
+            earn_data.append([f"결근공제 ({int(payslip.absent_days)}일)", f"-{payslip.absent_deduction:,}원"])
+        if payslip.weekly_holiday_deduction > 0:
+            earn_data.append(["주휴공제", f"-{payslip.weekly_holiday_deduction:,}원"])
         earn_total = [["총지급액", f"{payslip.gross:,}원"]]
 
         earn_all = earn_header + earn_data + earn_total
@@ -570,9 +658,13 @@ def payslip_excel():
         "야간(h)",
         "휴일(h)",
         "기본급",
+        "주휴수당",
         "잔업수당",
         "야간수당",
         "휴일수당",
+        "결근일수",
+        "결근공제",
+        "주휴공제",
         "총지급",
         "소득세",
         "국민연금",
@@ -589,8 +681,9 @@ def payslip_excel():
         cell = ws.cell(row=1, column=col, value=header)
         cell.font = bold
 
+    _XL_MODE = {"standard": "209h고정", "daily_build": "일급제", "actual": "실근무", "daily": "공수제"}
     for i, payslip in enumerate(payslips, 2):
-        mode_label = "209h고정" if payslip.salary_mode == "standard" else "실근무"
+        mode_label = _XL_MODE.get(payslip.salary_mode, payslip.salary_mode)
         values = [
             payslip.employee_id,
             payslip.emp_name,
@@ -601,9 +694,13 @@ def payslip_excel():
             payslip.night_hours,
             payslip.holiday_hours,
             payslip.base_salary,
+            payslip.weekly_holiday_pay,
             payslip.ot_pay,
             payslip.night_pay,
             payslip.holiday_pay,
+            payslip.absent_days,
+            payslip.absent_deduction,
+            payslip.weekly_holiday_deduction,
             payslip.gross,
             payslip.tax,
             payslip.pension,

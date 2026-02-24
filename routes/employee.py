@@ -5,9 +5,10 @@ from datetime import datetime
 from flask import Blueprint, jsonify, render_template, request
 from sqlalchemy.exc import IntegrityError
 
-from models import AdvanceRequest, AttendanceRecord, Employee, Payslip, Site, db
+from models import AdvanceRequest, AttendanceRecord, Employee, Payslip, Site, WageConfig, db
 from routes.utils import require_admin
 from extensions import limiter
+from services.wage_service import get_wage_config, get_wage_config_detail, save_wage_config
 
 logger = logging.getLogger(__name__)
 
@@ -211,3 +212,48 @@ def verify_employee():
         return jsonify({"verified": True, "employee": employee.to_dict()})
 
     return jsonify({"verified": False, "error": "등록된 재직 직원이 아닙니다."})
+
+
+# ── 직원 급여 설정 API ──────────────────────────────────
+
+
+@employee_bp.route("/api/employees/<int:emp_id>/wage-config")
+@require_admin
+def get_emp_wage_config(emp_id):
+    """직원의 급여 설정 조회 (해석된 값 + 원본 + 출처 상세)."""
+    emp = db.session.get(Employee, emp_id)
+    if not emp:
+        return jsonify({"error": "직원을 찾을 수 없습니다."}), 404
+
+    detail = get_wage_config_detail(emp_id)
+
+    raw = WageConfig.query.filter_by(config_type="employee", target_id=emp_id).first()
+    raw_data = raw.to_dict() if raw else {}
+
+    return jsonify({
+        "success": True,
+        "detail": detail,
+        "raw": raw_data,
+        "employee_name": emp.name,
+    })
+
+
+@employee_bp.route("/api/employees/<int:emp_id>/wage-config", methods=["PUT"])
+@require_admin
+def update_emp_wage_config(emp_id):
+    """직원의 급여 설정 저장."""
+    emp = db.session.get(Employee, emp_id)
+    if not emp:
+        return jsonify({"error": "직원을 찾을 수 없습니다."}), 404
+
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"error": "JSON body required"}), 400
+
+    try:
+        cfg = save_wage_config("employee", emp_id, data)
+        return jsonify({"success": True, "config": cfg.to_dict()})
+    except Exception as exc:
+        db.session.rollback()
+        logger.error("Employee wage config save error: %s", exc)
+        return jsonify({"error": "저장 실패"}), 500

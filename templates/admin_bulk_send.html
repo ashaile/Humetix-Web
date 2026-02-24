@@ -1,0 +1,580 @@
+{% extends "base_admin.html" %}
+
+{% block admin_title %}HUMETIX - 대량전송{% endblock %}
+{% block page_title %}대량전송{% endblock %}
+{% block page_desc %}같은 서식으로 여러 사람에게 계약서를 한번에 보냅니다.{% endblock %}
+
+{% block page_css %}
+/* ── 대량전송 폼 영역 ── */
+.bulk-form-section {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 24px;
+}
+.bulk-form-section h3 {
+    font-size: 16px; font-weight: 700;
+    margin-bottom: 16px; color: var(--text);
+}
+.bulk-form-row {
+    display: flex; gap: 16px; flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+.bulk-form-row .form-group { flex: 1; min-width: 200px; }
+
+/* ── 수신자 테이블 ── */
+.recipient-table-wrap {
+    margin-top: 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+.recipient-table {
+    width: 100%; border-collapse: collapse;
+}
+.recipient-table th {
+    background: var(--bg3); padding: 8px 12px;
+    font-size: 12px; font-weight: 600; color: var(--text2);
+    text-align: left; border-bottom: 1px solid var(--border);
+}
+.recipient-table td {
+    padding: 6px 10px; border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+}
+.recipient-table tr:last-child td { border-bottom: none; }
+.recipient-table .row-num {
+    width: 40px; text-align: center;
+    font-size: 12px; color: var(--text2); font-weight: 600;
+}
+.recipient-table input {
+    width: 100%; padding: 6px 8px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg); color: var(--text); font-size: 13px;
+}
+.recipient-table input:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(var(--accent-rgb, 99,102,241), .15);
+}
+.recipient-table .del-cell { width: 40px; text-align: center; }
+.recipient-del-btn {
+    background: none; border: none; color: var(--danger);
+    cursor: pointer; font-size: 18px; padding: 4px 8px;
+    border-radius: var(--radius-sm); transition: background .15s;
+}
+.recipient-del-btn:hover { background: rgba(239,68,68,.1); }
+
+/* ── 행 추가 버튼 ── */
+.add-row-btn {
+    display: block; width: 100%; padding: 10px;
+    margin-top: 8px;
+    border: 1px dashed var(--border); border-radius: var(--radius-sm);
+    background: none; cursor: pointer;
+    color: var(--text2); font-size: 13px;
+    text-align: center; transition: all .15s;
+}
+.add-row-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── 엑셀 업로드 영역 ── */
+.excel-upload-area {
+    display: flex; gap: 8px; align-items: center;
+    margin-bottom: 12px;
+}
+.excel-upload-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); background: var(--bg2);
+    cursor: pointer; font-size: 13px; color: var(--text);
+    transition: all .15s;
+}
+.excel-upload-btn:hover { border-color: var(--accent); color: var(--accent); }
+.excel-hint { font-size: 12px; color: var(--text2); }
+
+/* ── 관리자 정보 영역 ── */
+.employer-section {
+    background: rgba(99,102,241,.06);
+    border: 1px solid rgba(99,102,241,.2);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    margin-bottom: 20px;
+}
+.employer-section h4 {
+    font-size: 14px; font-weight: 600;
+    margin-bottom: 12px; color: var(--accent);
+}
+.employer-row {
+    display: flex; gap: 16px; flex-wrap: wrap;
+}
+.employer-row .form-group { flex: 1; min-width: 200px; }
+
+/* ── 전송 버튼 영역 ── */
+.bulk-submit-area {
+    display: flex; gap: 12px; justify-content: flex-end;
+    margin-top: 20px; padding-top: 16px;
+    border-top: 1px solid var(--border);
+}
+
+/* ── 전송 진행 상태 ── */
+.send-progress {
+    display: none; align-items: center; gap: 12px;
+    margin-top: 12px; padding: 12px 16px;
+    background: #eff6ff; border: 1px solid #bfdbfe;
+    border-radius: var(--radius-sm); font-size: 13px; color: #1d4ed8;
+}
+.send-progress.show { display: flex; }
+.send-progress .progress-bar-wrap {
+    flex: 1; height: 8px; background: #dbeafe;
+    border-radius: 4px; overflow: hidden;
+}
+.send-progress .progress-bar-fill {
+    height: 100%; background: var(--accent);
+    border-radius: 4px; transition: width .3s;
+    width: 0%;
+}
+
+/* ── 대량전송 이력 테이블 ── */
+.history-section { margin-top: 8px; }
+.history-section tr[style*="cursor:pointer"]:hover td { background: rgba(232,93,38,.04); }
+.history-progress {
+    display: flex; align-items: center; gap: 8px;
+}
+.history-progress-bar {
+    flex: 1; height: 6px; background: var(--bg3);
+    border-radius: 3px; overflow: hidden; min-width: 60px;
+}
+.history-progress-fill {
+    height: 100%; border-radius: 3px;
+    transition: width .3s;
+}
+.history-progress-fill.complete { background: var(--success, #16a34a); }
+.history-progress-fill.partial { background: #f59e0b; }
+.history-progress-text {
+    font-size: 12px; color: var(--text2); white-space: nowrap;
+}
+
+/* ── 날짜 확인 버튼 ── */
+.dt-confirm-btn {
+    padding: 6px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg2); cursor: pointer; font-size: 13px; font-family: inherit;
+    white-space: nowrap; transition: all .15s;
+}
+.dt-confirm-btn:hover { border-color: var(--accent); color: var(--accent); }
+.dt-confirm-btn.confirmed {
+    background: #dcfce7; border-color: #16a34a; color: #16a34a; pointer-events: none;
+}
+.dt-confirmed-text {
+    font-size: 12px; color: #16a34a; font-weight: 600; display: none; margin-top: 4px;
+}
+.dt-confirmed-text.show { display: inline-block; }
+
+/* ── 반응형 ── */
+@media (max-width: 768px) {
+    .bulk-form-row { flex-direction: column; }
+    .bulk-form-row .form-group { min-width: 100%; }
+    .bulk-submit-area { flex-direction: column; }
+    .bulk-submit-area .btn { width: 100%; }
+}
+{% endblock %}
+
+{% block content %}
+{# ── 대량전송 폼 ── #}
+<div class="bulk-form-section">
+    <h3>&#128232; 새 대량전송</h3>
+    <div class="bulk-form-row">
+        <div class="form-group">
+            <label class="form-label">서식 선택 <span style="color:var(--danger);">*</span></label>
+            <select class="form-input" id="bulkTemplate">
+                <option value="">서식을 선택하세요</option>
+                {% for t in templates %}
+                <option value="{{ t.id }}">{{ t.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">계약명 (선택)</label>
+            <input type="text" class="form-input" id="bulkTitle" placeholder="비워두면 서식명이 사용됩니다">
+        </div>
+        <div class="form-group">
+            <label class="form-label">만료일 (선택)</label>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <input type="datetime-local" class="form-input" id="bulkExpiry" style="flex:1;">
+                <button type="button" class="dt-confirm-btn" onclick="confirmBulkDt(this, 'bulkExpiry')">확인</button>
+            </div>
+            <span class="dt-confirmed-text" id="bulkExpiryConfirmed"></span>
+        </div>
+    </div>
+    <div class="bulk-form-row">
+        <div class="form-group">
+            <label class="form-label" style="display:flex;align-items:center;gap:8px;">
+                <input type="checkbox" id="bulkEnableSchedule" onchange="toggleBulkSchedule()">
+                예약발송
+            </label>
+            <div id="bulkScheduleSection" style="display:none;margin-top:8px;">
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <input type="datetime-local" class="form-input" id="bulkScheduledAt" style="flex:1;">
+                    <button type="button" class="dt-confirm-btn" onclick="confirmBulkDt(this, 'bulkScheduledAt')">확인</button>
+                </div>
+                <span class="dt-confirmed-text" id="bulkScheduledAtConfirmed"></span>
+                <div style="font-size:12px;color:var(--text2);margin-top:4px;">지정한 시각에 자동으로 서명 링크 SMS가 발송됩니다.</div>
+            </div>
+        </div>
+    </div>
+
+    {# ── 관리자(사용자) 정보 ── #}
+    <div class="employer-section">
+        <h4>&#128100; 관리자(사용자) 정보</h4>
+        <div class="employer-row">
+            <div class="form-group">
+                <label class="form-label">사용자 이름 <span style="color:var(--danger);">*</span></label>
+                <input type="text" class="form-input" id="employerName" placeholder="서명할 관리자 이름">
+            </div>
+            <div class="form-group">
+                <label class="form-label">사용자 연락처</label>
+                <input type="text" class="form-input" id="employerPhone" placeholder="연락처 입력 (선택)">
+            </div>
+        </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+        <label class="form-label" style="margin:0;">수신자 목록 (근로자)</label>
+        <div class="excel-upload-area">
+            <a href="{{ url_for('static', filename='bulk_send_sample.xlsx') }}" class="excel-upload-btn" download>&#128203; 양식 다운로드</a>
+            <label class="excel-upload-btn" for="excelInput">
+                &#128196; 엑셀/CSV 업로드
+            </label>
+            <input type="file" id="excelInput" accept=".xlsx,.xls,.csv" style="display:none">
+        </div>
+    </div>
+    <div class="recipient-table-wrap">
+        <table class="recipient-table" id="recipientTable">
+            <thead>
+                <tr>
+                    <th class="row-num">#</th>
+                    <th>이름 <span style="color:var(--danger);">*</span></th>
+                    <th>연락처</th>
+                    <th class="del-cell"></th>
+                </tr>
+            </thead>
+            <tbody id="recipientTbody">
+            </tbody>
+        </table>
+    </div>
+    <button class="add-row-btn" onclick="addRecipientRow()">+ 수신자 추가</button>
+
+    {# ── 전송 진행 표시 ── #}
+    <div class="send-progress" id="sendProgress">
+        <span id="sendProgressText">전송 중... 0/0</span>
+        <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="sendProgressBar"></div>
+        </div>
+    </div>
+
+    <div class="bulk-submit-area">
+        <button class="btn btn-primary" id="bulkSendBtn" onclick="executeBulkSend()">
+            &#128232; 대량 전송
+        </button>
+    </div>
+</div>
+
+{# ── 대량전송 이력 ── #}
+<div class="history-section">
+    <div class="table-wrap">
+        <div class="table-header">
+            <div class="table-title">대량전송 이력 ({{ bulk_history|length }}건)</div>
+        </div>
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>계약명</th>
+                        <th>서식명</th>
+                        <th>진행현황</th>
+                        <th>생성일</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for h in bulk_history %}
+                    <tr style="cursor:pointer;" onclick="location.href='/admin/bulk-send/{{ h.batch_id }}'">
+                        <td style="font-weight:600;">{{ h.title }}</td>
+                        <td>{{ h.template_name }}</td>
+                        <td>
+                            <div class="history-progress">
+                                <div class="history-progress-bar">
+                                    {% set pct = (h.signed / h.total * 100) if h.total > 0 else 0 %}
+                                    <div class="history-progress-fill {{ 'complete' if h.signed == h.total else 'partial' }}"
+                                         style="width:{{ pct|round|int }}%"></div>
+                                </div>
+                                <span class="history-progress-text">
+                                    <strong>{{ h.total }}</strong>/<span style="color:var(--success);">{{ h.signed }}</span>/<span style="color:#b45309;">{{ h.pending }}</span>
+                                    <small style="color:var(--text2);">(전체/완료/대기)</small>
+                                </span>
+                            </div>
+                        </td>
+                        <td class="mono" style="white-space:nowrap;font-size:12px;">
+                            {{ h.created_at.strftime('%Y-%m-%d %H:%M') if h.created_at else '-' }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% if not bulk_history %}
+                    <tr>
+                        <td colspan="4" style="text-align:center;padding:24px;color:var(--text2);">
+                            대량전송 이력이 없습니다.
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head_extra %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+{% endblock %}
+
+{% block page_js %}
+const csrfToken = window.csrfToken;
+const headers = { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken };
+
+/* ── 날짜/시간 확인 버튼 ── */
+function confirmBulkDt(btn, inputId) {
+    const input = document.getElementById(inputId);
+    if (!input.value) {
+        showToast('날짜/시각을 선택해주세요.');
+        return;
+    }
+    input.blur();
+    btn.textContent = '설정됨';
+    btn.classList.add('confirmed');
+    const confirmText = document.getElementById(inputId + 'Confirmed');
+    if (confirmText) {
+        const dt = new Date(input.value);
+        confirmText.textContent = dt.toLocaleString('ko-KR') + ' 설정됨';
+        confirmText.classList.add('show');
+    }
+    input.addEventListener('input', function handler() {
+        btn.textContent = '확인';
+        btn.classList.remove('confirmed');
+        if (confirmText) confirmText.classList.remove('show');
+        input.removeEventListener('input', handler);
+    });
+}
+
+/* ── 예약발송 토글 ── */
+function toggleBulkSchedule() {
+    const enabled = document.getElementById('bulkEnableSchedule').checked;
+    document.getElementById('bulkScheduleSection').style.display = enabled ? '' : 'none';
+    const btn = document.getElementById('bulkSendBtn');
+    btn.innerHTML = enabled ? '&#128337; 예약 대량전송' : '&#128232; 대량 전송';
+}
+
+/* ── 수신자 행 관리 ── */
+let rowCounter = 0;
+
+function addRecipientRow(name, phone) {
+    rowCounter++;
+    const tbody = document.getElementById('recipientTbody');
+    const tr = document.createElement('tr');
+    tr.dataset.rowId = rowCounter;
+    const tdNum = document.createElement('td'); tdNum.className = 'row-num'; tdNum.textContent = rowCounter;
+    const tdName = document.createElement('td');
+    const inpName = document.createElement('input'); inpName.type = 'text'; inpName.className = 'recipient-name'; inpName.placeholder = '이름 입력';
+    if (name) inpName.value = name;
+    tdName.appendChild(inpName);
+    const tdPhone = document.createElement('td');
+    const inpPhone = document.createElement('input'); inpPhone.type = 'text'; inpPhone.className = 'recipient-phone'; inpPhone.placeholder = '연락처 입력 (선택)';
+    if (phone) inpPhone.value = phone;
+    tdPhone.appendChild(inpPhone);
+    const tdDel = document.createElement('td'); tdDel.className = 'del-cell';
+    const delBtn = document.createElement('button'); delBtn.className = 'recipient-del-btn'; delBtn.title = '삭제'; delBtn.textContent = '\u00d7';
+    delBtn.onclick = function() { removeRecipientRow(this); };
+    tdDel.appendChild(delBtn);
+    tr.appendChild(tdNum); tr.appendChild(tdName); tr.appendChild(tdPhone); tr.appendChild(tdDel);
+    tbody.appendChild(tr);
+}
+
+function removeRecipientRow(btn) {
+    const tbody = document.getElementById('recipientTbody');
+    btn.closest('tr').remove();
+    /* 행 번호 재정렬 */
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach((row, i) => {
+        row.querySelector('.row-num').textContent = i + 1;
+    });
+    rowCounter = rows.length;
+}
+
+/* 초기 5행 생성 */
+for (let i = 0; i < 5; i++) addRecipientRow();
+
+/* ── 엑셀/CSV 파일 파싱 ── */
+document.getElementById('excelInput').addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+            if (rows.length === 0) {
+                showToast('파일에 데이터가 없습니다.');
+                return;
+            }
+
+            /* 첫 행이 헤더인지 판단 (이름/연락처 등의 키워드 포함 시 건너뜀) */
+            let startIdx = 0;
+            const first = String(rows[0][0] || '').toLowerCase();
+            if (first.includes('이름') || first.includes('name') || first.includes('성명')) {
+                startIdx = 1;
+            }
+
+            /* 기존 빈 행 제거 후 추가 */
+            const tbody = document.getElementById('recipientTbody');
+            const existingRows = tbody.querySelectorAll('tr');
+            existingRows.forEach(row => {
+                const nameVal = row.querySelector('.recipient-name').value.trim();
+                if (!nameVal) row.remove();
+            });
+
+            let addedCount = 0;
+            for (let i = startIdx; i < rows.length; i++) {
+                const name = String(rows[i][0] || '').trim();
+                const phone = String(rows[i][1] || '').trim();
+                if (name) {
+                    addRecipientRow(name, phone);
+                    addedCount++;
+                }
+            }
+
+            /* 행 번호 재정렬 */
+            const allRows = tbody.querySelectorAll('tr');
+            allRows.forEach((row, idx) => {
+                row.querySelector('.row-num').textContent = idx + 1;
+            });
+            rowCounter = allRows.length;
+
+            showToast(addedCount + '명의 수신자가 추가되었습니다.');
+        } catch (err) {
+            console.error('파일 파싱 오류:', err);
+            showToast('파일을 읽을 수 없습니다. 엑셀(.xlsx) 또는 CSV 파일을 사용하세요.');
+        }
+    };
+    reader.readAsArrayBuffer(file);
+    this.value = '';
+});
+
+/* ── 대량 전송 실행 ── */
+async function executeBulkSend() {
+    const templateId = document.getElementById('bulkTemplate').value;
+    if (!templateId) {
+        showToast('서식을 선택하세요.');
+        return;
+    }
+
+    const employerName = document.getElementById('employerName').value.trim();
+    if (!employerName) {
+        showToast('관리자(사용자) 이름을 입력하세요.');
+        return;
+    }
+
+    /* 수신자 수집 (빈 행 제외) */
+    const rows = document.querySelectorAll('#recipientTbody tr');
+    const recipients = [];
+    rows.forEach(row => {
+        const name = row.querySelector('.recipient-name').value.trim();
+        if (name) {
+            recipients.push({
+                name: name,
+                phone: row.querySelector('.recipient-phone').value.trim()
+            });
+        }
+    });
+
+    if (recipients.length === 0) {
+        showToast('수신자를 최소 1명 입력하세요.');
+        return;
+    }
+
+    /* UI 상태: 전송 중 */
+    const btn = document.getElementById('bulkSendBtn');
+    const progress = document.getElementById('sendProgress');
+    const progressText = document.getElementById('sendProgressText');
+    const progressBar = document.getElementById('sendProgressBar');
+
+    btn.disabled = true;
+    btn.textContent = '전송 중...';
+    progress.classList.add('show');
+
+    const title = document.getElementById('bulkTitle').value.trim();
+    const expiry = document.getElementById('bulkExpiry').value || null;
+    const employerPhone = document.getElementById('employerPhone').value.trim();
+    const scheduledAt = document.getElementById('bulkEnableSchedule').checked
+        ? document.getElementById('bulkScheduledAt').value || null
+        : null;
+
+    if (scheduledAt) {
+        const schedDate = new Date(scheduledAt);
+        if (schedDate <= new Date()) {
+            showToast('예약 시각은 현재보다 미래여야 합니다.');
+            btn.disabled = false;
+            btn.innerHTML = '&#128232; 대량 전송';
+            return;
+        }
+    }
+
+    let successCount = 0;
+
+    /* 배치 ID 생성 (같은 대량전송의 모든 계약을 그룹핑) */
+    const batchId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : Date.now().toString(36) + Math.random().toString(36).slice(2);
+
+    for (let i = 0; i < recipients.length; i++) {
+        const r = recipients[i];
+        const current = i + 1;
+        const pct = Math.round((current / recipients.length) * 100);
+        progressText.textContent = '전송 중... ' + current + '/' + recipients.length;
+        progressBar.style.width = pct + '%';
+
+        try {
+            const res = await fetch('/api/contracts/bulk-create', {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({
+                    template_id: parseInt(templateId),
+                    title: title || null,
+                    expires_at: expiry,
+                    scheduled_at: scheduledAt,
+                    worker_name: r.name,
+                    worker_phone: r.phone,
+                    employer_name: employerName,
+                    employer_phone: employerPhone,
+                    batch_id: batchId,
+                })
+            });
+            const data = await res.json();
+            if (data.success) successCount++;
+        } catch(e) {
+            console.error('대량전송 오류:', e);
+        }
+    }
+
+    /* 완료 */
+    btn.disabled = false;
+    btn.innerHTML = scheduledAt ? '&#128337; 예약 대량전송' : '&#128232; 대량 전송';
+    const doneLabel = scheduledAt ? '예약 설정' : '생성';
+    progressText.textContent = '완료! ' + successCount + '/' + recipients.length + '건 ' + doneLabel;
+    progressBar.style.width = '100%';
+
+    const doneMsg = scheduledAt
+        ? successCount + '건의 예약발송이 설정되었습니다.'
+        : successCount + '건의 계약이 생성되었습니다.';
+    showToast(doneMsg);
+    setTimeout(() => location.reload(), 1200);
+}
+{% endblock %}

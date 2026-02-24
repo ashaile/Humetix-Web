@@ -1,0 +1,761 @@
+{% extends "base_admin.html" %}
+
+{% block admin_title %}HUMETIX - 연차관리{% endblock %}
+{% block page_title %}연차 관리{% endblock %}
+{% block page_desc %}직원별 연차 현황을 확인하고 관리합니다.{% endblock %}
+
+{% block page_css %}
+.top-bar {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+.top-bar .form-group { min-width: 120px; }
+.stat-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+.stat-card {
+    flex: 1;
+    min-width: 140px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: center;
+}
+.stat-card .stat-value { font-size: 28px; font-weight: 700; color: var(--primary); }
+.stat-card .stat-label { font-size: 12px; color: var(--text2); margin-top: 4px; }
+.bar-bg {
+    display: inline-block;
+    width: 80px;
+    height: 8px;
+    background: var(--bg3);
+    border-radius: 4px;
+    overflow: hidden;
+    vertical-align: middle;
+}
+.bar-used {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+    border-radius: 4px;
+    transition: width .3s;
+}
+/* 관리 버튼 */
+.action-btns { display: flex; gap: 4px; }
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text2);
+    transition: all .15s;
+}
+.btn-icon:hover { background: var(--bg3); color: var(--text); }
+.btn-icon.danger:hover { background: #fef2f2; color: #dc2626; border-color: #fca5a5; }
+.btn-icon.recalc:hover { background: #eff6ff; color: #2563eb; border-color: #93c5fd; }
+/* 검색 바 */
+.search-box {
+    position: relative;
+    flex: 1;
+    max-width: 260px;
+}
+.search-box input {
+    width: 100%;
+    padding: 8px 12px 8px 32px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-family: inherit;
+    background: var(--bg2);
+}
+.search-box input:focus { outline: none; border-color: var(--accent); }
+.search-box .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 13px;
+    color: var(--text2);
+    pointer-events: none;
+}
+/* 선택 도구 */
+.bulk-bar {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #fef3c7;
+    border: 1px solid #fcd34d;
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    font-size: 13px;
+}
+.bulk-bar.show { display: flex; }
+.bulk-bar .bulk-count { font-weight: 700; color: var(--primary); }
+.bulk-bar .btn-sm { padding: 4px 12px; font-size: 12px; }
+/* 체크박스 */
+.row-check {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+/* 수정 모달 */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,.5);
+    z-index: 1500;
+    align-items: center;
+    justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal-card {
+    background: var(--bg);
+    border-radius: var(--radius);
+    box-shadow: 0 20px 60px rgba(0,0,0,.15);
+    width: 380px;
+    max-width: 90vw;
+    padding: 28px;
+}
+.modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+.modal-field { margin-bottom: 14px; }
+.modal-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text2);
+    margin-bottom: 4px;
+}
+.modal-field input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: inherit;
+    background: var(--bg2);
+}
+.modal-field input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+.modal-field .hint {
+    font-size: 11px;
+    color: var(--text2);
+    margin-top: 3px;
+}
+.modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+@media (max-width: 768px) {
+    .top-bar { flex-direction: column; }
+    .stat-row { flex-direction: column; }
+    .action-btns { flex-wrap: wrap; }
+    .search-box { max-width: 100%; }
+}
+{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <div class="form-group">
+        <label class="form-label">연도</label>
+        <div style="display:flex;align-items:center;gap:4px;">
+            <button class="btn-icon" onclick="changeYearBy(-1)" title="이전 연도" style="width:32px;height:32px;">&#9664;</button>
+            <input type="number" id="yearInput" class="form-input" value="{{ year }}"
+                   min="2020" max="2040" style="width:90px;text-align:center;"
+                   onchange="changeYear()" onkeydown="if(event.key==='Enter')changeYear()">
+            <button class="btn-icon" onclick="changeYearBy(1)" title="다음 연도" style="width:32px;height:32px;">&#9654;</button>
+        </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary" id="syncEmpBtn" onclick="syncEmployees()">직원 동기화</button>
+        <button class="btn btn-primary" id="syncBtn" onclick="openSyncModal()">근무 동기화</button>
+        <button class="btn btn-outline" onclick="openAddEmployee()">직원 추가</button>
+    </div>
+    <div class="search-box" style="margin-left:auto;">
+        <span class="search-icon">&#128269;</span>
+        <input type="text" id="searchInput" placeholder="직원명 검색..." oninput="filterRows()">
+    </div>
+</div>
+
+<div class="stat-row">
+    <div class="stat-card">
+        <div class="stat-value">{{ balances|length }}</div>
+        <div class="stat-label">대상 직원 수</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ '%.0f'|format(balances|sum(attribute='entitled')) }}</div>
+        <div class="stat-label">총 발생 일수</div>
+    </div>
+    <div class="stat-card" style="border-color:#f59e0b;">
+        <div class="stat-value" style="color:#f59e0b;">{{ '%.0f'|format(balances|sum(attribute='carryover')) }}</div>
+        <div class="stat-label">총 이월 일수</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ '%.0f'|format(balances|sum(attribute='used')) }}</div>
+        <div class="stat-label">총 사용 일수</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ '%.0f'|format(balances|sum(attribute='remaining')) }}</div>
+        <div class="stat-label">총 잔여 일수</div>
+    </div>
+</div>
+
+<!-- 선택 도구 바 -->
+<div class="bulk-bar" id="bulkBar">
+    <span><span class="bulk-count" id="bulkCount">0</span>명 선택됨</span>
+    <button class="btn btn-outline btn-sm" onclick="bulkDelete()">선택 삭제</button>
+    <button class="btn btn-outline btn-sm" style="color:#dc2626;border-color:#fca5a5;" onclick="deleteAll()">전체 삭제</button>
+    <button class="btn btn-outline btn-sm" style="margin-left:auto;" onclick="clearSelection()">선택 해제</button>
+</div>
+
+<div class="table-wrap">
+    <div class="table-header">
+        <div class="table-title">{{ year }}년 연차 현황</div>
+    </div>
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:36px;"><input type="checkbox" class="row-check" id="checkAll" onchange="toggleAll(this)"></th>
+                    <th>직원명</th>
+                    <th>입사일</th>
+                    <th>발생</th>
+                    <th>이월</th>
+                    <th>사용</th>
+                    <th>잔여</th>
+                    <th>사용률</th>
+                    <th style="width:100px;">관리</th>
+                </tr>
+            </thead>
+            <tbody id="leaveBody">
+                {% for b in balances %}
+                <tr id="row-{{ b.id }}" data-name="{{ b.employee.name if b.employee else '' }}">
+                    <td><input type="checkbox" class="row-check" value="{{ b.id }}" onchange="updateBulkBar()"></td>
+                    <td class="emp-name">
+                        {% if b.employee %}
+                        <a href="/admin/leave/{{ b.employee_id }}/detail?year={{ year }}" style="color:var(--text);text-decoration:none;border-bottom:1px dashed var(--text2);">{{ b.employee.name }}</a>
+                        {% else %}-{% endif %}
+                    </td>
+                    <td class="mono">{{ b.employee.hire_date.strftime('%Y-%m-%d') if b.employee and b.employee.hire_date else '-' }}</td>
+                    <td class="mono" id="entitled-{{ b.id }}">{{ '%.0f'|format(b.entitled) }}일</td>
+                    <td class="mono" id="carryover-{{ b.id }}" style="{% if b.carryover > 0 %}color:#f59e0b;font-weight:600;{% endif %}">
+                        {% if b.carryover > 0 %}+{{ '%.0f'|format(b.carryover) }}{% else %}-{% endif %}
+                    </td>
+                    <td class="mono" id="used-{{ b.id }}">{{ '%.0f'|format(b.used) }}일</td>
+                    <td class="mono" style="font-weight:600;" id="remaining-{{ b.id }}">{{ '%.0f'|format(b.remaining) }}일</td>
+                    <td id="pct-{{ b.id }}">
+                        {% set pool = b.entitled + b.carryover %}
+                        {% set pct = (b.used / pool * 100) if pool > 0 else 0 %}
+                        <span class="bar-bg">
+                            <span class="bar-used" style="width:{{ '%.0f'|format([pct, 100]|min) }}%"></span>
+                        </span>
+                        <span class="mono" style="font-size:12px;margin-left:4px;">{{ '%.0f'|format(pct) }}%</span>
+                    </td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="btn-icon" title="수정"
+                                onclick="openEdit({{ b.id }}, '{{ b.employee.name if b.employee else '' }}', {{ b.entitled }}, {{ b.used }})">
+                                &#9998;
+                            </button>
+                            <button class="btn-icon recalc" title="재계산"
+                                onclick="recalcLeave({{ b.id }}, this)">
+                                &#8635;
+                            </button>
+                            <button class="btn-icon danger" title="삭제"
+                                onclick="deleteLeave({{ b.id }}, '{{ b.employee.name if b.employee else '' }}')">
+                                &#10005;
+                            </button>
+                            <a href="/admin/leave/{{ b.employee_id }}/detail?year={{ year }}"
+                               class="btn-icon" title="상세" style="text-decoration:none;">&#8594;</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not balances %}
+                <tr id="emptyRow">
+                    <td colspan="9" style="text-align:center;padding:24px;color:var(--text2);">
+                        연차 데이터가 없습니다. '연차 동기화' 버튼을 눌러주세요.
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 수정 모달 -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal-card">
+        <div class="modal-title" id="editModalTitle">연차 수정</div>
+        <input type="hidden" id="editId">
+        <div class="modal-field">
+            <label>발생 일수</label>
+            <input type="number" id="editEntitled" min="0" max="99" step="0.5">
+            <div class="hint">발생 연차 일수를 직접 입력합니다.</div>
+        </div>
+        <div class="modal-field">
+            <label>사용 일수</label>
+            <input type="number" id="editUsed" min="0" max="99" step="0.5">
+            <div class="hint">근무기록과 별도로 관리자가 직접 입력합니다.</div>
+        </div>
+        <div class="modal-field">
+            <label>잔여 일수 (자동 계산)</label>
+            <input type="text" id="editRemaining" readonly style="background:var(--bg3);color:var(--text2);">
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeEdit()">취소</button>
+            <button class="btn btn-primary" id="editSaveBtn" onclick="saveEdit()">저장</button>
+        </div>
+    </div>
+</div>
+
+<!-- 근무 동기화 옵션 모달 -->
+<div class="modal-overlay" id="syncModal">
+    <div class="modal-card">
+        <div class="modal-title">근무 동기화</div>
+        <div class="modal-field">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="syncAttendanceChk" checked style="width:18px;height:18px;">
+                근무 엑셀 데이터 동기화 (만근 자동발생 + 사용 가져오기)
+            </label>
+            <div class="hint" style="margin-top:6px;">체크 해제 시 수동 등록한 발생/사용만 기준으로 Balance를 갱신합니다.</div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeSyncModal()">취소</button>
+            <button class="btn btn-primary" id="syncRunBtn" onclick="syncLeave()">동기화 실행</button>
+        </div>
+    </div>
+</div>
+
+<!-- 직원 추가 모달 -->
+<div class="modal-overlay" id="addModal">
+    <div class="modal-card">
+        <div class="modal-title">직원 추가</div>
+        <div class="modal-field">
+            <label>직원 선택</label>
+            <select id="addEmpSelect" class="form-input" style="width:100%;">
+                <option value="">-- 직원 선택 --</option>
+                {% for e in unsynced_employees %}
+                <option value="{{ e.id }}">{{ e.name }}{% if e.department %} ({{ e.department }}){% endif %}</option>
+                {% endfor %}
+            </select>
+            {% if not unsynced_employees %}
+            <div class="hint">모든 활성 직원이 이미 등록되어 있습니다.</div>
+            {% endif %}
+        </div>
+        <div class="modal-field">
+            <label>발생 일수</label>
+            <input type="number" id="addEntitled" min="0" max="99" step="0.5" value="0">
+            <div class="hint">나중에 상세 페이지에서 수정할 수 있습니다.</div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeAddEmployee()">취소</button>
+            <button class="btn btn-primary" id="addSaveBtn" onclick="saveAddEmployee()">추가</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+function changeYear() {
+    const year = document.getElementById('yearInput').value;
+    if (year >= 2020 && year <= 2040) location.href = '/admin/leave?year=' + year;
+}
+function changeYearBy(delta) {
+    const input = document.getElementById('yearInput');
+    input.value = parseInt(input.value) + delta;
+    changeYear();
+}
+
+/* ── 직원 추가 ── */
+function openAddEmployee() {
+    document.getElementById('addEmpSelect').value = '';
+    document.getElementById('addEntitled').value = '0';
+    document.getElementById('addModal').classList.add('show');
+}
+function closeAddEmployee() { document.getElementById('addModal').classList.remove('show'); }
+
+async function saveAddEmployee() {
+    const empId = document.getElementById('addEmpSelect').value;
+    if (!empId) { showToast('직원을 선택해주세요.'); return; }
+    const entitled = parseFloat(document.getElementById('addEntitled').value) || 0;
+    const year = parseInt(document.getElementById('yearInput').value);
+    const btn = document.getElementById('addSaveBtn');
+    setButtonLoading(btn, true);
+    try {
+        const res = await fetch('/api/leave/add-employee', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': window.csrfToken },
+            body: JSON.stringify({ employee_id: parseInt(empId), year: year, entitled: entitled })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message);
+            closeAddEmployee();
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showToast(data.error || '추가 실패');
+        }
+    } finally { setButtonLoading(btn, false); }
+}
+
+document.getElementById('addModal').addEventListener('click', function(e) { if (e.target === this) closeAddEmployee(); });
+
+function openSyncModal() { document.getElementById('syncModal').classList.add('show'); }
+function closeSyncModal() { document.getElementById('syncModal').classList.remove('show'); }
+document.getElementById('syncModal').addEventListener('click', function(e) { if (e.target === this) closeSyncModal(); });
+
+async function syncEmployees() {
+    const ok = await showConfirm('활성 직원 전원을 연차관리에 등록합니다.'); if (!ok) return;
+    const year = document.getElementById('yearInput').value;
+    const btn = document.getElementById('syncEmpBtn');
+    setButtonLoading(btn, true);
+    try {
+        const formData = new FormData();
+        formData.append('year', year);
+        formData.append('csrf_token', window.csrfToken);
+        const res = await fetch('/admin/leave/sync-employees', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message);
+            setTimeout(() => location.reload(), 800);
+        } else {
+            showToast(data.error || '직원 동기화 실패');
+        }
+    } finally { setButtonLoading(btn, false); }
+}
+
+async function syncLeave() {
+    const year = document.getElementById('yearInput').value;
+    const includeAttendance = document.getElementById('syncAttendanceChk').checked;
+    const btn = document.getElementById('syncRunBtn');
+    setButtonLoading(btn, true);
+    try {
+        const formData = new FormData();
+        formData.append('year', year);
+        formData.append('include_attendance', includeAttendance ? '1' : '0');
+        formData.append('csrf_token', window.csrfToken);
+        const res = await fetch('/admin/leave/sync', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message);
+            closeSyncModal();
+            setTimeout(() => location.reload(), 800);
+        } else {
+            showToast(data.error || '동기화 실패');
+        }
+    } finally { setButtonLoading(btn, false); }
+}
+
+/* ── 검색 ── */
+function filterRows() {
+    const q = document.getElementById('searchInput').value.trim().toLowerCase();
+    const rows = document.querySelectorAll('#leaveBody tr[data-name]');
+    let visible = 0;
+    rows.forEach(function(row) {
+        const name = row.getAttribute('data-name').toLowerCase();
+        const show = !q || name.includes(q);
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+    const empty = document.getElementById('emptyRow');
+    if (empty) empty.style.display = visible > 0 ? 'none' : '';
+    updateStatCards();
+}
+
+/* ── 체크박스 / 선택 도구 ── */
+function getCheckedIds() {
+    return Array.from(document.querySelectorAll('#leaveBody .row-check:checked'))
+        .map(function(cb) { return cb.value; });
+}
+
+function updateBulkBar() {
+    const ids = getCheckedIds();
+    const bar = document.getElementById('bulkBar');
+    const countEl = document.getElementById('bulkCount');
+    if (ids.length > 0) {
+        bar.classList.add('show');
+        countEl.textContent = ids.length;
+    } else {
+        bar.classList.remove('show');
+    }
+    // 전체선택 체크박스 상태 동기화
+    const all = document.querySelectorAll('#leaveBody .row-check');
+    const checked = document.querySelectorAll('#leaveBody .row-check:checked');
+    document.getElementById('checkAll').checked = all.length > 0 && all.length === checked.length;
+}
+
+function toggleAll(master) {
+    const rows = document.querySelectorAll('#leaveBody tr[data-name]');
+    rows.forEach(function(row) {
+        if (row.style.display !== 'none') {
+            const cb = row.querySelector('.row-check');
+            if (cb) cb.checked = master.checked;
+        }
+    });
+    updateBulkBar();
+}
+
+function clearSelection() {
+    document.querySelectorAll('#leaveBody .row-check').forEach(function(cb) { cb.checked = false; });
+    document.getElementById('checkAll').checked = false;
+    updateBulkBar();
+}
+
+/* ── 선택 삭제 ── */
+async function bulkDelete() {
+    const ids = getCheckedIds();
+    if (!ids.length) return;
+    const ok = await showConfirm(ids.length + '건의 연차 데이터를 삭제하시겠습니까?'); if (!ok) return;
+
+    const res = await fetch('/api/leave/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': window.csrfToken },
+        body: JSON.stringify({ ids: ids })
+    });
+    const data = await res.json();
+    if (data.success) {
+        showToast(data.message);
+        ids.forEach(function(id) {
+            const row = document.getElementById('row-' + id);
+            if (row) row.remove();
+        });
+        clearSelection();
+        updateStatCards();
+    } else {
+        showToast(data.error || '삭제 실패');
+    }
+}
+
+/* ── 전체 삭제 ── */
+async function deleteAll() {
+    const allIds = Array.from(document.querySelectorAll('#leaveBody .row-check'))
+        .map(function(cb) { return cb.value; });
+    if (!allIds.length) return;
+    const ok2 = await showConfirm('전체 ' + allIds.length + '건의 연차 데이터를 모두 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.'); if (!ok2) return;
+
+    const res = await fetch('/api/leave/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': window.csrfToken },
+        body: JSON.stringify({ ids: allIds })
+    });
+    const data = await res.json();
+    if (data.success) {
+        showToast(data.message);
+        allIds.forEach(function(id) {
+            const row = document.getElementById('row-' + id);
+            if (row) row.remove();
+        });
+        clearSelection();
+        updateStatCards();
+    } else {
+        showToast(data.error || '삭제 실패');
+    }
+}
+
+/* ── 수정 모달 ── */
+function openEdit(id, name, entitled, used) {
+    document.getElementById('editId').value = id;
+    document.getElementById('editModalTitle').textContent = name + ' 연차 수정';
+    document.getElementById('editEntitled').value = entitled;
+    document.getElementById('editUsed').value = used;
+    calcRemaining();
+    document.getElementById('editModal').classList.add('show');
+}
+
+function closeEdit() {
+    document.getElementById('editModal').classList.remove('show');
+}
+
+function calcRemaining() {
+    const e = parseFloat(document.getElementById('editEntitled').value) || 0;
+    const u = parseFloat(document.getElementById('editUsed').value) || 0;
+    document.getElementById('editRemaining').value = Math.max(e - u, 0) + '일';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const entInput = document.getElementById('editEntitled');
+    const usedInput = document.getElementById('editUsed');
+    if (entInput) entInput.addEventListener('input', calcRemaining);
+    if (usedInput) usedInput.addEventListener('input', calcRemaining);
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { closeEdit(); closeAddEmployee(); }
+});
+document.getElementById('editModal').addEventListener('click', function(e) {
+    if (e.target === this) closeEdit();
+});
+
+async function saveEdit() {
+    const id = document.getElementById('editId').value;
+    const entitled = parseFloat(document.getElementById('editEntitled').value);
+    const used = parseFloat(document.getElementById('editUsed').value);
+    const btn = document.getElementById('editSaveBtn');
+
+    if (isNaN(entitled) || isNaN(used) || entitled < 0 || used < 0) {
+        showToast('올바른 값을 입력해주세요.');
+        return;
+    }
+
+    setButtonLoading(btn, true);
+    try {
+        const res = await fetch('/api/leave/' + id, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': window.csrfToken
+            },
+            body: JSON.stringify({ entitled, used })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message);
+            closeEdit();
+            const d = data.data;
+            document.getElementById('entitled-' + id).textContent = Math.round(d.entitled) + '일';
+            const coEl = document.getElementById('carryover-' + id);
+            if (coEl) {
+                if (d.carryover > 0) {
+                    coEl.textContent = '+' + Math.round(d.carryover);
+                    coEl.style.color = '#f59e0b';
+                    coEl.style.fontWeight = '600';
+                } else {
+                    coEl.textContent = '-';
+                    coEl.style.color = '';
+                    coEl.style.fontWeight = '';
+                }
+            }
+            document.getElementById('used-' + id).textContent = Math.round(d.used) + '일';
+            document.getElementById('remaining-' + id).textContent = Math.round(d.remaining) + '일';
+            updatePctCell(id, d.entitled, d.used, d.carryover);
+            updateStatCards();
+        } else {
+            showToast(data.error || '수정 실패');
+        }
+    } finally {
+        setButtonLoading(btn, false);
+    }
+}
+
+/* ── 재계산 ── */
+async function recalcLeave(id, btn) {
+    const ok3 = await showConfirm('발생/사용 내역 기준으로 연차를 재계산하시겠습니까?\n수동 수정 값은 초기화됩니다.'); if (!ok3) return;
+    const origHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '...';
+    try {
+        const formData = new FormData();
+        formData.append('csrf_token', window.csrfToken);
+        const res = await fetch('/api/leave/recalc/' + id, {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message);
+            const d = data.data;
+            document.getElementById('entitled-' + id).textContent = Math.round(d.entitled) + '일';
+            const coEl = document.getElementById('carryover-' + id);
+            if (coEl) {
+                if (d.carryover > 0) {
+                    coEl.textContent = '+' + Math.round(d.carryover);
+                    coEl.style.color = '#f59e0b';
+                    coEl.style.fontWeight = '600';
+                } else {
+                    coEl.textContent = '-';
+                    coEl.style.color = '';
+                    coEl.style.fontWeight = '';
+                }
+            }
+            document.getElementById('used-' + id).textContent = Math.round(d.used) + '일';
+            document.getElementById('remaining-' + id).textContent = Math.round(d.remaining) + '일';
+            updatePctCell(id, d.entitled, d.used, d.carryover);
+            updateStatCards();
+        } else {
+            showToast(data.error || '재계산 실패');
+        }
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+    }
+}
+
+/* ── 단건 삭제 ── */
+async function deleteLeave(id, name) {
+    const ok4 = await showConfirm(name + '의 연차 데이터를 삭제하시겠습니까?'); if (!ok4) return;
+    const res = await fetch('/api/leave/' + id, {
+        method: 'DELETE',
+        headers: { 'X-CSRFToken': window.csrfToken }
+    });
+    const data = await res.json();
+    if (data.success) {
+        showToast(data.message);
+        const row = document.getElementById('row-' + id);
+        if (row) row.remove();
+        updateBulkBar();
+        updateStatCards();
+    } else {
+        showToast(data.error || '삭제 실패');
+    }
+}
+
+/* ── 사용률 셀 업데이트 ── */
+function updatePctCell(id, entitled, used, carryover) {
+    const cell = document.getElementById('pct-' + id);
+    if (!cell) return;
+    const pool = entitled + (carryover || 0);
+    const pct = pool > 0 ? Math.min(used / pool * 100, 100) : 0;
+    cell.innerHTML = '<span class="bar-bg"><span class="bar-used" style="width:' + pct.toFixed(0)
+        + '%"></span></span>'
+        + ' <span class="mono" style="font-size:12px;margin-left:4px;">' + pct.toFixed(0) + '%</span>';
+}
+
+/* ── 통계 카드 재계산 (보이는 행만) ── */
+function updateStatCards() {
+    const rows = document.querySelectorAll('tbody tr[id^="row-"]');
+    let count = 0, totalE = 0, totalC = 0, totalU = 0, totalR = 0;
+    rows.forEach(function(row) {
+        if (row.style.display === 'none') return;
+        count++;
+        const eText = row.querySelector('td:nth-child(4)').textContent;
+        const cText = row.querySelector('td:nth-child(5)').textContent;
+        const uText = row.querySelector('td:nth-child(6)').textContent;
+        const rText = row.querySelector('td:nth-child(7)').textContent;
+        totalE += parseInt(eText) || 0;
+        totalC += parseInt(cText) || 0;
+        totalU += parseInt(uText) || 0;
+        totalR += parseInt(rText) || 0;
+    });
+    const cards = document.querySelectorAll('.stat-card .stat-value');
+    if (cards.length >= 5) {
+        cards[0].textContent = count;
+        cards[1].textContent = totalE;
+        cards[2].textContent = totalC;
+        cards[3].textContent = totalU;
+        cards[4].textContent = totalR;
+    }
+}
+{% endblock %}

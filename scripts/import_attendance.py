@@ -325,6 +325,7 @@ def create_attendance_record(employee, work_date, clock_in, clock_out, work_type
         overtime_hours=ot_hours,
         night_hours=night_hours,
         holiday_work_hours=holiday_hours,
+        source="excel",
     )
     db.session.add(record)
     return record, "created"

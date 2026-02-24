@@ -1,0 +1,720 @@
+{% extends "base_admin.html" %}
+
+{% block admin_title %}HUMETIX - 계약 생성{% endblock %}
+{% block page_title %}새 계약 생성{% endblock %}
+{% block page_desc %}서식을 선택하고 참여자를 배정하여 계약을 생성합니다.{% endblock %}
+
+{% block head_extra %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
+{% endblock %}
+
+{% block page_css %}
+/* ── 레이아웃 ── */
+.create-layout {
+    display: grid; grid-template-columns: 1fr 420px; gap: 24px;
+    align-items: start;
+}
+.create-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px; margin-bottom: 20px;
+}
+.create-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+
+/* ── PDF 미리보기 ── */
+.pdf-preview {
+    background: #e0e0e0; border-radius: var(--radius);
+    padding: 16px; text-align: center; overflow: auto; max-height: 70vh;
+}
+.pdf-page-container {
+    position: relative; display: inline-block;
+}
+.pdf-page-container canvas { display: block; box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+.pdf-nav {
+    display: flex; gap: 8px; align-items: center;
+    justify-content: center; margin-top: 12px;
+}
+.pdf-nav button {
+    padding: 6px 12px; border: 1px solid var(--border);
+    background: var(--bg2); border-radius: 4px; cursor: pointer;
+    font-family: inherit;
+}
+.pdf-nav span { font-size: 13px; color: var(--text2); }
+
+/* ── 필드 오버레이 ── */
+.field-overlay {
+    position: absolute; border: 1.5px solid; border-radius: 3px;
+    font-size: 10px; line-height: 1.2; padding: 2px 4px;
+    overflow: hidden; pointer-events: none; opacity: 0.7;
+    display: flex; flex-direction: column; justify-content: center;
+}
+.field-overlay .fo-label {
+    font-weight: 600; white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis;
+}
+.field-overlay .fo-value {
+    font-size: 9px; white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis; opacity: 0.8;
+}
+/* 역할별 색상 */
+.field-overlay[data-role="employer"] {
+    border-color: #3b82f6; background: rgba(59,130,246,.12); color: #1d4ed8;
+}
+.field-overlay[data-role="worker"] {
+    border-color: #ef4444; background: rgba(239,68,68,.12); color: #b91c1c;
+}
+.field-overlay[data-role="witness"],
+.field-overlay[data-role="other"] {
+    border-color: #8b5cf6; background: rgba(139,92,246,.12); color: #6d28d9;
+}
+
+/* ── 참여자 행 ── */
+.participant-row {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 16px; margin-bottom: 12px;
+}
+.participant-row h4 {
+    font-size: 14px; font-weight: 600; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+}
+.participant-row h4 .role-dot {
+    width: 12px; height: 12px; border-radius: 3px;
+}
+.participant-fields {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+}
+
+/* ── 미리서명 섹션 ── */
+.pre-sign-section {
+    margin-top: 12px; padding-top: 12px;
+    border-top: 1px solid var(--border);
+}
+.pre-sign-toggle {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; cursor: pointer; margin-bottom: 8px;
+}
+.sign-fields-list {
+    display: grid; gap: 8px; margin-top: 8px;
+}
+.sign-field-item {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; padding: 8px; background: var(--bg2);
+    border-radius: 4px; flex-wrap: wrap;
+}
+.sign-field-item .field-type-badge {
+    padding: 2px 8px; border-radius: 10px; font-size: 11px;
+    font-weight: 600; background: var(--bg3);
+}
+.sign-field-item input[type="text"],
+.sign-field-item input[type="date"] {
+    flex: 1; padding: 6px 8px; border: 1px solid var(--border);
+    border-radius: 4px; font-size: 13px; font-family: inherit;
+    background: var(--bg); min-width: 120px;
+}
+.sign-field-item input:disabled {
+    opacity: 0.6; cursor: not-allowed; background: var(--bg3);
+}
+.sign-field-item input[type="file"] {
+    flex: 1; font-size: 12px; min-width: 120px;
+}
+.sign-btn-small {
+    padding: 6px 12px; background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 4px; cursor: pointer; font-size: 12px; font-family: inherit;
+}
+.sign-btn-small:hover { background: var(--bg3); }
+.sig-preview {
+    width: 120px; height: 50px; border: 1px solid var(--border);
+    border-radius: 4px; object-fit: contain; background: #fff;
+}
+.img-preview {
+    max-width: 100px; max-height: 50px; border: 1px solid var(--border);
+    border-radius: 4px; object-fit: contain; background: #fff;
+}
+
+/* ── 서명 모달 ── */
+.sig-modal {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.5); z-index: 2000;
+    justify-content: center; align-items: center;
+}
+.sig-modal.show { display: flex; }
+.sig-modal-card {
+    background: #fff; border-radius: 12px; padding: 24px;
+    width: 90%; max-width: 500px;
+}
+.sig-modal-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
+.sig-canvas-wrap {
+    border: 2px solid #ddd; border-radius: 8px;
+    background: #fff; margin-bottom: 12px;
+}
+.sig-canvas-wrap canvas { width: 100%; height: 200px; display: block; }
+.sig-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* ── 날짜 확인 행 ── */
+.dt-confirm-row {
+    display: flex; align-items: center; gap: 8px; margin-top: 6px;
+}
+.dt-confirm-row .form-input { flex: 1; }
+.dt-confirm-btn {
+    padding: 6px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg2); cursor: pointer; font-size: 13px; font-family: inherit;
+    white-space: nowrap; transition: all .15s;
+}
+.dt-confirm-btn:hover { border-color: var(--accent); color: var(--accent); }
+.dt-confirm-btn.confirmed {
+    background: #dcfce7; border-color: #16a34a; color: #16a34a; pointer-events: none;
+}
+.dt-confirmed-text {
+    font-size: 12px; color: #16a34a; font-weight: 600; display: none;
+}
+.dt-confirmed-text.show { display: inline; }
+
+/* ── 직원 불러오기 ── */
+.emp-load-row {
+    display: flex; gap: 6px; align-items: center; margin-bottom: 10px;
+}
+.emp-load-row select {
+    flex: 1; padding: 6px 8px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-size: 12px; font-family: inherit;
+    background: var(--bg); color: var(--text);
+}
+.emp-load-btn {
+    padding: 6px 10px; border: 1px solid var(--accent); border-radius: var(--radius-sm);
+    background: rgba(99,102,241,.08); cursor: pointer; font-size: 12px;
+    font-family: inherit; color: var(--accent); white-space: nowrap; transition: all .15s;
+}
+.emp-load-btn:hover { background: rgba(99,102,241,.18); }
+
+/* ── 반응형 ── */
+@media (max-width: 900px) {
+    .create-layout { grid-template-columns: 1fr; }
+    .participant-fields { grid-template-columns: 1fr; }
+}
+{% endblock %}
+
+{% block content %}
+<div class="create-layout">
+    <!-- 왼쪽: PDF 미리보기 -->
+    <div>
+        <div class="create-card">
+            <h3>서식 미리보기</h3>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label class="form-label">서식 선택</label>
+                <select class="form-input" id="templateSelect" onchange="onTemplateChange()">
+                    {% for t in templates %}
+                    <option value="{{ t.id }}" {{ 'selected' if template and t.id == template.id }}>{{ t.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="pdf-preview" id="pdfPreview">
+                <div class="pdf-page-container" id="pdfPageContainer">
+                    <canvas id="previewCanvas"></canvas>
+                    <!-- 필드 오버레이가 여기에 동적으로 추가됨 -->
+                </div>
+                <div class="pdf-nav">
+                    <button onclick="prevPage()">&#9664;</button>
+                    <span id="pageInfo">- / -</span>
+                    <button onclick="nextPage()">&#9654;</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 오른쪽: 계약 설정 -->
+    <div>
+        <div class="create-card">
+            <h3>계약 정보</h3>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label class="form-label">계약명</label>
+                <input type="text" class="form-input" id="contractTitle" placeholder="서식명이 기본값으로 사용됩니다">
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label class="form-label">서명 만료일 (선택)</label>
+                <div class="dt-confirm-row">
+                    <input type="datetime-local" class="form-input" id="expiresAt">
+                    <button type="button" class="dt-confirm-btn" onclick="confirmDt(this, 'expiresAt')">확인</button>
+                </div>
+                <span class="dt-confirmed-text" id="expiresAtConfirmed">만료일 설정됨</span>
+            </div>
+            <div class="form-group" style="margin-bottom:4px;">
+                <label class="form-label" style="display:flex;align-items:center;gap:8px;">
+                    <input type="checkbox" id="enableSchedule" onchange="toggleSchedule()">
+                    예약발송
+                </label>
+                <div id="scheduleSection" style="display:none;margin-top:8px;">
+                    <div class="dt-confirm-row">
+                        <input type="datetime-local" class="form-input" id="scheduledAt">
+                        <button type="button" class="dt-confirm-btn" onclick="confirmDt(this, 'scheduledAt')">확인</button>
+                    </div>
+                    <span class="dt-confirmed-text" id="scheduledAtConfirmed">예약 시각 설정됨</span>
+                    <div style="font-size:12px;color:var(--text2);margin-top:4px;">지정한 시각에 자동으로 서명 링크 SMS가 발송됩니다.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="create-card">
+            <h3>참여자 배정</h3>
+            <div id="participantsContainer"></div>
+        </div>
+
+        <button class="btn btn-primary" id="createBtn" onclick="submitContract()" style="width:100%;">
+            계약 생성 및 서명 링크 발급
+        </button>
+        <div id="scheduleHint" style="display:none;text-align:center;font-size:12px;color:#4338ca;margin-top:6px;">
+            예약된 시각에 SMS가 자동 발송됩니다.
+        </div>
+    </div>
+</div>
+
+<!-- 서명 모달 -->
+<div class="sig-modal" id="sigModal">
+    <div class="sig-modal-card">
+        <h3 id="sigModalTitle">서명</h3>
+        <div class="sig-canvas-wrap">
+            <canvas id="sigCanvas"></canvas>
+        </div>
+        <div class="sig-actions">
+            <button class="btn btn-outline btn-sm" onclick="clearSig()">지우기</button>
+            <button class="btn btn-outline btn-sm" onclick="closeSigModal()">취소</button>
+            <button class="btn btn-primary btn-sm" onclick="confirmSig()">확인</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+const csrfToken = window.csrfToken;
+const apiHeaders = { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken };
+
+/* ── 서식 데이터 ── */
+const templatesData = {
+    {% for t in templates %}
+    {{ t.id }}: {{ t.to_dict()|tojson }},
+    {% endfor %}
+};
+
+/* ── 직원 데이터 (직원 자동완성 용) ── */
+const employeesData = {
+    {% for emp in employees %}
+    {{ emp.id }}: { name: {{ emp.name|tojson }}, phone: {{ (emp.phone or '')|tojson }} },
+    {% endfor %}
+};
+
+/* ── 날짜/시간 확인 버튼 ── */
+function confirmDt(btn, inputId) {
+    const input = document.getElementById(inputId);
+    if (!input.value) {
+        showToast('날짜/시각을 선택해주세요.');
+        return;
+    }
+    /* 입력 포커스 해제 → 브라우저 달력 닫힘 */
+    input.blur();
+    btn.textContent = '설정됨';
+    btn.classList.add('confirmed');
+    const confirmText = document.getElementById(inputId + 'Confirmed');
+    if (confirmText) {
+        const dt = new Date(input.value);
+        confirmText.textContent = dt.toLocaleString('ko-KR') + ' 설정됨';
+        confirmText.classList.add('show');
+    }
+    /* 값이 변경되면 확인 상태 초기화 */
+    input.addEventListener('input', function handler() {
+        btn.textContent = '확인';
+        btn.classList.remove('confirmed');
+        if (confirmText) confirmText.classList.remove('show');
+        input.removeEventListener('input', handler);
+    });
+}
+
+/* ── 예약발송 토글 ── */
+function toggleSchedule() {
+    const enabled = document.getElementById('enableSchedule').checked;
+    document.getElementById('scheduleSection').style.display = enabled ? '' : 'none';
+    const btn = document.getElementById('createBtn');
+    const hint = document.getElementById('scheduleHint');
+    if (enabled) {
+        btn.textContent = '예약발송 설정 및 계약 생성';
+        hint.style.display = '';
+    } else {
+        btn.textContent = '계약 생성 및 서명 링크 발급';
+        hint.style.display = 'none';
+    }
+}
+
+let currentTemplate = null;
+let pdfDoc = null;
+let currentPage = 1;
+let canvasWidth = 0;
+let canvasHeight = 0;
+let signaturePad = null;
+let sigCallback = null;
+
+/* ── PDF.js 초기화 ── */
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+/* ── 서식 변경 ── */
+function onTemplateChange() {
+    const tid = document.getElementById('templateSelect').value;
+    if (tid) {
+        location.href = '/admin/contracts/new?template_id=' + tid;
+    }
+}
+
+/* ── 직원에서 불러오기 (참여자 영역에서 사용) ── */
+function loadFromEmployee(roleKey) {
+    const sel = document.getElementById('empSelect_' + roleKey);
+    if (!sel) return;
+    const empId = sel.value;
+    if (!empId) { showToast('직원을 선택해주세요.'); return; }
+
+    const emp = employeesData[empId];
+    if (!emp) return;
+
+    const nameInput = document.querySelector('input[data-role="' + roleKey + '"][data-field="name"]');
+    const phoneInput = document.querySelector('input[data-role="' + roleKey + '"][data-field="phone"]');
+
+    if (nameInput) nameInput.value = emp.name;
+    if (phoneInput) phoneInput.value = emp.phone;
+    showToast(emp.name + ' 정보가 입력되었습니다.');
+}
+
+/* ── PDF 로드 ── */
+async function loadPdf(tid) {
+    try {
+        /* Task 1: /data -> /pdf 로 변경 */
+        const resp = await fetch('/api/contract-templates/' + tid + '/pdf', { credentials: 'same-origin' });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const buf = await resp.arrayBuffer();
+        pdfDoc = await pdfjsLib.getDocument({ data: buf }).promise;
+        currentPage = 1;
+        await showPage(1);
+    } catch (e) {
+        document.getElementById('pdfPreview').innerHTML =
+            '<p style="padding:40px;color:#999;">PDF를 불러올 수 없습니다.</p>';
+    }
+}
+
+/* ── 페이지 렌더링 + 필드 오버레이 ── */
+async function showPage(num) {
+    if (!pdfDoc) return;
+    currentPage = num;
+    const page = await pdfDoc.getPage(num);
+    const viewport = page.getViewport({ scale: 1.2 });
+    const canvas = document.getElementById('previewCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    canvasWidth = viewport.width;
+    canvasHeight = viewport.height;
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    document.getElementById('pageInfo').textContent = num + ' / ' + pdfDoc.numPages;
+
+    /* 필드 오버레이 렌더링 */
+    renderFieldOverlays(num);
+}
+
+/* ── 필드 오버레이 (Task 8) ── */
+function renderFieldOverlays(pageNum) {
+    const container = document.getElementById('pdfPageContainer');
+    /* 기존 오버레이 제거 */
+    container.querySelectorAll('.field-overlay').forEach(el => el.remove());
+
+    if (!currentTemplate) return;
+    const fields = currentTemplate.fields || [];
+
+    fields.forEach((f, idx) => {
+        /* 해당 페이지 필드만 렌더링 (page 는 1부터 시작) */
+        if ((f.page || 1) !== pageNum) return;
+
+        const x = (f.x_pct || 0) / 100 * canvasWidth;
+        const y = (f.y_pct || 0) / 100 * canvasHeight;
+        const w = (f.w_pct || 10) / 100 * canvasWidth;
+        const h = (f.h_pct || 3) / 100 * canvasHeight;
+
+        const div = document.createElement('div');
+        div.className = 'field-overlay';
+        div.dataset.role = f.role || 'employer';
+        div.style.cssText = 'left:' + x + 'px;top:' + y + 'px;width:' + w + 'px;height:' + h + 'px;';
+
+        let labelText = f.label || f.type;
+        let valueText = f.default_value || '';
+
+        div.innerHTML = '<span class="fo-label">' + escHtml(labelText) + '</span>' +
+                         (valueText ? '<span class="fo-value">' + escHtml(valueText) + '</span>' : '');
+        container.appendChild(div);
+    });
+}
+
+function escHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+}
+
+function prevPage() { if (currentPage > 1) showPage(currentPage - 1); }
+function nextPage() { if (pdfDoc && currentPage < pdfDoc.numPages) showPage(currentPage + 1); }
+
+/* ── 참여자 렌더링 ── */
+function renderParticipants() {
+    const container = document.getElementById('participantsContainer');
+    container.innerHTML = '';
+    if (!currentTemplate) return;
+
+    const roles = currentTemplate.roles || [];
+    const fields = currentTemplate.fields || [];
+
+    roles.forEach((role, ri) => {
+        const roleFields = fields.map((f, idx) => ({ ...f, _idx: idx }))
+                                  .filter(f => f.role === role.key);
+
+        const div = document.createElement('div');
+        div.className = 'participant-row';
+        div.dataset.roleKey = role.key;
+
+        const dotColor = role.key === 'employer' ? '#3b82f6' :
+                          role.key === 'worker' ? '#ef4444' : '#8b5cf6';
+
+        let html = '<h4><span class="role-dot" style="background:' + dotColor + '"></span>' +
+                   escHtml(role.label) + '</h4>';
+
+        /* 근로자 역할: 직원에서 불러오기 */
+        if (role.key === 'worker') {
+            html += '<div class="emp-load-row">';
+            html += '<select id="empSelect_worker"><option value="">-- 직원에서 불러오기 --</option>';
+            for (const [eid, emp] of Object.entries(employeesData)) {
+                html += '<option value="' + eid + '">' + escHtml(emp.name) + (emp.phone ? ' (' + emp.phone + ')' : '') + '</option>';
+            }
+            html += '</select>';
+            html += '<button type="button" class="emp-load-btn" onclick="loadFromEmployee(\'worker\')">불러오기</button>';
+            html += '</div>';
+        }
+
+        html += '<div class="participant-fields">';
+        html += '<div class="form-group"><label class="form-label">이름 *</label>';
+        html += '<input type="text" class="form-input" data-role="' + role.key + '" data-field="name"></div>';
+        html += '<div class="form-group"><label class="form-label">연락처</label>';
+        html += '<input type="text" class="form-input" data-role="' + role.key + '" data-field="phone" placeholder="010-0000-0000"></div>';
+        html += '</div>';
+
+        /* 미리서명 섹션 */
+        if (roleFields.length > 0) {
+            html += '<div class="pre-sign-section">';
+            html += '<label class="pre-sign-toggle">';
+            html += '<input type="checkbox" data-role="' + role.key + '" data-field="pre_signed" onchange="togglePreSign(this)">';
+            html += ' 미리 서명하기 (관리자가 대신 입력)</label>';
+            html += '<div class="sign-fields-list" id="preSignFields_' + role.key + '" style="display:none;">';
+
+            roleFields.forEach(f => {
+                const typeLabel = { text: '텍스트', date: '날짜', signature: '서명',
+                                    stamp: '도장', checkbox: '체크', image: '이미지' }[f.type] || f.type;
+                const isReadOnly = !!f.read_only;
+                const defaultVal = f.default_value || '';
+
+                html += '<div class="sign-field-item" data-field-idx="' + f._idx + '">';
+                html += '<span class="field-type-badge">' + typeLabel + '</span>';
+                html += '<span>' + escHtml(f.label || f.type) + '</span>';
+
+                if (f.type === 'text') {
+                    /* Task 3: 기본값 미리 채우기, 읽기전용 처리 */
+                    html += '<input type="text" data-vidx="' + f._idx + '"' +
+                            ' value="' + escHtml(defaultVal) + '"' +
+                            (isReadOnly ? ' disabled' : '') + '>';
+                } else if (f.type === 'date') {
+                    html += '<input type="date" data-vidx="' + f._idx + '"' +
+                            ' value="' + escHtml(defaultVal) + '"' +
+                            (isReadOnly ? ' disabled' : '') + '>';
+                } else if (f.type === 'signature' || f.type === 'stamp') {
+                    html += '<img class="sig-preview" data-vidx="' + f._idx + '" src="" style="display:none;">';
+                    html += '<button class="sign-btn-small" onclick="openSigModal(' + f._idx + ',\'' + f.type + '\')">' +
+                            (f.type === 'signature' ? '서명' : '도장') + '</button>';
+                } else if (f.type === 'checkbox') {
+                    html += '<input type="checkbox" data-vidx="' + f._idx + '">';
+                } else if (f.type === 'image') {
+                    /* Task 6: 이미지 필드 - 파일 업로드 */
+                    html += '<input type="file" accept="image/*" data-vidx="' + f._idx + '" onchange="uploadFieldImage(this,' + f._idx + ')">';
+                    html += '<img class="img-preview" data-img-vidx="' + f._idx + '" src="" style="display:none;">';
+                }
+                html += '</div>';
+            });
+
+            html += '</div></div>';
+        }
+
+        div.innerHTML = html;
+        container.appendChild(div);
+    });
+}
+
+function togglePreSign(cb) {
+    const role = cb.dataset.role;
+    const sec = document.getElementById('preSignFields_' + role);
+    sec.style.display = cb.checked ? '' : 'none';
+}
+
+/* ── 이미지 필드 업로드 (Task 6) ── */
+async function uploadFieldImage(fileInput, fieldIdx) {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const res = await fetch('/api/upload-field-image', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken },
+            body: formData,
+        });
+        const data = await res.json();
+        if (data.url) {
+            /* 업로드 성공 - 미리보기 표시 및 URL 저장 */
+            const img = document.querySelector('img[data-img-vidx="' + fieldIdx + '"]');
+            if (img) { img.src = data.url; img.style.display = ''; }
+            fileInput.dataset.uploadedUrl = data.url;
+        } else {
+            showToast(data.error || '이미지 업로드 실패');
+        }
+    } catch (e) {
+        showToast('이미지 업로드 중 오류 발생');
+    }
+}
+
+/* ── 서명 패드 모달 ── */
+function openSigModal(fieldIdx, type) {
+    const modal = document.getElementById('sigModal');
+    document.getElementById('sigModalTitle').textContent =
+        type === 'signature' ? '서명' : '도장 날인';
+    modal.classList.add('show');
+
+    const canvas = document.getElementById('sigCanvas');
+    canvas.width = canvas.parentElement.clientWidth - 4;
+    canvas.height = 200;
+
+    signaturePad = new SignaturePad(canvas, {
+        backgroundColor: 'rgba(255,255,255,0)',
+        penColor: type === 'stamp' ? '#e74c3c' : '#000',
+    });
+
+    sigCallback = (dataUrl) => {
+        const img = document.querySelector('img[data-vidx="' + fieldIdx + '"]');
+        if (img) { img.src = dataUrl; img.style.display = ''; }
+    };
+}
+
+function clearSig() { if (signaturePad) signaturePad.clear(); }
+
+function closeSigModal() {
+    document.getElementById('sigModal').classList.remove('show');
+    signaturePad = null;
+    sigCallback = null;
+}
+
+function confirmSig() {
+    if (!signaturePad || signaturePad.isEmpty()) {
+        showToast('서명을 입력하세요.');
+        return;
+    }
+    const dataUrl = signaturePad.toDataURL();
+    if (sigCallback) sigCallback(dataUrl);
+    closeSigModal();
+}
+
+/* ── 계약 제출 ── */
+async function submitContract() {
+    const tid = document.getElementById('templateSelect').value;
+    if (!tid || !currentTemplate) { showToast('서식을 선택하세요.'); return; }
+
+    const roles = currentTemplate.roles || [];
+    const participants = [];
+
+    for (const role of roles) {
+        const nameEl = document.querySelector('input[data-role="' + role.key + '"][data-field="name"]');
+        const phoneEl = document.querySelector('input[data-role="' + role.key + '"][data-field="phone"]');
+        const preSignEl = document.querySelector('input[data-role="' + role.key + '"][data-field="pre_signed"]');
+
+        const name = nameEl ? nameEl.value.trim() : '';
+        if (!name) { showToast(role.label + '의 이름을 입력하세요.'); return; }
+
+        const p = {
+            role_key: role.key,
+            name,
+            phone: phoneEl ? phoneEl.value.trim() : '',
+            pre_signed: preSignEl ? preSignEl.checked : false,
+            field_values: [],
+        };
+
+        if (p.pre_signed) {
+            const container = document.getElementById('preSignFields_' + role.key);
+            if (container) {
+                container.querySelectorAll('.sign-field-item').forEach(item => {
+                    const idx = parseInt(item.dataset.fieldIdx);
+                    const textInput = item.querySelector('input[type="text"][data-vidx]');
+                    const dateInput = item.querySelector('input[type="date"][data-vidx]');
+                    const sigImg = item.querySelector('img.sig-preview[data-vidx]');
+                    const checkInput = item.querySelector('input[type="checkbox"][data-vidx]');
+                    const fileInput = item.querySelector('input[type="file"][data-vidx]');
+
+                    let value = '';
+                    if (textInput) value = textInput.value;
+                    else if (dateInput) value = dateInput.value;
+                    else if (sigImg && sigImg.src && sigImg.style.display !== 'none') value = sigImg.src;
+                    else if (checkInput) value = checkInput.checked ? 'Y' : '';
+                    else if (fileInput && fileInput.dataset.uploadedUrl) value = fileInput.dataset.uploadedUrl;
+
+                    p.field_values.push({ field_idx: idx, value });
+                });
+            }
+        }
+        participants.push(p);
+    }
+
+    /* expires_at + scheduled_at */
+    const scheduledAt = document.getElementById('enableSchedule').checked
+        ? document.getElementById('scheduledAt').value || null
+        : null;
+
+    if (scheduledAt) {
+        const schedDate = new Date(scheduledAt);
+        if (schedDate <= new Date()) {
+            showToast('예약 시각은 현재보다 미래여야 합니다.');
+            return;
+        }
+    }
+
+    const empSel = document.getElementById('empSelect_worker');
+    const body = {
+        template_id: parseInt(tid),
+        title: document.getElementById('contractTitle').value.trim(),
+        employee_id: empSel ? empSel.value || null : null,
+        expires_at: document.getElementById('expiresAt').value || null,
+        scheduled_at: scheduledAt,
+        participants,
+    };
+
+    const btn = document.getElementById('createBtn');
+    setButtonLoading(btn, true);
+
+    try {
+        const res = await fetch('/api/contracts', {
+            method: 'POST', headers: apiHeaders, body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (data.success) {
+            const msg = scheduledAt ? '예약발송이 설정되었습니다.' : '계약이 생성되었습니다.';
+            showToast(msg);
+            setTimeout(() => { location.href = '/admin/contracts'; }, 800);
+        } else {
+            showToast(data.error || '생성 실패');
+        }
+    } finally {
+        setButtonLoading(btn, false);
+    }
+}
+
+/* ── 초기화 ── */
+{% if template %}
+currentTemplate = templatesData[{{ template.id }}];
+loadPdf({{ template.id }});
+renderParticipants();
+{% endif %}
+{% endblock %}

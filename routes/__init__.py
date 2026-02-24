@@ -12,6 +12,8 @@ def register_blueprints(app):
     from routes.dashboard import dashboard_bp
     from routes.site import site_bp
     from routes.notice import notice_bp
+    from routes.contract import contract_bp
+    from routes.leave import leave_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(apply_bp)
@@ -23,3 +25,5 @@ def register_blueprints(app):
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(site_bp)
     app.register_blueprint(notice_bp)
+    app.register_blueprint(contract_bp)
+    app.register_blueprint(leave_bp)

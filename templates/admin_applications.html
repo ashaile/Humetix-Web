@@ -513,7 +513,7 @@
     <div style="display: flex; gap: 8px; align-items: center;">
         <button type="button" class="btn btn-success btn-sm" id="openExcelColumnModalBtn">엑셀 내보내기</button>
         <button type="button" class="btn btn-primary btn-sm" id="downloadApplicationFormBtn">입사지원서 다운로드</button>
-        <button onclick="if(confirm('선택한 항목을 삭제하시겠습니까?')) document.getElementById('deleteForm').submit();"
+        <button onclick="showConfirm('선택한 항목을 삭제하시겠습니까?').then(ok => { if(ok) document.getElementById('deleteForm').submit(); });"
             class="btn btn-danger btn-sm">선택 삭제</button>
     </div>
 </div>

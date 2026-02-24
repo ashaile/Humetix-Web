@@ -1,0 +1,482 @@
+{% extends "base_admin.html" %}
+
+{% block admin_title %}HUMETIX - 대량전송 상세{% endblock %}
+{% block page_title %}{{ batch_info.title }}{% endblock %}
+{% block page_desc %}대량전송 상세 현황을 확인합니다.{% endblock %}
+
+{% block page_css %}
+/* ── 뒤로가기 ── */
+.back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 14px; font-weight: 500; color: var(--text2);
+    text-decoration: none; margin-bottom: 16px; transition: color .15s;
+}
+.back-link:hover { color: var(--accent); }
+.back-link .arrow { font-size: 18px; }
+
+/* ── 배치 정보 헤더 ── */
+.batch-header {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px; margin-bottom: 24px;
+}
+.batch-header-top { display: flex; gap: 24px; flex-wrap: wrap; }
+.batch-header-info { flex: 1; min-width: 250px; }
+.batch-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+.batch-meta { font-size: 13px; color: var(--text2); margin-bottom: 8px; }
+.batch-meta span { margin-right: 16px; }
+
+/* ── 진행률 카드 ── */
+.batch-progress-card {
+    min-width: 280px; padding: 16px 20px;
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--bg); display: flex; flex-direction: column; gap: 8px;
+}
+.batch-progress-summary { font-size: 15px; font-weight: 700; }
+.batch-progress-summary .remain { font-weight: 600; color: #b45309; }
+.batch-progress-actions { display: flex; gap: 8px; align-items: center; }
+.batch-progress-bar {
+    height: 10px; background: var(--bg3);
+    border-radius: 5px; overflow: hidden; flex: 1;
+}
+.batch-progress-fill { height: 100%; border-radius: 5px; transition: width .3s; }
+.batch-progress-fill.complete { background: var(--success, #16a34a); }
+.batch-progress-fill.partial { background: #2563eb; }
+.batch-pct { font-size: 13px; font-weight: 700; color: var(--text2); min-width: 36px; text-align: right; }
+
+/* ── 상태 배지 ── */
+.badge-signed { background: #dcfce7; color: #16a34a; }
+.badge-need-sign { background: #fef3c7; color: #b45309; }
+.badge-cancelled-status { background: var(--bg3); color: var(--text2); }
+.badge-expired { background: #fee2e2; color: var(--danger); }
+.badge-scheduled { background: #e0e7ff; color: #4338ca; }
+.badge-pending { background: #fef3c7; color: #b45309; }
+.badge-completed { background: #dcfce7; color: #16a34a; }
+.badge-in_progress { background: #dbeafe; color: #1d4ed8; }
+
+/* ── 참여자 목록 (계약관리 동일) ── */
+.participants-list { font-size: 12px; color: var(--text2); }
+.participants-list .signed { color: var(--success); font-weight: 600; }
+.participants-list .pending-sign { color: #b45309; }
+.participants-list > div { margin-bottom: 4px; }
+.participants-list > div:last-child { margin-bottom: 0; }
+.sign-link-box {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; margin-top: 2px;
+}
+.action-btns { display: flex; gap: 4px; flex-wrap: wrap; }
+
+/* ── 만료일 수정 모달 ── */
+.expiry-modal {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.45); z-index: 2000;
+    justify-content: center; align-items: center;
+}
+.expiry-modal.show { display: flex; }
+.expiry-modal-card {
+    background: var(--bg2); border-radius: var(--radius); padding: 24px;
+    width: 90%; max-width: 380px; box-shadow: var(--shadow-lg, 0 8px 24px rgba(0,0,0,.2));
+}
+.expiry-modal-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+.expiry-modal-card .form-group { margin-bottom: 14px; }
+.expiry-modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+
+/* ── PDF 미리보기 모달 ── */
+.pdf-preview-modal {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.6); z-index: 3000;
+    justify-content: center; align-items: center;
+}
+.pdf-preview-modal.show { display: flex; }
+.pdf-preview-card {
+    background: var(--bg2); border-radius: var(--radius);
+    width: 95%; max-width: 900px; height: 90vh;
+    display: flex; flex-direction: column;
+    box-shadow: 0 12px 40px rgba(0,0,0,.3);
+}
+.pdf-preview-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+}
+.pdf-preview-title { font-size: 15px; font-weight: 700; }
+.pdf-preview-close {
+    background: none; border: none; font-size: 28px; cursor: pointer;
+    color: var(--text2); line-height: 1; padding: 0 4px; transition: color .15s;
+}
+.pdf-preview-close:hover { color: var(--danger); }
+.pdf-preview-body { flex: 1; overflow: hidden; }
+
+/* ── 반응형 ── */
+@media (max-width: 768px) {
+    .batch-header-top { flex-direction: column; }
+    .batch-progress-card { min-width: 100%; }
+    .action-btns { flex-direction: column; }
+    .action-btns .btn { width: 100%; justify-content: center; }
+    .pdf-preview-card { width: 100%; height: 100vh; border-radius: 0; }
+}
+{% endblock %}
+
+{% block content %}
+{# ── 뒤로가기 ── #}
+<a href="/admin/bulk-send" class="back-link">
+    <span class="arrow">&#8592;</span> 대량전송 목록으로
+</a>
+
+{# ── 배치 정보 헤더 ── #}
+<div class="batch-header">
+    <div class="batch-header-top">
+        <div class="batch-header-info">
+            <div class="batch-title">{{ batch_info.title }}</div>
+            <div class="batch-meta">
+                <span>&#128196; 서식: {{ batch_info.template_name }}</span>
+                <span>&#128197; 생성일: {{ batch_info.created_at.strftime('%Y-%m-%d %H:%M') if batch_info.created_at else '-' }}</span>
+            </div>
+        </div>
+        <div class="batch-progress-card">
+            <div class="batch-progress-summary">
+                {{ batch_info.signed }}건 서명완료
+                {% if batch_info.pending > 0 %}
+                <br><span class="remain">{{ batch_info.pending }}건 남음</span>
+                {% endif %}
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="openBatchExpiryModal()" style="align-self:flex-start;">전체 계약 만료일 설정</button>
+            {% set pct = (batch_info.signed / batch_info.total * 100) if batch_info.total > 0 else 0 %}
+            <div class="batch-progress-actions">
+                <div class="batch-progress-bar">
+                    <div class="batch-progress-fill {{ 'complete' if batch_info.signed == batch_info.total else 'partial' }}"
+                         style="width:{{ pct|round|int }}%"></div>
+                </div>
+                <span class="batch-pct">{{ pct|round|int }}%</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ── 계약 목록 테이블 (계약관리와 동일한 구조) ── #}
+<div class="table-wrap">
+    <div class="table-header">
+        <div class="table-title">계약 목록 ({{ participant_list|length }}건)</div>
+    </div>
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>계약명</th>
+                    <th>참여자</th>
+                    <th>상태</th>
+                    <th>생성일</th>
+                    <th>만료</th>
+                    <th>관리</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in participant_list %}
+                <tr>
+                    <td class="mono">{{ item.no }}</td>
+                    <td class="emp-name">{{ item.name }}</td>
+                    <td>
+                        <div class="participants-list">
+                            {% for part in item.participants %}
+                            <div>
+                                {% if part.status == 'signed' %}
+                                <span class="signed">&#10003;</span>
+                                {% else %}
+                                <span class="pending-sign">&#9711;</span>
+                                {% endif %}
+                                {{ part.name }}{% if part.phone %} <span class="mono" style="font-size:11px;color:var(--text2);">{{ part.phone }}</span>{% endif %}
+                                <span style="font-size:10px;margin-left:2px;">
+                                    {% if part.status == 'signed' %}<span style="color:var(--success);">서명완료</span>
+                                    {% elif item.contract_status == 'cancelled' %}<span style="color:var(--text2);">취소</span>
+                                    {% else %}<span style="color:#b45309;">서명필요</span>{% endif %}
+                                </span>
+                                {% if part.status != 'signed' and item.contract_status != 'cancelled' %}
+                                <div class="sign-link-box">
+                                    <button class="btn btn-outline btn-sm" style="padding:2px 6px;min-height:auto;font-size:11px;" onclick="copySignLink('{{ part.sign_token }}', this)">링크복사</button>
+                                    {% if part.phone %}
+                                    <button class="btn btn-outline btn-sm" style="padding:2px 6px;min-height:auto;font-size:11px;color:var(--accent);border-color:var(--accent);"
+                                            onclick="resendSms({{ item.contract_id }}, {{ part.id }}, this)">재전송</button>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </td>
+                    <td>
+                        {% if item.contract_status == 'completed' %}
+                        <span class="badge badge-completed">완료</span>
+                        {% elif item.contract_status == 'cancelled' %}
+                        <span class="badge badge-cancelled-status">취소</span>
+                        {% elif item.contract_status == 'scheduled' %}
+                        <span class="badge badge-scheduled">예약</span>
+                        {% elif item.contract_status == 'in_progress' %}
+                        <span class="badge badge-in_progress">서명중</span>
+                        {% elif item.contract_status == 'pending' %}
+                        <span class="badge badge-pending">대기</span>
+                        {% else %}
+                        <span class="badge badge-need-sign">대기</span>
+                        {% endif %}
+                    </td>
+                    <td class="mono" style="white-space:nowrap;font-size:12px;">
+                        {{ item.signed_at.strftime('%Y-%m-%d %H:%M') if item.signed_at else '-' }}
+                    </td>
+                    <td>
+                        {% if item.contract_status == 'completed' %}
+                            {% if item.expires_at %}
+                            <span class="mono" style="font-size:11px;color:var(--text2);">{{ item.expires_at.strftime('%m/%d %H:%M') }}</span>
+                            {% else %}
+                            <span style="color:var(--text2);">-</span>
+                            {% endif %}
+                        {% else %}
+                            {% if item.expires_at %}
+                            <span class="badge {{ 'badge-expired' if item.is_expired else 'badge-pending' }}"
+                                  title="{{ item.expires_at.strftime('%Y-%m-%d %H:%M') }}">
+                                {% if item.is_expired %}만료{% else %}{{ item.expires_at.strftime('%m/%d') }}까지{% endif %}
+                            </span>
+                            <button class="btn btn-outline btn-sm" style="padding:1px 5px;min-height:auto;font-size:10px;"
+                                    onclick="editExpiry({{ item.contract_id }}, '{{ item.expires_at.strftime('%Y-%m-%dT%H:%M') }}')">{{ '연장' if item.is_expired else '수정' }}</button>
+                            {% else %}
+                            <button class="btn btn-outline btn-sm" style="padding:1px 5px;min-height:auto;font-size:10px;"
+                                    onclick="editExpiry({{ item.contract_id }}, '')">설정</button>
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="btn btn-outline btn-sm" onclick="openPdfPreview({{ item.contract_id }}, '{{ item.name|replace("'", "\\'") }}')" title="문서 미리보기">문서열람</button>
+                            <a href="/admin/contracts/{{ item.contract_id }}/pdf" class="btn btn-success btn-sm" title="PDF 다운로드">PDF</a>
+                            {% if item.contract_status != 'cancelled' and item.contract_status != 'completed' %}
+                            <button class="btn btn-danger btn-sm" onclick="cancelContract({{ item.contract_id }}, '{{ item.name|replace("'", "\\'") }}')" title="계약 취소">취소</button>
+                            {% endif %}
+                            <button class="btn btn-sm" style="background:#6b7280;color:#fff;" onclick="hardDeleteContract({{ item.contract_id }}, '{{ item.name|replace("'", "\\'") }}')" title="완전 삭제">삭제</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not participant_list %}
+                <tr>
+                    <td colspan="7" style="text-align:center;padding:24px;color:var(--text2);">
+                        참여자 정보가 없습니다.
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 개별 만료일 수정 모달 -->
+<div class="expiry-modal" id="expiryModal">
+    <div class="expiry-modal-card">
+        <h3>만료일 수정</h3>
+        <div class="form-group">
+            <label class="form-label">만료일시</label>
+            <input type="datetime-local" class="form-input" id="expiryInput">
+        </div>
+        <div style="font-size:12px;color:var(--text2);margin-top:-8px;">비워두면 무기한으로 설정됩니다.</div>
+        <div class="expiry-modal-actions">
+            <button class="btn btn-outline" onclick="closeExpiryModal()">취소</button>
+            <button class="btn btn-outline" onclick="clearExpiry()" style="color:var(--danger);border-color:var(--danger);">무기한</button>
+            <button class="btn btn-primary" onclick="saveExpiry()">저장</button>
+        </div>
+    </div>
+</div>
+
+<!-- 일괄 만료일 설정 모달 -->
+<div class="expiry-modal" id="batchExpiryModal">
+    <div class="expiry-modal-card">
+        <h3>전체 계약 만료일 설정</h3>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">서명 미완료 계약의 만료일을 일괄 변경합니다.</p>
+        <div class="form-group">
+            <label class="form-label">만료일시</label>
+            <input type="datetime-local" class="form-input" id="batchExpiryInput">
+        </div>
+        <div style="font-size:12px;color:var(--text2);margin-top:-8px;">비워두면 무기한으로 설정됩니다.</div>
+        <div class="expiry-modal-actions">
+            <button class="btn btn-outline" onclick="closeBatchExpiryModal()">취소</button>
+            <button class="btn btn-outline" onclick="clearBatchExpiry()" style="color:var(--danger);border-color:var(--danger);">무기한</button>
+            <button class="btn btn-primary" onclick="saveBatchExpiry()">일괄 적용</button>
+        </div>
+    </div>
+</div>
+
+<!-- PDF 미리보기 모달 -->
+<div class="pdf-preview-modal" id="pdfPreviewModal">
+    <div class="pdf-preview-card">
+        <div class="pdf-preview-header">
+            <span class="pdf-preview-title" id="pdfPreviewTitle">문서 미리보기</span>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <a id="pdfDownloadBtn" href="#" class="btn btn-outline btn-sm" download>다운로드</a>
+                <button class="pdf-preview-close" onclick="closePdfPreview()">&times;</button>
+            </div>
+        </div>
+        <div class="pdf-preview-body">
+            <iframe id="pdfPreviewFrame" src="" style="width:100%;height:100%;border:none;"></iframe>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+const csrfToken = window.csrfToken;
+const headers = { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken };
+const batchId = '{{ batch_info.batch_id }}';
+
+/* ── PDF 미리보기 모달 ── */
+function openPdfPreview(cid, title) {
+    document.getElementById('pdfPreviewTitle').textContent = title + '.pdf';
+    document.getElementById('pdfPreviewFrame').src = '/admin/contracts/' + cid + '/view-pdf';
+    document.getElementById('pdfDownloadBtn').href = '/admin/contracts/' + cid + '/pdf';
+    document.getElementById('pdfPreviewModal').classList.add('show');
+}
+
+function closePdfPreview() {
+    document.getElementById('pdfPreviewModal').classList.remove('show');
+    document.getElementById('pdfPreviewFrame').src = '';
+}
+
+document.getElementById('pdfPreviewModal').addEventListener('click', function(e) {
+    if (e.target === this) closePdfPreview();
+});
+
+/* ── SMS 재전송 ── */
+function resendSms(cid, pid, btn) {
+    showConfirm('이 참여자에게 서명 링크 SMS를 재전송하시겠습니까?', async () => {
+        setButtonLoading(btn, true);
+        try {
+            const res = await fetch('/api/contracts/' + cid + '/participants/' + pid + '/resend-sms', {
+                method: 'POST', headers: headers
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast(data.message || 'SMS가 재전송되었습니다.');
+            } else {
+                showToast(data.error || 'SMS 재전송 실패');
+            }
+        } catch(e) {
+            showToast('오류가 발생했습니다.');
+        } finally {
+            setButtonLoading(btn, false);
+        }
+    });
+}
+
+/* ── 서명 링크 복사 ── */
+async function copySignLink(token, btn) {
+    const url = location.origin + '/sign/' + token;
+    try {
+        await navigator.clipboard.writeText(url);
+        btn.textContent = '복사됨!';
+        setTimeout(() => { btn.textContent = '링크복사'; }, 1500);
+    } catch(e) {
+        const ta = document.createElement('textarea');
+        ta.value = url; document.body.appendChild(ta);
+        ta.select(); document.execCommand('copy');
+        document.body.removeChild(ta);
+    }
+    showToast('서명 링크가 복사되었습니다.');
+}
+
+/* ── 계약 취소 ── */
+function cancelContract(cid, title) {
+    showConfirm('"' + title + '" 계약을 취소하시겠습니까?', async () => {
+        const res = await fetch('/api/contracts/' + cid, { method: 'DELETE', headers });
+        const data = await res.json();
+        if (data.success) {
+            showToast('계약이 취소되었습니다.');
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showToast(data.error || '취소 실패');
+        }
+    });
+}
+
+/* ── 계약 삭제 (완전 삭제) ── */
+function hardDeleteContract(cid, title) {
+    showConfirm('"' + title + '" 계약을 완전히 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.', async () => {
+        const res = await fetch('/api/contracts/' + cid + '/hard-delete', { method: 'DELETE', headers });
+        const data = await res.json();
+        if (data.success) {
+            showToast('계약이 삭제되었습니다.');
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showToast(data.error || '삭제 실패');
+        }
+    });
+}
+
+/* ── 개별 만료일 수정 모달 ── */
+let expiryTargetCid = null;
+
+function editExpiry(cid, currentVal) {
+    expiryTargetCid = cid;
+    document.getElementById('expiryInput').value = currentVal || '';
+    document.getElementById('expiryModal').classList.add('show');
+}
+
+function closeExpiryModal() {
+    document.getElementById('expiryModal').classList.remove('show');
+    expiryTargetCid = null;
+}
+
+function clearExpiry() {
+    document.getElementById('expiryInput').value = '';
+    saveExpiry();
+}
+
+function saveExpiry() {
+    if (!expiryTargetCid) return;
+    const val = document.getElementById('expiryInput').value;
+    fetch('/api/contracts/' + expiryTargetCid + '/update-expiry', {
+        method: 'PUT', headers: headers,
+        body: JSON.stringify({ expires_at: val || null })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showToast('만료일이 변경되었습니다.');
+            closeExpiryModal();
+            setTimeout(() => location.reload(), 500);
+        } else { showToast(data.error || '변경 실패'); }
+    })
+    .catch(() => showToast('오류가 발생했습니다.'));
+}
+
+/* ── 일괄 만료일 설정 모달 ── */
+function openBatchExpiryModal() {
+    document.getElementById('batchExpiryInput').value = '';
+    document.getElementById('batchExpiryModal').classList.add('show');
+}
+
+function closeBatchExpiryModal() {
+    document.getElementById('batchExpiryModal').classList.remove('show');
+}
+
+function clearBatchExpiry() {
+    document.getElementById('batchExpiryInput').value = '';
+    saveBatchExpiry();
+}
+
+function saveBatchExpiry() {
+    const val = document.getElementById('batchExpiryInput').value;
+    fetch('/api/contracts/batch/' + batchId + '/update-expiry', {
+        method: 'PUT', headers: headers,
+        body: JSON.stringify({ expires_at: val || null })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.updated + '건의 만료일이 변경되었습니다.');
+            closeBatchExpiryModal();
+            setTimeout(() => location.reload(), 500);
+        } else { showToast(data.error || '변경 실패'); }
+    })
+    .catch(() => showToast('오류가 발생했습니다.'));
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        if (document.getElementById('pdfPreviewModal').classList.contains('show')) closePdfPreview();
+    }
+});
+{% endblock %}

@@ -2,7 +2,7 @@
 
 {% block admin_title %}HUMETIX - 사원 명부 관리{% endblock %}
 {% block page_title %}사원 명부 관리{% endblock %}
-{% block page_desc %}사원을 등록하고 입사일/퇴사일을 관리합니다. 등록된 사원만 근태 입력과 가불 신청이 가능합니다.{% endblock %}
+{% block page_desc %}사원을 등록하고 입사일/퇴사일을 관리합니다. 등록된 사원만 근무 입력과 가불 신청이 가능합니다.{% endblock %}
 
 {% block page_css %}
 .register-card {
@@ -59,7 +59,7 @@
             <input type="date" id="emp-hire" class="form-input">
         </div>
         <div class="form-group">
-            <label class="form-label">현장</label>
+            <label class="form-label">고객사</label>
             <select id="emp-site" class="form-input">
                 <option value="">미배정</option>
                 {% for site in sites %}
@@ -91,7 +91,7 @@
                 <tr>
                     <th>이름</th>
                     <th>생년월일</th>
-                    <th>현장</th>
+                    <th>고객사</th>
                     <th>공제유형</th>
                     <th>입사일</th>
                     <th>퇴사일</th>
@@ -125,6 +125,8 @@
                         <div class="action-btns">
                             <button class="btn btn-outline btn-sm"
                                 onclick='openEditEmp({{ emp.id }}, {{ emp.to_dict()|tojson }})'>수정</button>
+                            <button class="btn btn-outline btn-sm"
+                                onclick="openEmpWageModal({{ emp.id }}, '{{ emp.name }}')">급여설정</button>
                             {% if emp.is_active %}
                             <button class="btn btn-outline btn-sm"
                                 onclick="markResign({{ emp.id }}, '{{ emp.name }}')">퇴사</button>
@@ -182,7 +184,7 @@
             <input type="date" id="editEmpHire" class="form-input">
         </div>
         <div class="form-group" style="margin-bottom:12px;">
-            <label class="form-label">현장</label>
+            <label class="form-label">고객사</label>
             <select id="editEmpSite" class="form-input">
                 <option value="">미배정</option>
                 {% for site in sites %}
@@ -193,6 +195,104 @@
         <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
             <button type="button" class="btn btn-outline btn-sm" onclick="closeEditEmp()">취소</button>
             <button type="button" class="btn btn-primary btn-sm" onclick="submitEditEmp()">저장</button>
+        </div>
+    </div>
+</div>
+<!-- 직원 급여 설정 모달 -->
+<div id="empWageModal" class="modal-overlay">
+    <div class="modal-card" style="max-width:560px;">
+        <h3 id="empWageTitle">급여 설정</h3>
+        <input type="hidden" id="empWageId">
+        <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">
+            비워두면 고객사 설정 → 시스템 기본값 순서로 적용됩니다.
+        </p>
+        <!-- 출처 표시 영역 -->
+        <div id="empWageSourceInfo" style="font-size:12px;margin-bottom:16px;display:none;">
+            <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <th style="text-align:left;padding:4px 8px;color:var(--text2);">항목</th>
+                        <th style="text-align:right;padding:4px 8px;color:var(--text2);">현재값</th>
+                        <th style="text-align:left;padding:4px 8px;color:var(--text2);">출처</th>
+                    </tr>
+                </thead>
+                <tbody id="empWageSourceBody"></tbody>
+            </table>
+        </div>
+        <!-- 급여 산정방식 -->
+        <div class="form-group" style="margin-bottom:10px;">
+            <label class="form-label">급여 산정방식</label>
+            <select id="ewCalcMethod" class="form-input">
+                <option value="">미설정 (상위 설정 따름)</option>
+                <option value="standard">209h 고정 (주휴포함 차감)</option>
+                <option value="daily_build">일급제 (0→쌓기)</option>
+                <option value="actual">실근무시간 (주휴포함 시급)</option>
+            </select>
+        </div>
+        <!-- 급여유형 -->
+        <div class="form-group" style="margin-bottom:10px;">
+            <label class="form-label">급여유형</label>
+            <select id="ewType" class="form-input" onchange="toggleWageType('ew')">
+                <option value="">미설정 (상위 설정 따름)</option>
+                <option value="hourly">시급제</option>
+                <option value="daily">공수제 (일당)</option>
+            </select>
+        </div>
+        <!-- 시급제 -->
+        <div id="ewHourlyGroup" class="form-group" style="margin-bottom:10px;">
+            <label class="form-label">시급 (원)</label>
+            <input type="number" id="ewHourly" class="form-input" placeholder="10320">
+        </div>
+        <!-- 공수제 -->
+        <div id="ewDailyGroup" class="form-group" style="margin-bottom:10px;display:none;">
+            <label class="form-label">일당 — 1공 단가 (원)</label>
+            <input type="number" id="ewDaily" class="form-input" placeholder="150000">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div class="form-group">
+                <label class="form-label">기본 근무시간</label>
+                <input type="number" step="0.5" id="ewStdHours" class="form-input" placeholder="8.0">
+            </div>
+            <div class="form-group">
+                <label class="form-label">휴게시간</label>
+                <input type="number" step="0.5" id="ewBreak" class="form-input" placeholder="1.0">
+            </div>
+            <div class="form-group">
+                <label class="form-label">잔업 계산방식</label>
+                <select id="ewOtUnit" class="form-input" onchange="toggleOtUnit('ew')">
+                    <option value="">미설정 (상위 설정 따름)</option>
+                    <option value="rate">배율 (시급/일당 기준)</option>
+                    <option value="fixed">시간당 정액</option>
+                </select>
+            </div>
+            <div id="ewOtRateGroup" class="form-group">
+                <label class="form-label">연장근로 배율</label>
+                <input type="number" step="0.1" id="ewOt" class="form-input" placeholder="1.5">
+            </div>
+            <div id="ewOtFixedGroup" class="form-group" style="display:none;">
+                <label class="form-label">잔업 시간당 금액 (원)</label>
+                <input type="number" id="ewOtFixed" class="form-input" placeholder="20000">
+            </div>
+            <div class="form-group">
+                <label class="form-label">야간 가산 배율</label>
+                <input type="number" step="0.1" id="ewNight" class="form-input" placeholder="0.5">
+            </div>
+            <div class="form-group">
+                <label class="form-label">무급휴일 배율</label>
+                <input type="number" step="0.1" id="ewUnpaid" class="form-input" placeholder="1.5">
+            </div>
+            <div class="form-group">
+                <label class="form-label">유급휴일 배율 (8h 이내)</label>
+                <input type="number" step="0.1" id="ewPaid" class="form-input" placeholder="1.5">
+            </div>
+            <div class="form-group" style="grid-column:1/-1;">
+                <label class="form-label">유급휴일 초과 배율 (8h 초과)</label>
+                <input type="number" step="0.1" id="ewPaidOt" class="form-input" placeholder="2.0">
+            </div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="closeEmpWageModal()">취소</button>
+            <button type="button" class="btn btn-primary btn-sm" id="ewSubmitBtn" onclick="submitEmpWage()">저장</button>
         </div>
     </div>
 </div>
@@ -335,4 +435,148 @@ async function submitEditEmp() {
         showToast(data.error || '수정 실패');
     }
 }
+
+/* ── 직원 급여 설정 ──────────────────────── */
+const ewFields = [
+    {id:'ewHourly', key:'hourly_wage'},
+    {id:'ewDaily', key:'daily_wage'},
+    {id:'ewStdHours', key:'standard_work_hours'},
+    {id:'ewBreak', key:'break_hours'},
+    {id:'ewOt', key:'overtime_rate'},
+    {id:'ewNight', key:'night_bonus_rate'},
+    {id:'ewUnpaid', key:'unpaid_holiday_rate'},
+    {id:'ewPaid', key:'paid_holiday_rate'},
+    {id:'ewPaidOt', key:'paid_holiday_ot_rate'},
+    {id:'ewOtFixed', key:'overtime_fixed_amount'},
+];
+
+function toggleWageType(prefix) {
+    const sel = document.getElementById(prefix + 'Type').value;
+    document.getElementById(prefix + 'HourlyGroup').style.display = (sel === 'daily') ? 'none' : '';
+    document.getElementById(prefix + 'DailyGroup').style.display = (sel === 'daily') ? '' : 'none';
+}
+
+function toggleOtUnit(prefix) {
+    const sel = document.getElementById(prefix + 'OtUnit').value;
+    document.getElementById(prefix + 'OtRateGroup').style.display = (sel === 'fixed') ? 'none' : '';
+    document.getElementById(prefix + 'OtFixedGroup').style.display = (sel === 'fixed') ? '' : 'none';
+}
+
+const VALUE_DISPLAY = {
+    'wage_type': v => v === 'hourly' ? '시급제' : v === 'daily' ? '공수제' : v,
+    'overtime_unit': v => v === 'rate' ? '배율' : v === 'fixed' ? '정액' : v,
+    'calc_method': v => v === 'standard' ? '209h 고정' : v === 'daily_build' ? '일급제' : v === 'actual' ? '실근무시간' : v || '미설정',
+};
+
+async function openEmpWageModal(empId, empName) {
+    document.getElementById('empWageId').value = empId;
+    document.getElementById('empWageTitle').textContent = empName + ' — 급여 설정';
+
+    // 필드 초기화
+    ewFields.forEach(f => {
+        document.getElementById(f.id).value = '';
+        document.getElementById(f.id).placeholder = '';
+    });
+    document.getElementById('ewCalcMethod').value = '';
+    document.getElementById('ewType').value = '';
+    document.getElementById('ewOtUnit').value = '';
+    toggleWageType('ew');
+    toggleOtUnit('ew');
+    document.getElementById('empWageSourceInfo').style.display = 'none';
+
+    try {
+        const res = await fetch('/api/employees/' + empId + '/wage-config', {
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
+        });
+        const data = await res.json();
+        if (data.success) {
+            // 입력 필드에 raw(개별 설정) 값 채우기
+            ewFields.forEach(f => {
+                const el = document.getElementById(f.id);
+                const rawVal = data.raw[f.key];
+                el.value = rawVal != null ? rawVal : '';
+            });
+            // select 필드
+            document.getElementById('ewCalcMethod').value = data.raw['calc_method'] || '';
+            document.getElementById('ewType').value = data.raw['wage_type'] || '';
+            document.getElementById('ewOtUnit').value = data.raw['overtime_unit'] || '';
+            toggleWageType('ew');
+            toggleOtUnit('ew');
+
+            // 출처 테이블 표시
+            if (data.detail && data.detail.length) {
+                const tbody = document.getElementById('empWageSourceBody');
+                tbody.innerHTML = '';
+                data.detail.forEach(d => {
+                    const tr = document.createElement('tr');
+                    tr.style.borderBottom = '1px solid var(--border)';
+                    const srcBadge = d.source === 'employee'
+                        ? '<span style="color:#059669;font-weight:600;">' + d.source_name + '</span>'
+                        : '<span style="color:var(--text2);">' + d.source_name + '</span>';
+                    const displayVal = VALUE_DISPLAY[d.field]
+                        ? VALUE_DISPLAY[d.field](d.value)
+                        : (d.value != null ? d.value.toLocaleString() : '-');
+                    tr.innerHTML = '<td style="padding:4px 8px;">' + d.label + '</td>'
+                        + '<td style="text-align:right;padding:4px 8px;font-weight:600;">' + displayVal + '</td>'
+                        + '<td style="padding:4px 8px;">' + srcBadge + '</td>';
+                    tbody.appendChild(tr);
+
+                    // placeholder에 해석된 값 표시
+                    const field = ewFields.find(f => f.key === d.field);
+                    if (field) {
+                        document.getElementById(field.id).placeholder = d.value != null ? d.value : '';
+                    }
+                });
+                document.getElementById('empWageSourceInfo').style.display = 'block';
+            }
+        }
+    } catch (e) {
+        console.error(e);
+    }
+
+    document.getElementById('empWageModal').classList.add('show');
+}
+
+function closeEmpWageModal() {
+    document.getElementById('empWageModal').classList.remove('show');
+}
+
+async function submitEmpWage() {
+    const empId = document.getElementById('empWageId').value;
+    const payload = {};
+    ewFields.forEach(f => {
+        const val = document.getElementById(f.id).value.trim();
+        payload[f.key] = val === '' ? null : val;
+    });
+    // select 필드
+    payload['calc_method'] = document.getElementById('ewCalcMethod').value || null;
+    payload['wage_type'] = document.getElementById('ewType').value || null;
+    payload['overtime_unit'] = document.getElementById('ewOtUnit').value || null;
+
+    const btn = document.getElementById('ewSubmitBtn');
+    setButtonLoading(btn, true);
+    try {
+        const res = await fetch('/api/employees/' + empId + '/wage-config', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast('급여 설정이 저장되었습니다.');
+            closeEmpWageModal();
+        } else {
+            showToast(data.error || '저장 실패');
+        }
+    } finally {
+        setButtonLoading(btn, false);
+    }
+}
+
+/* 모달 배경 클릭으로 닫기 */
+['editEmpModal','empWageModal'].forEach(id => {
+    document.getElementById(id).addEventListener('click', function(e) {
+        if (e.target === this) this.classList.remove('show');
+    });
+});
 {% endblock %}

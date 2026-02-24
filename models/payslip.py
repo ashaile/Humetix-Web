@@ -20,7 +20,7 @@ class Payslip(db.Model):
     emp_name = db.Column(db.String(50), nullable=False)
     dept = db.Column(db.String(50), default="")
     month = db.Column(db.String(7), nullable=False, index=True)
-    salary_mode = db.Column(db.String(10), default="standard")
+    salary_mode = db.Column(db.String(15), default="standard")
     total_work_hours = db.Column(db.Float, nullable=False, default=0.0)
     ot_hours = db.Column(db.Float, nullable=False, default=0.0)
     night_hours = db.Column(db.Float, nullable=False, default=0.0)
@@ -29,14 +29,19 @@ class Payslip(db.Model):
     ot_pay = db.Column(db.Integer, nullable=False, default=0)
     night_pay = db.Column(db.Integer, nullable=False, default=0)
     holiday_pay = db.Column(db.Integer, nullable=False, default=0)
+    weekly_holiday_pay = db.Column(db.Integer, nullable=False, default=0)
     gross = db.Column(db.Integer, nullable=False, default=0)
     tax = db.Column(db.Integer, nullable=False, default=0)
-    insurance = db.Column(db.Integer, nullable=False, default=0)
+    insurance = db.Column(db.Integer, nullable=False, default=0)  # 4대보험 합계 (pension + health_ins + longterm_care + employment_ins)
     pension = db.Column(db.Integer, nullable=False, default=0)
     health_ins = db.Column(db.Integer, nullable=False, default=0)
     longterm_care = db.Column(db.Integer, nullable=False, default=0)
     employment_ins = db.Column(db.Integer, nullable=False, default=0)
     advance_deduction = db.Column(db.Integer, nullable=False, default=0)
+    # 결근/주휴 공제
+    absent_days = db.Column(db.Float, nullable=False, default=0)
+    absent_deduction = db.Column(db.Integer, nullable=False, default=0)
+    weekly_holiday_deduction = db.Column(db.Integer, nullable=False, default=0)
     net = db.Column(db.Integer, nullable=False, default=0)
     is_manual = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
@@ -61,6 +66,7 @@ class Payslip(db.Model):
             "ot_pay": self.ot_pay,
             "night_pay": self.night_pay,
             "holiday_pay": self.holiday_pay,
+            "weekly_holiday_pay": self.weekly_holiday_pay,
             "gross": self.gross,
             "tax": self.tax,
             "insurance": self.insurance,
@@ -69,6 +75,9 @@ class Payslip(db.Model):
             "longterm_care": self.longterm_care,
             "employment_ins": self.employment_ins,
             "advance_deduction": self.advance_deduction,
+            "absent_days": self.absent_days,
+            "absent_deduction": self.absent_deduction,
+            "weekly_holiday_deduction": self.weekly_holiday_deduction,
             "net": self.net,
             "is_manual": self.is_manual,
         }

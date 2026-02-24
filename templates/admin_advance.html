@@ -40,7 +40,8 @@
                     <th>신청일</th>
                     <th>생년월일</th>
                     <th>이름</th>
-                    <th>부서</th>
+                    <th>고객사</th>
+                    <th>부서/현장</th>
                     <th>근무형태</th>
                     <th>신청월</th>
                     <th>금액</th>
@@ -54,6 +55,7 @@
                     <td>{{ item.created_at.strftime('%Y-%m-%d') }}</td>
                     <td>{{ item.birth_date }}</td>
                     <td>{{ item.emp_name }}</td>
+                    <td>{{ site_map.get(item.employee_id, '-') }}</td>
                     <td>{{ item.dept }}</td>
                     {% if item.status == 'pending' %}
                     <div class="action-btns">

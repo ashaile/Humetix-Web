@@ -1,0 +1,1156 @@
+{% extends "base.html" %}
+
+{% block title %}서식 편집 - {{ template.name }}{% endblock %}
+
+{% block head_extra %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
+{% endblock %}
+
+{% block page_css_block %}
+<style>
+:root { --side-w: 260px; --props-w: 280px; --topbar-h: 48px; --toolbar-h: 42px; }
+* { box-sizing: border-box; margin: 0; }
+body { overflow: hidden; font-family: 'Noto Sans KR', sans-serif; font-size: 13px; color: #333; }
+
+/* ── 상단 바 ── */
+.topbar {
+    position: fixed; top: 0; left: 0; right: 0; height: var(--topbar-h);
+    background: #1e293b; color: #fff; display: flex; align-items: center;
+    padding: 0 12px; gap: 10px; z-index: 200;
+}
+.topbar .back-btn { background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer; padding: 4px 8px; }
+.topbar .back-btn:hover { color: #fff; }
+.topbar .tpl-name { font-size: 14px; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.topbar .btn-group { display: flex; gap: 6px; }
+.topbar .tb-btn { padding: 6px 16px; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.topbar .tb-preview { background: #334155; color: #e2e8f0; }
+.topbar .tb-preview:hover { background: #475569; }
+.topbar .tb-save { background: #2563eb; color: #fff; }
+.topbar .tb-save:hover { background: #1d4ed8; }
+.topbar .tb-save:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ── 메인 레이아웃 ── */
+.editor-layout { display: flex; position: fixed; top: var(--topbar-h); left: 0; right: 0; bottom: 0; }
+
+/* ── 왼쪽 사이드바 ── */
+.sidebar { width: var(--side-w); background: #f8fafc; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; }
+.sb-section { padding: 14px; border-bottom: 1px solid #e2e8f0; }
+.sb-title { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
+
+/* 도구 그리드 */
+.tool-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.tool-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 8px 4px; border: 1px solid #e2e8f0; border-radius: 8px;
+    background: #fff; cursor: pointer; font-size: 10px; font-weight: 500; color: #64748b; transition: all .15s;
+}
+.tool-btn:hover { border-color: #2563eb; color: #2563eb; background: #eff6ff; }
+.tool-btn .ti { font-size: 18px; line-height: 1; }
+
+/* 참여자 */
+.part-item {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin-bottom: 4px;
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px;
+}
+.part-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+.part-label { flex: 1; font-weight: 500; }
+.part-del { background: none; border: none; color: #cbd5e1; cursor: pointer; font-size: 14px; padding: 0 2px; }
+.part-del:hover { color: #ef4444; }
+.add-part { display: block; width: 100%; padding: 7px; background: none; border: 1px dashed #cbd5e1; border-radius: 6px; color: #94a3b8; font-size: 11px; cursor: pointer; text-align: center; }
+.add-part:hover { border-color: #2563eb; color: #2563eb; }
+
+/* 페이지 목록 */
+.pg-item {
+    display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px;
+    cursor: pointer; font-size: 12px; color: #64748b; margin-bottom: 2px;
+}
+.pg-item:hover { background: #e2e8f0; }
+.pg-item.active { background: #2563eb; color: #fff; font-weight: 600; }
+.pg-num { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 11px; font-weight: 700; background: rgba(0,0,0,.05); }
+.pg-item.active .pg-num { background: rgba(255,255,255,.2); }
+
+/* 서식명 입력 */
+.sb-input { width: 100%; padding: 6px 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; font-family: inherit; }
+.sb-input:focus { border-color: #2563eb; outline: none; }
+
+/* ── 중앙 영역 ── */
+.center { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+/* 도구 모음 */
+.toolbar {
+    height: var(--toolbar-h); background: #fff; border-bottom: 1px solid #e2e8f0;
+    display: flex; align-items: center; padding: 0 12px; gap: 4px; flex-shrink: 0;
+}
+.tb-sep { width: 1px; height: 24px; background: #e2e8f0; margin: 0 6px; }
+.toolbar button {
+    padding: 5px 8px; border: 1px solid #e2e8f0; border-radius: 5px; background: #fff;
+    cursor: pointer; font-size: 14px; color: #64748b; display: flex; align-items: center; gap: 4px;
+}
+.toolbar button:hover { background: #f1f5f9; color: #334155; }
+.toolbar button:disabled { opacity: .35; cursor: not-allowed; }
+.toolbar button.active { background: #eff6ff; border-color: #2563eb; color: #2563eb; }
+.toolbar .zoom-label { font-size: 12px; font-weight: 600; color: #475569; min-width: 42px; text-align: center; }
+
+/* 캔버스 영역 */
+.canvas-area { flex: 1; overflow: auto; background: #cbd5e1; display: flex; justify-content: center; align-items: flex-start; padding: 20px; }
+.page-wrap { position: relative; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,.12); }
+.page-wrap canvas { display: block; }
+
+/* PDF 상태 */
+.pdf-status { text-align: center; padding: 80px 20px; color: #94a3b8; }
+.pdf-status .icon { font-size: 36px; margin-bottom: 12px; }
+
+/* ── 필드 오버레이 ── */
+.fld {
+    position: absolute; border: 2px solid; border-radius: 3px;
+    cursor: move; display: flex; flex-direction: column; justify-content: center;
+    padding: 2px 4px; user-select: none; overflow: hidden; line-height: 1.3;
+}
+.fld:hover { box-shadow: 0 0 0 2px rgba(0,0,0,.15); }
+.fld.sel { box-shadow: 0 0 0 2px #2563eb; z-index: 10; }
+/* 라벨 태그 (기본값 있을 때 작은 표시) */
+.fld .fld-tag { pointer-events: none; font-size: 9px; opacity: .6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 기본값 메인 표시 */
+.fld .fld-main { pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 기본값 없을 때 라벨이 메인 */
+.fld .fld-label-only { pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px; }
+/* 서명/도장/이미지 미리보기 */
+.fld .fld-img {
+    pointer-events: none; width: 100%; height: 100%;
+    object-fit: contain; position: absolute; top: 0; left: 0;
+}
+/* 리사이즈 핸들 */
+.fld .rh {
+    position: absolute; right: -4px; bottom: -4px; width: 10px; height: 10px;
+    background: #2563eb; border-radius: 2px; cursor: nwse-resize;
+}
+/* 삭제 버튼 */
+.fld .fd {
+    position: absolute; top: -8px; right: -8px; width: 16px; height: 16px;
+    background: #ef4444; color: #fff; border: none; border-radius: 50%;
+    font-size: 10px; cursor: pointer; display: none; align-items: center; justify-content: center; line-height: 1;
+}
+.fld:hover .fd { display: flex; }
+
+/* ── 스냅 가이드 라인 ── */
+.snap-guide { position: absolute; z-index: 100; pointer-events: none; display: none; }
+.snap-guide-h { left: 0; right: 0; height: 1px; background: #2563eb; }
+.snap-guide-v { top: 0; bottom: 0; width: 1px; background: #2563eb; }
+
+/* ── 오른쪽: 속성 패널 ── */
+.props { width: var(--props-w); background: #f8fafc; border-left: 1px solid #e2e8f0; overflow-y: auto; padding: 14px; flex-shrink: 0; }
+.props .sb-title { margin-bottom: 14px; }
+.props-empty { font-size: 12px; color: #94a3b8; text-align: center; padding: 40px 0; }
+.pg { margin-bottom: 10px; }
+.pg-lbl { font-size: 10px; font-weight: 600; color: #94a3b8; margin-bottom: 3px; }
+.pg-in {
+    width: 100%; padding: 6px 8px; border: 1px solid #e2e8f0; border-radius: 5px;
+    font-size: 12px; font-family: inherit; background: #fff;
+}
+.pg-in:focus { border-color: #2563eb; outline: none; }
+.pg-row { display: flex; gap: 6px; }
+.pg-row .pg { flex: 1; }
+.pg-chk { display: flex; align-items: center; gap: 5px; font-size: 12px; cursor: pointer; margin-bottom: 6px; }
+.pg-chk input { accent-color: #2563eb; }
+
+/* 글꼴 설정 */
+.font-row { display: flex; gap: 4px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+.font-row button {
+    width: 30px; height: 30px; border: 1px solid #e2e8f0; border-radius: 5px; background: #fff;
+    cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; color: #475569;
+}
+.font-row button:hover { background: #f1f5f9; }
+.font-row button.on { background: #eff6ff; border-color: #2563eb; color: #2563eb; }
+.font-sz { width: 50px; padding: 4px 6px; border: 1px solid #e2e8f0; border-radius: 5px; font-size: 12px; text-align: center; }
+
+/* 기본값 텍스트 영역 */
+.dv-area { width: 100%; min-height: 60px; padding: 6px 8px; border: 1px solid #e2e8f0; border-radius: 5px; font-size: 12px; font-family: inherit; resize: vertical; }
+.dv-area:focus { border-color: #2563eb; outline: none; }
+
+/* 이미지 업로드 영역 */
+.img-upload-wrap { margin-top: 6px; }
+.img-upload-btn {
+    display: block; width: 100%; padding: 8px; border: 1px dashed #cbd5e1; border-radius: 6px;
+    background: #fff; cursor: pointer; font-size: 11px; font-weight: 500; color: #64748b; text-align: center;
+}
+.img-upload-btn:hover { border-color: #2563eb; color: #2563eb; background: #eff6ff; }
+.img-preview-wrap { margin-top: 8px; text-align: center; }
+.img-preview-wrap img { max-width: 100%; max-height: 100px; border-radius: 4px; border: 1px solid #e2e8f0; }
+.img-clear-btn {
+    display: inline-block; margin-top: 4px; padding: 3px 10px; border: 1px solid #fecaca;
+    border-radius: 4px; background: #fff; cursor: pointer; font-size: 10px; color: #ef4444;
+}
+.img-clear-btn:hover { background: #fef2f2; }
+
+/* 서명/도장 버튼 */
+.sig-open-btn {
+    display: block; width: 100%; padding: 10px; border: 1px dashed #cbd5e1; border-radius: 6px;
+    background: #fff; cursor: pointer; font-size: 12px; font-weight: 600; color: #475569; text-align: center;
+}
+.sig-open-btn:hover { border-color: #2563eb; color: #2563eb; background: #eff6ff; }
+
+/* 속성 하단 버튼 */
+.props-actions { display: flex; gap: 6px; margin-top: 14px; }
+.pa-btn { flex: 1; padding: 7px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; cursor: pointer; font-size: 11px; font-weight: 600; text-align: center; }
+.pa-btn:hover { background: #f1f5f9; }
+.pa-btn.danger { color: #ef4444; border-color: #fecaca; }
+.pa-btn.danger:hover { background: #fef2f2; }
+
+/* ── 서명 모달 ── */
+.sig-modal {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.5); z-index: 2000;
+    justify-content: center; align-items: center;
+}
+.sig-modal.show { display: flex; }
+.sig-modal-card {
+    background: #fff; border-radius: 12px; padding: 24px;
+    width: 90%; max-width: 500px;
+}
+.sig-modal-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
+.sig-canvas-wrap {
+    border: 2px solid #ddd; border-radius: 8px;
+    background: #fff; margin-bottom: 12px;
+}
+.sig-canvas-wrap canvas { width: 100%; height: 200px; display: block; }
+.sig-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.sig-actions button {
+    padding: 8px 18px; border: 1px solid #e2e8f0; border-radius: 6px;
+    cursor: pointer; font-size: 13px; font-weight: 600; font-family: inherit;
+}
+.sig-act-clear { background: #fff; color: #64748b; }
+.sig-act-clear:hover { background: #f1f5f9; }
+.sig-act-cancel { background: #fff; color: #64748b; }
+.sig-act-cancel:hover { background: #f1f5f9; }
+.sig-act-confirm { background: #2563eb; color: #fff; border-color: #2563eb; }
+.sig-act-confirm:hover { background: #1d4ed8; }
+
+/* ── 반응형 ── */
+@media (max-width: 1024px) {
+    .sidebar { width: 200px; }
+    .props { width: 220px; }
+}
+@media (max-width: 768px) {
+    .sidebar, .props { display: none; }
+}
+</style>
+{% endblock %}
+
+{% block body_content %}
+<!-- 상단 바 -->
+<div class="topbar">
+    <button class="back-btn" onclick="location.href='/admin/contract-templates'" title="나가기">&#8592;</button>
+    <span class="tpl-name" id="tplName">{{ template.name }}</span>
+    <div class="btn-group">
+        <button class="tb-btn tb-preview" onclick="previewPdf()">미리보기</button>
+        <button class="tb-btn tb-save" id="saveBtn" onclick="saveTemplate()">저장하기</button>
+    </div>
+</div>
+
+<div class="editor-layout">
+    <!-- 왼쪽 사이드바 -->
+    <div class="sidebar">
+        <div class="sb-section">
+            <div class="sb-title">필드 도구</div>
+            <div class="tool-grid">
+                <button class="tool-btn" onclick="addField('text')"><span class="ti">T</span>텍스트</button>
+                <button class="tool-btn" onclick="addField('date')"><span class="ti">&#128197;</span>날짜</button>
+                <button class="tool-btn" onclick="addField('signature')"><span class="ti">&#9999;&#65039;</span>서명</button>
+                <button class="tool-btn" onclick="addField('stamp')"><span class="ti">&#128398;</span>도장</button>
+                <button class="tool-btn" onclick="addField('checkbox')"><span class="ti">&#9745;</span>체크</button>
+                <button class="tool-btn" onclick="addField('image')"><span class="ti">&#128444;</span>이미지</button>
+            </div>
+        </div>
+
+        <div class="sb-section">
+            <div class="sb-title">서명 참여자 리스트</div>
+            <div id="partList"></div>
+            <button class="add-part" onclick="addRole()">+ 역할 추가</button>
+        </div>
+
+        <div class="sb-section">
+            <div class="sb-title">페이지</div>
+            <div id="pagesList"></div>
+        </div>
+
+        <div class="sb-section">
+            <div class="sb-title">서식명</div>
+            <input type="text" class="sb-input" id="tplNameIn" value="{{ template.name }}"
+                   oninput="document.getElementById('tplName').textContent=this.value">
+        </div>
+    </div>
+
+    <!-- 중앙 영역 -->
+    <div class="center">
+        <!-- 도구 모음 -->
+        <div class="toolbar">
+            <button onclick="undo()" title="실행취소 (Ctrl+Z)" id="undoBtn" disabled>&#8630;</button>
+            <button onclick="redo()" title="다시실행 (Ctrl+Y)" id="redoBtn" disabled>&#8631;</button>
+            <div class="tb-sep"></div>
+            <button onclick="zoomOut()" title="축소">&#8722;</button>
+            <span class="zoom-label" id="zoomLabel">100%</span>
+            <button onclick="zoomIn()" title="확대">&#43;</button>
+            <button onclick="zoomReset()" title="100%">&#8634;</button>
+            <div class="tb-sep"></div>
+            <button onclick="copyField()" title="필드 복사 (Ctrl+D)">&#128203;</button>
+            <button onclick="deleteSelectedField()" title="삭제 (Del)">&#128465;</button>
+        </div>
+
+        <!-- 캔버스 영역 -->
+        <div class="canvas-area" id="canvasArea">
+            <div class="pdf-status" id="pdfStatus"><div class="icon">&#9203;</div><div>PDF 로딩 중...</div></div>
+            <div class="page-wrap" id="pageWrap" style="display:none;">
+                <canvas id="pdfCanvas"></canvas>
+                <div id="fieldsLayer"></div>
+                <!-- 스냅 가이드 라인 -->
+                <div id="snapGuides">
+                    <div class="snap-guide snap-guide-h" id="guideH"></div>
+                    <div class="snap-guide snap-guide-v" id="guideV"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 오른쪽: 속성 패널 -->
+    <div class="props">
+        <div class="sb-title">필드 속성</div>
+        <div class="props-empty" id="propsEmpty">필드를 선택하세요</div>
+        <div id="propsForm" style="display:none;">
+            <!-- 유형 -->
+            <div class="pg">
+                <div class="pg-lbl">유형</div>
+                <select class="pg-in" id="pType" onchange="setProp('type',this.value);updatePropsPanel()">
+                    <option value="text">텍스트</option>
+                    <option value="date">날짜</option>
+                    <option value="signature">서명</option>
+                    <option value="stamp">도장</option>
+                    <option value="checkbox">체크박스</option>
+                    <option value="image">이미지</option>
+                </select>
+            </div>
+            <!-- 라벨 -->
+            <div class="pg">
+                <div class="pg-lbl">라벨</div>
+                <input type="text" class="pg-in" id="pLabel" oninput="setProp('label',this.value)">
+            </div>
+            <!-- 참여자 -->
+            <div class="pg">
+                <div class="pg-lbl">참여자</div>
+                <select class="pg-in" id="pRole" onchange="setProp('role',this.value)"></select>
+            </div>
+            <!-- 위치 -->
+            <div class="pg-row">
+                <div class="pg"><div class="pg-lbl">X (%)</div><input type="number" class="pg-in" id="pX" step="0.1" onchange="setProp('x_pct',+this.value)"></div>
+                <div class="pg"><div class="pg-lbl">Y (%)</div><input type="number" class="pg-in" id="pY" step="0.1" onchange="setProp('y_pct',+this.value)"></div>
+            </div>
+            <div class="pg-row">
+                <div class="pg"><div class="pg-lbl">W (%)</div><input type="number" class="pg-in" id="pW" step="0.1" onchange="setProp('w_pct',+this.value)"></div>
+                <div class="pg"><div class="pg-lbl">H (%)</div><input type="number" class="pg-in" id="pH" step="0.1" onchange="setProp('h_pct',+this.value)"></div>
+            </div>
+            <!-- 체크박스 옵션 -->
+            <div class="pg">
+                <label class="pg-chk"><input type="checkbox" id="pReq" onchange="setProp('required',this.checked)"> 필수</label>
+                <label class="pg-chk"><input type="checkbox" id="pMove" onchange="setProp('moveable',this.checked)"> 이동가능</label>
+                <label class="pg-chk"><input type="checkbox" id="pRO" onchange="setProp('read_only',this.checked)"> 읽기전용</label>
+            </div>
+            <!-- 글꼴 설정 (text/date 전용) -->
+            <div id="fontSection">
+                <div class="pg-lbl" style="margin-bottom:6px;">글꼴 설정</div>
+                <div class="font-row">
+                    <input type="number" class="font-sz" id="pFontSz" value="12" min="6" max="72" onchange="setProp('font_size',+this.value)">
+                    <button id="fBold" onclick="toggleProp('font_bold')" title="굵게"><b>B</b></button>
+                    <button id="fItalic" onclick="toggleProp('font_italic')" title="기울임"><i>I</i></button>
+                    <div class="tb-sep" style="margin:0 2px;"></div>
+                    <button id="fLeft" onclick="setProp('text_align','left');updatePropsPanel()" title="왼쪽 정렬">&#9776;</button>
+                    <button id="fCenter" onclick="setProp('text_align','center');updatePropsPanel()" title="가운데 정렬">&#9776;</button>
+                    <button id="fRight" onclick="setProp('text_align','right');updatePropsPanel()" title="오른쪽 정렬">&#9776;</button>
+                </div>
+            </div>
+            <!-- 기본값 섹션 (유형에 따라 변경) -->
+            <div id="dvSection">
+                <div class="pg-lbl" id="dvSectionLabel">기본값 (미리 작성)</div>
+                <!-- 텍스트 기본값 -->
+                <div id="dvTextWrap" class="pg">
+                    <textarea class="dv-area" id="pDV" oninput="setProp('default_value',this.value)" placeholder="미리 입력할 텍스트..."></textarea>
+                </div>
+                <!-- 날짜 기본값 -->
+                <div id="dvDateWrap" class="pg" style="display:none;">
+                    <input type="date" class="pg-in" id="pDVDate" onchange="setProp('default_value',this.value)">
+                </div>
+                <!-- 서명/도장 기본값 -->
+                <div id="dvSigWrap" class="pg" style="display:none;">
+                    <button class="sig-open-btn" id="sigOpenBtn" onclick="openEditorSigModal()">서명하기</button>
+                    <div class="img-preview-wrap" id="sigPreview" style="display:none;"></div>
+                </div>
+                <!-- 이미지 기본값 -->
+                <div id="dvImgWrap" class="pg" style="display:none;">
+                    <input type="file" id="imgFileInput" accept="image/*" style="display:none;" onchange="handleImageUpload(this)">
+                    <button class="img-upload-btn" onclick="document.getElementById('imgFileInput').click()">이미지 파일 선택</button>
+                    <div class="img-preview-wrap" id="imgPreview" style="display:none;"></div>
+                </div>
+            </div>
+            <!-- 하단 버튼 -->
+            <div class="props-actions">
+                <button class="pa-btn" onclick="copyField()">&#128203; 복사</button>
+                <button class="pa-btn danger" onclick="deleteSelectedField()">&#128465; 삭제</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 서명/도장 모달 (에디터용) -->
+<div class="sig-modal" id="editorSigModal">
+    <div class="sig-modal-card">
+        <h3 id="editorSigTitle">서명</h3>
+        <div class="sig-canvas-wrap">
+            <canvas id="editorSigCanvas"></canvas>
+        </div>
+        <div class="sig-actions">
+            <button class="sig-act-clear" onclick="clearEditorSig()">지우기</button>
+            <button class="sig-act-cancel" onclick="closeEditorSigModal()">취소</button>
+            <button class="sig-act-confirm" onclick="confirmEditorSig()">확인</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block base_js %}
+<script>
+/* ── 기본 상수 ── */
+const TID = {{ template.id }};
+const CSRF = '{{ csrf_token() }}';
+const PDF_URL = '/api/contract-templates/' + TID + '/pdf';
+
+/* ── 역할 색상 (5가지) ── */
+const COLORS = [
+    { border:'#3b82f6', bg:'rgba(59,130,246,.10)', text:'#1e40af', dot:'#3b82f6' },
+    { border:'#ef4444', bg:'rgba(239,68,68,.10)',  text:'#991b1b', dot:'#ef4444' },
+    { border:'#f59e0b', bg:'rgba(245,158,11,.10)', text:'#92400e', dot:'#f59e0b' },
+    { border:'#10b981', bg:'rgba(16,185,129,.10)', text:'#065f46', dot:'#10b981' },
+    { border:'#8b5cf6', bg:'rgba(139,92,246,.10)', text:'#5b21b6', dot:'#8b5cf6' },
+];
+function roleColor(i) { return COLORS[i % COLORS.length]; }
+function roleIdx(key) { const i = roles.findIndex(r => r.key === key); return i < 0 ? 0 : i; }
+function getRC(key) { return roleColor(roleIdx(key)); }
+
+/* ── 상태 ── */
+let fields = {{ template.fields|tojson }};
+let roles  = {{ template.roles|tojson }};
+let currentPage = 1, pageCount = {{ template.page_count }};
+let selIdx = null, pdfDoc = null, cw = 0, ch = 0;
+let scale = 1.0;
+
+/* ── Undo / Redo ── */
+let history = [], histIdx = -1;
+function snap() {
+    history = history.slice(0, histIdx + 1);
+    history.push(JSON.stringify(fields));
+    if (history.length > 50) history.shift();
+    histIdx = history.length - 1;
+    updUndoUI();
+}
+function undo() {
+    if (histIdx <= 0) return;
+    histIdx--;
+    fields = JSON.parse(history[histIdx]);
+    selIdx = null; renderFields(); updatePropsPanel(); updUndoUI();
+}
+function redo() {
+    if (histIdx >= history.length - 1) return;
+    histIdx++;
+    fields = JSON.parse(history[histIdx]);
+    selIdx = null; renderFields(); updatePropsPanel(); updUndoUI();
+}
+function updUndoUI() {
+    document.getElementById('undoBtn').disabled = histIdx <= 0;
+    document.getElementById('redoBtn').disabled = histIdx >= history.length - 1;
+}
+
+/* ── PDF 로딩 ── */
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+async function loadPdf() {
+    const st = document.getElementById('pdfStatus'), wr = document.getElementById('pageWrap');
+    try {
+        if (typeof pdfjsLib === 'undefined') throw new Error('pdf.js 라이브러리를 불러올 수 없습니다.');
+        const r = await fetch(PDF_URL, { credentials: 'same-origin' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const buf = await r.arrayBuffer();
+        if (!buf || buf.byteLength === 0) throw new Error('빈 응답. 페이지를 새로고침하세요.');
+        pdfDoc = await pdfjsLib.getDocument({ data: buf }).promise;
+        pageCount = pdfDoc.numPages;
+        st.style.display = 'none'; wr.style.display = '';
+        renderPagesNav();
+        await renderPage(1);
+        snap();
+    } catch (e) {
+        console.error('PDF 로드 실패:', e);
+        st.innerHTML = '<div class="icon">&#9888;</div><div style="color:#ef4444;font-weight:600;">PDF 로드 실패</div>' +
+            '<div style="margin-top:6px;">' + (e.message||'') + '</div>' +
+            '<button onclick="loadPdf()" style="margin-top:14px;padding:7px 18px;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;background:#fff;">다시 시도</button>';
+    }
+}
+
+async function renderPage(num) {
+    currentPage = num;
+    const page = await pdfDoc.getPage(num);
+    const vp = page.getViewport({ scale });
+    const cvs = document.getElementById('pdfCanvas'), ctx = cvs.getContext('2d');
+    cvs.width = vp.width; cvs.height = vp.height;
+    cw = vp.width; ch = vp.height;
+    const wr = document.getElementById('pageWrap');
+    wr.style.width = vp.width + 'px'; wr.style.height = vp.height + 'px';
+    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    renderFields(); renderPagesNav();
+}
+
+/* ── 줌 ── */
+function setZoom(s) {
+    scale = Math.max(0.5, Math.min(3, s));
+    document.getElementById('zoomLabel').textContent = Math.round(scale * 100) + '%';
+    if (pdfDoc) renderPage(currentPage);
+}
+function zoomIn() { setZoom(scale + 0.25); }
+function zoomOut() { setZoom(scale - 0.25); }
+function zoomReset() { setZoom(1.0); }
+
+/* ── 페이지 네비게이션 ── */
+function renderPagesNav() {
+    const c = document.getElementById('pagesList'); c.innerHTML = '';
+    for (let i = 1; i <= pageCount; i++) {
+        const d = document.createElement('div');
+        d.className = 'pg-item' + (i === currentPage ? ' active' : '');
+        d.innerHTML = '<span class="pg-num">' + i + '</span>페이지 ' + i;
+        d.onclick = () => renderPage(i);
+        c.appendChild(d);
+    }
+}
+
+/* ── 필드 렌더링 ── */
+const ICONS = { text:'T', date:'&#128197;', signature:'&#9999;', stamp:'&#9653;', checkbox:'&#9745;', image:'&#128444;' };
+
+function renderFields() {
+    const layer = document.getElementById('fieldsLayer'); layer.innerHTML = '';
+    fields.forEach((f, i) => { if ((f.page || 1) === currentPage) layer.appendChild(mkField(f, i)); });
+}
+
+function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function mkField(f, idx) {
+    const el = document.createElement('div');
+    el.className = 'fld' + (idx === selIdx ? ' sel' : '');
+    const rc = getRC(f.role || 'employer');
+    el.style.cssText = 'border-color:' + rc.border + ';background:' + rc.bg + ';color:' + rc.text + ';' +
+        'left:' + ((f.x_pct || 0) / 100 * cw) + 'px;top:' + ((f.y_pct || 0) / 100 * ch) + 'px;' +
+        'width:' + ((f.w_pct || 10) / 100 * cw) + 'px;height:' + ((f.h_pct || 3) / 100 * ch) + 'px;';
+
+    const label = (ICONS[f.type] || '') + ' ' + (f.label || f.type);
+    const isText = f.type === 'text' || f.type === 'date';
+    const isVisual = f.type === 'signature' || f.type === 'stamp' || f.type === 'image';
+
+    /* 글꼴 스타일 계산 */
+    const fSz = f.font_size ? (f.font_size * scale) + 'px' : '';
+    const fWt = f.font_bold ? 'font-weight:700;' : '';
+    const fIt = f.font_italic ? 'font-style:italic;' : '';
+    const fAl = 'text-align:' + (f.text_align || 'left') + ';width:100%;';
+    const fontCSS = (fSz ? 'font-size:' + fSz + ';' : '') + fWt + fIt + fAl;
+
+    let html = '';
+
+    if (isVisual && f.default_value) {
+        /* 서명/도장/이미지에 기본값(base64 또는 URL)이 있으면 이미지로 표시 */
+        html = '<span class="fld-tag">' + label + '</span>';
+        html += '<img class="fld-img" src="' + escHtml(f.default_value) + '" alt="' + escHtml(f.label || f.type) + '">';
+    } else if (isText && f.default_value) {
+        /* 텍스트/날짜에 기본값 있음: 라벨=작은 태그, 기본값=메인 (글꼴 적용) */
+        html = '<span class="fld-tag">' + label + '</span>' +
+               '<span class="fld-main" style="' + fontCSS + '">' + escHtml(f.default_value) + '</span>';
+    } else {
+        /* 기본값 없음: 라벨이 메인 */
+        html = '<span class="fld-label-only" style="' + (isText ? fontCSS : '') + '">' + label + '</span>';
+    }
+
+    html += '<span class="rh"></span><button class="fd" onclick="event.stopPropagation();delField(' + idx + ')">&#215;</button>';
+    el.innerHTML = html;
+
+    el.addEventListener('mousedown', e => {
+        if (e.target.classList.contains('rh')) startResize(e, idx);
+        else if (!e.target.classList.contains('fd')) { selField(idx); startDrag(e, idx); }
+    });
+    el.addEventListener('click', e => { e.stopPropagation(); selField(idx); });
+    return el;
+}
+
+/* ── 스냅 가이드 (정렬 보조선) ── */
+const SNAP_THRESHOLD = 3; /* px 임계값 (페이지 % 기준으로 변환하여 사용) */
+
+function getSnapThresholdPct() {
+    /* 3px를 현재 캔버스 크기 기준 % 로 변환 */
+    return { x: (SNAP_THRESHOLD / cw) * 100, y: (SNAP_THRESHOLD / ch) * 100 };
+}
+
+function calcSnapGuides(dragIdx, newX, newY) {
+    const f = fields[dragIdx];
+    const fw = f.w_pct || 10, fh = f.h_pct || 3;
+    const thresh = getSnapThresholdPct();
+    const guideH = document.getElementById('guideH');
+    const guideV = document.getElementById('guideV');
+    let snapX = null, snapY = null;
+    let showH = false, showV = false;
+    let guideHPos = 0, guideVPos = 0;
+
+    /* 드래그 중인 필드의 엣지/중심 */
+    const dragEdges = {
+        left: newX, right: newX + fw, cx: newX + fw / 2,
+        top: newY, bottom: newY + fh, cy: newY + fh / 2
+    };
+
+    fields.forEach((other, i) => {
+        if (i === dragIdx) return;
+        if ((other.page || 1) !== currentPage) return;
+        const ox = other.x_pct || 0, oy = other.y_pct || 0;
+        const ow = other.w_pct || 10, oh = other.h_pct || 3;
+        const otherEdges = {
+            left: ox, right: ox + ow, cx: ox + ow / 2,
+            top: oy, bottom: oy + oh, cy: oy + oh / 2
+        };
+
+        /* 수직 정렬 (X축 스냅) */
+        const xPairs = [
+            { drag: 'left', other: 'left' }, { drag: 'left', other: 'right' },
+            { drag: 'right', other: 'left' }, { drag: 'right', other: 'right' },
+            { drag: 'cx', other: 'cx' }
+        ];
+        for (const p of xPairs) {
+            const diff = Math.abs(dragEdges[p.drag] - otherEdges[p.other]);
+            if (diff < thresh.x) {
+                const offset = otherEdges[p.other] - dragEdges[p.drag];
+                snapX = newX + offset;
+                showV = true;
+                guideVPos = otherEdges[p.other];
+                break;
+            }
+        }
+
+        /* 수평 정렬 (Y축 스냅) */
+        const yPairs = [
+            { drag: 'top', other: 'top' }, { drag: 'top', other: 'bottom' },
+            { drag: 'bottom', other: 'top' }, { drag: 'bottom', other: 'bottom' },
+            { drag: 'cy', other: 'cy' }
+        ];
+        for (const p of yPairs) {
+            const diff = Math.abs(dragEdges[p.drag] - otherEdges[p.other]);
+            if (diff < thresh.y) {
+                const offset = otherEdges[p.other] - dragEdges[p.drag];
+                snapY = newY + offset;
+                showH = true;
+                guideHPos = otherEdges[p.other];
+                break;
+            }
+        }
+    });
+
+    /* 가이드 라인 표시 */
+    if (showH) {
+        guideH.style.display = 'block';
+        guideH.style.top = (guideHPos / 100 * ch) + 'px';
+    } else {
+        guideH.style.display = 'none';
+    }
+    if (showV) {
+        guideV.style.display = 'block';
+        guideV.style.left = (guideVPos / 100 * cw) + 'px';
+    } else {
+        guideV.style.display = 'none';
+    }
+
+    return { x: snapX, y: snapY };
+}
+
+function hideSnapGuides() {
+    document.getElementById('guideH').style.display = 'none';
+    document.getElementById('guideV').style.display = 'none';
+}
+
+/* ── 드래그 / 리사이즈 ── */
+function startDrag(e, idx) {
+    e.preventDefault();
+    const f = fields[idx], sx = e.clientX, sy = e.clientY, ox = f.x_pct || 0, oy = f.y_pct || 0;
+    let moved = false;
+    function mv(ev) {
+        moved = true;
+        let newX = clamp(ox + (ev.clientX - sx) / cw * 100, 0, 100 - (f.w_pct || 10));
+        let newY = clamp(oy + (ev.clientY - sy) / ch * 100, 0, 100 - (f.h_pct || 3));
+
+        /* 스냅 가이드 계산 및 적용 */
+        const snapped = calcSnapGuides(idx, newX, newY);
+        if (snapped.x !== null) newX = clamp(snapped.x, 0, 100 - (f.w_pct || 10));
+        if (snapped.y !== null) newY = clamp(snapped.y, 0, 100 - (f.h_pct || 3));
+
+        f.x_pct = newX;
+        f.y_pct = newY;
+        renderFields(); updatePropsPanel();
+    }
+    function up() {
+        document.removeEventListener('mousemove', mv);
+        document.removeEventListener('mouseup', up);
+        hideSnapGuides();
+        if (moved) snap();
+    }
+    document.addEventListener('mousemove', mv);
+    document.addEventListener('mouseup', up);
+}
+
+function startResize(e, idx) {
+    e.preventDefault(); e.stopPropagation();
+    const f = fields[idx], sx = e.clientX, sy = e.clientY, ow = f.w_pct || 10, oh = f.h_pct || 3;
+    function mv(ev) {
+        f.w_pct = Math.max(2, ow + (ev.clientX - sx) / cw * 100);
+        f.h_pct = Math.max(1, oh + (ev.clientY - sy) / ch * 100);
+        renderFields(); updatePropsPanel();
+    }
+    function up() { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); snap(); }
+    document.addEventListener('mousemove', mv);
+    document.addEventListener('mouseup', up);
+}
+
+function clamp(v, mn, mx) { return Math.max(mn, Math.min(mx, v)); }
+
+/* ── 필드 CRUD ── */
+function addField(type) {
+    const defs = {
+        text:      { w: 15, h: 3, label: '텍스트' },
+        date:      { w: 12, h: 3, label: '날짜' },
+        signature: { w: 12, h: 6, label: '서명' },
+        stamp:     { w: 8,  h: 8, label: '도장' },
+        checkbox:  { w: 3,  h: 3, label: '체크' },
+        image:     { w: 12, h: 10, label: '이미지' },
+    };
+    const d = defs[type] || defs.text;
+    fields.push({
+        type, page: currentPage, x_pct: 25, y_pct: 25, w_pct: d.w, h_pct: d.h,
+        role: roles.length ? roles[0].key : 'employer',
+        label: d.label, required: true, moveable: true, read_only: false,
+        default_value: '', font_size: 12, font_bold: false, font_italic: false, text_align: 'left',
+    });
+    selIdx = fields.length - 1;
+    renderFields(); updatePropsPanel(); snap();
+}
+
+function delField(idx) {
+    fields.splice(idx, 1);
+    if (selIdx === idx) selIdx = null;
+    else if (selIdx > idx) selIdx--;
+    renderFields(); updatePropsPanel(); snap();
+}
+
+function deleteSelectedField() { if (selIdx !== null) delField(selIdx); }
+
+function copyField() {
+    if (selIdx === null) return;
+    const c = JSON.parse(JSON.stringify(fields[selIdx]));
+    c.x_pct = (c.x_pct || 0) + 3;
+    c.y_pct = (c.y_pct || 0) + 3;
+    fields.push(c);
+    selIdx = fields.length - 1;
+    renderFields(); updatePropsPanel(); snap();
+}
+
+function selField(idx) { selIdx = idx; renderFields(); updatePropsPanel(); }
+
+/* ── 속성 패널 업데이트 ── */
+function updatePropsPanel() {
+    const empty = document.getElementById('propsEmpty'), form = document.getElementById('propsForm');
+    if (selIdx === null || !fields[selIdx]) { empty.style.display = ''; form.style.display = 'none'; return; }
+    empty.style.display = 'none'; form.style.display = '';
+
+    const f = fields[selIdx];
+    document.getElementById('pType').value = f.type || 'text';
+    document.getElementById('pLabel').value = f.label || '';
+    document.getElementById('pX').value = (f.x_pct || 0).toFixed(1);
+    document.getElementById('pY').value = (f.y_pct || 0).toFixed(1);
+    document.getElementById('pW').value = (f.w_pct || 10).toFixed(1);
+    document.getElementById('pH').value = (f.h_pct || 3).toFixed(1);
+    document.getElementById('pReq').checked = f.required !== false;
+    document.getElementById('pMove').checked = f.moveable !== false;
+    document.getElementById('pRO').checked = !!f.read_only;
+
+    /* 역할 select */
+    const sel = document.getElementById('pRole'); sel.innerHTML = '';
+    roles.forEach((r, i) => {
+        const o = document.createElement('option');
+        o.value = r.key;
+        o.textContent = r.label + ' (' + r.key + ')';
+        sel.appendChild(o);
+    });
+    sel.value = f.role || '';
+
+    const isText = f.type === 'text' || f.type === 'date';
+    const isSig = f.type === 'signature' || f.type === 'stamp';
+    const isImg = f.type === 'image';
+    const isCheck = f.type === 'checkbox';
+
+    /* 글꼴 섹션: text/date만 표시 */
+    document.getElementById('fontSection').style.display = isText ? '' : 'none';
+
+    /* 기본값 섹션: 유형별 표시 */
+    document.getElementById('dvSection').style.display = (isText || isSig || isImg) ? '' : 'none';
+    document.getElementById('dvTextWrap').style.display = f.type === 'text' ? '' : 'none';
+    document.getElementById('dvDateWrap').style.display = f.type === 'date' ? '' : 'none';
+    document.getElementById('dvSigWrap').style.display = isSig ? '' : 'none';
+    document.getElementById('dvImgWrap').style.display = isImg ? '' : 'none';
+
+    /* 기본값 섹션 라벨 변경 */
+    const dvLabel = document.getElementById('dvSectionLabel');
+    if (isSig) dvLabel.textContent = f.type === 'signature' ? '서명 미리 입력' : '도장 미리 입력';
+    else if (isImg) dvLabel.textContent = '이미지 업로드';
+    else dvLabel.textContent = '기본값 (미리 작성)';
+
+    if (isText) {
+        document.getElementById('pFontSz').value = f.font_size || 12;
+        document.getElementById('fBold').classList.toggle('on', !!f.font_bold);
+        document.getElementById('fItalic').classList.toggle('on', !!f.font_italic);
+        document.getElementById('fLeft').classList.toggle('on', (f.text_align || 'left') === 'left');
+        document.getElementById('fCenter').classList.toggle('on', f.text_align === 'center');
+        document.getElementById('fRight').classList.toggle('on', f.text_align === 'right');
+    }
+    if (f.type === 'text') document.getElementById('pDV').value = f.default_value || '';
+    if (f.type === 'date') document.getElementById('pDVDate').value = f.default_value || '';
+
+    /* 서명/도장 버튼 텍스트 및 미리보기 */
+    if (isSig) {
+        document.getElementById('sigOpenBtn').textContent = f.type === 'signature' ? '서명하기' : '도장 날인';
+        const preview = document.getElementById('sigPreview');
+        if (f.default_value) {
+            preview.style.display = '';
+            preview.innerHTML = '<img src="' + escHtml(f.default_value) + '" alt="미리보기">' +
+                '<br><button class="img-clear-btn" onclick="clearSigValue()">삭제</button>';
+        } else {
+            preview.style.display = 'none';
+            preview.innerHTML = '';
+        }
+    }
+
+    /* 이미지 미리보기 */
+    if (isImg) {
+        const preview = document.getElementById('imgPreview');
+        if (f.default_value) {
+            preview.style.display = '';
+            preview.innerHTML = '<img src="' + escHtml(f.default_value) + '" alt="미리보기">' +
+                '<br><button class="img-clear-btn" onclick="clearImgValue()">삭제</button>';
+        } else {
+            preview.style.display = 'none';
+            preview.innerHTML = '';
+        }
+    }
+}
+
+let _snapTimer = null;
+function setProp(key, val) {
+    if (selIdx === null) return;
+    fields[selIdx][key] = val;
+    renderFields();
+    /* 속성 변경도 undo 히스토리에 기록 (디바운스) */
+    clearTimeout(_snapTimer);
+    _snapTimer = setTimeout(snap, 400);
+}
+
+function toggleProp(key) {
+    if (selIdx === null) return;
+    fields[selIdx][key] = !fields[selIdx][key];
+    renderFields(); updatePropsPanel(); snap();
+}
+
+/* ── 이미지 업로드 처리 ── */
+async function handleImageUpload(input) {
+    if (!input.files || !input.files[0]) return;
+    if (selIdx === null) return;
+
+    const file = input.files[0];
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const res = await fetch('/api/upload-field-image', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': CSRF },
+            body: formData
+        });
+        const data = await res.json();
+        if (data.success && data.url) {
+            fields[selIdx].default_value = data.url;
+            renderFields(); updatePropsPanel(); snap();
+        } else {
+            alert(data.error || '이미지 업로드 실패');
+        }
+    } catch (e) {
+        alert('이미지 업로드 중 오류가 발생했습니다.');
+        console.error('이미지 업로드 오류:', e);
+    }
+    /* 같은 파일 재선택 가능하도록 초기화 */
+    input.value = '';
+}
+
+function clearImgValue() {
+    if (selIdx === null) return;
+    fields[selIdx].default_value = '';
+    renderFields(); updatePropsPanel(); snap();
+}
+
+/* ── 서명/도장 모달 (에디터용) ── */
+let editorSigPad = null;
+
+function openEditorSigModal() {
+    if (selIdx === null) return;
+    const f = fields[selIdx];
+    const isSig = f.type === 'signature';
+    const modal = document.getElementById('editorSigModal');
+    document.getElementById('editorSigTitle').textContent = isSig ? '서명' : '도장 날인';
+    modal.classList.add('show');
+
+    const canvas = document.getElementById('editorSigCanvas');
+    /* 모달이 보인 후 캔버스 크기 설정 */
+    requestAnimationFrame(() => {
+        canvas.width = canvas.parentElement.clientWidth - 4;
+        canvas.height = 200;
+        editorSigPad = new SignaturePad(canvas, {
+            backgroundColor: 'rgba(255,255,255,0)',
+            penColor: isSig ? '#000' : '#e74c3c',
+        });
+    });
+}
+
+function clearEditorSig() {
+    if (editorSigPad) editorSigPad.clear();
+}
+
+function closeEditorSigModal() {
+    document.getElementById('editorSigModal').classList.remove('show');
+    editorSigPad = null;
+}
+
+function confirmEditorSig() {
+    if (!editorSigPad || editorSigPad.isEmpty()) {
+        alert('서명을 입력하세요.');
+        return;
+    }
+    if (selIdx === null) return;
+    const dataUrl = editorSigPad.toDataURL();
+    fields[selIdx].default_value = dataUrl;
+    renderFields(); updatePropsPanel(); snap();
+    closeEditorSigModal();
+}
+
+function clearSigValue() {
+    if (selIdx === null) return;
+    fields[selIdx].default_value = '';
+    renderFields(); updatePropsPanel(); snap();
+}
+
+/* ── 역할 관리 ── */
+function renderRoles() {
+    const c = document.getElementById('partList'); c.innerHTML = '';
+    roles.forEach((r, i) => {
+        const rc = roleColor(i);
+        const d = document.createElement('div'); d.className = 'part-item';
+        d.innerHTML = '<span class="part-dot" style="background:' + rc.dot + '"></span>' +
+            '<span class="part-label">' + escHtml(r.label) + ' (' + escHtml(r.key) + ')</span>' +
+            (roles.length > 1 ? '<button class="part-del" onclick="removeRole(' + i + ')">&#215;</button>' : '');
+        c.appendChild(d);
+    });
+}
+
+function addRole() {
+    const key = prompt('역할 키 (영문, 예: witness)');
+    if (!key || !key.trim()) return;
+    const label = prompt('역할 표시명 (예: 증인)');
+    if (!label || !label.trim()) return;
+    roles.push({ key: key.trim(), label: label.trim() });
+    renderRoles(); renderFields();
+}
+
+function removeRole(idx) {
+    if (roles.length <= 1) return;
+    const key = roles[idx].key;
+    roles.splice(idx, 1);
+    fields.forEach(f => { if (f.role === key) f.role = roles[0].key; });
+    renderRoles(); renderFields();
+}
+
+/* ── 저장 ── */
+async function saveTemplate() {
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true; btn.textContent = '저장중...';
+    try {
+        const res = await fetch('/api/contract-templates/' + TID, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+            body: JSON.stringify({ name: document.getElementById('tplNameIn').value.trim(), fields, roles })
+        });
+        const data = await res.json();
+        if (data.success) {
+            btn.textContent = '저장됨!';
+            setTimeout(() => { btn.textContent = '저장하기'; btn.disabled = false; }, 1500);
+        } else {
+            alert(data.error || '저장 실패'); btn.textContent = '저장하기'; btn.disabled = false;
+        }
+    } catch (e) { alert('저장 중 오류'); btn.textContent = '저장하기'; btn.disabled = false; }
+}
+
+/* ── 미리보기 (현재 창에서 렌더링 → 이미지로 변환 → 새 창에 표시) ── */
+async function previewPdf() {
+    try {
+        const r = await fetch(PDF_URL, { credentials: 'same-origin' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const buf = await r.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+        const pvScale = 1.5;
+        const pageImages = [];
+
+        /* 현재 창에서 각 페이지를 렌더링하여 이미지로 변환 */
+        for (let pg = 1; pg <= pdf.numPages; pg++) {
+            const page = await pdf.getPage(pg);
+            const vp = page.getViewport({ scale: pvScale });
+
+            /* 숨겨진 캔버스에 PDF 렌더링 */
+            const cvs = document.createElement('canvas');
+            cvs.width = vp.width; cvs.height = vp.height;
+            const ctx = cvs.getContext('2d');
+            await page.render({ canvasContext: ctx, viewport: vp }).promise;
+
+            /* 필드 값을 캔버스 위에 깨끗하게 그리기 (값이 있는 필드만) */
+            fields.forEach(f => {
+                if ((f.page || 1) !== pg) return;
+                const dv = f.default_value || '';
+                if (!dv) return; /* 값 없으면 표시 안 함 */
+
+                const x = (f.x_pct || 0) / 100 * vp.width;
+                const y = (f.y_pct || 0) / 100 * vp.height;
+                const w = (f.w_pct || 10) / 100 * vp.width;
+                const h = (f.h_pct || 3) / 100 * vp.height;
+
+                ctx.save();
+                /* 텍스트/날짜: 검정 텍스트만 표시 (배경/테두리 없음) */
+                if (f.type === 'text' || f.type === 'date') {
+                    const fs = Math.min((parseInt(f.font_size) || 11) * pvScale, h * 0.8);
+                    const bold = f.font_bold ? 'bold ' : '';
+                    const italic = f.font_italic ? 'italic ' : '';
+                    ctx.font = italic + bold + fs + 'px "Noto Sans KR", sans-serif';
+                    ctx.fillStyle = '#000';
+                    ctx.textBaseline = 'middle';
+                    const align = f.text_align || 'left';
+                    let tx = x + 4;
+                    if (align === 'center') tx = x + w / 2;
+                    else if (align === 'right') tx = x + w - 4;
+                    ctx.textAlign = align;
+                    ctx.fillText(dv, tx, y + h / 2, w - 8);
+                }
+                /* 체크박스: 체크 표시 */
+                if (f.type === 'checkbox' && dv === 'Y') {
+                    ctx.font = 'bold ' + Math.min(h * 0.8, 16) + 'px sans-serif';
+                    ctx.fillStyle = '#000';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('\u2713', x + w / 2 - 5, y + h / 2);
+                }
+                ctx.restore();
+            });
+
+            pageImages.push({ dataUrl: cvs.toDataURL('image/png'), w: vp.width, h: vp.height, pg });
+        }
+
+        /* 이미지 필드 오버레이 정보 (서명/도장/이미지만 별도 수집) */
+        const imgOverlays = [];
+        fields.forEach(f => {
+            if ((f.type === 'signature' || f.type === 'stamp' || f.type === 'image') && f.default_value) {
+                imgOverlays.push(f);
+            }
+        });
+
+        /* 새 창 열기 */
+        const title = escHtml(document.getElementById('tplName')?.textContent || '미리보기');
+        const win = window.open('', '_blank');
+        if (!win) { alert('팝업이 차단되었습니다. 팝업을 허용해 주세요.'); return; }
+
+        let html = '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
+            '<title>' + title + ' - 미리보기</title>' +
+            '<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#525659;display:flex;flex-direction:column;' +
+            'align-items:center;gap:24px;padding:24px;font-family:"Noto Sans KR",sans-serif;}' +
+            '.page-wrap{position:relative;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.3)}' +
+            '.page-wrap img.pdf-img{display:block;width:100%}' +
+            '.pv-ovl{position:absolute;overflow:hidden}' +
+            '.pv-ovl img{width:100%;height:100%;object-fit:contain}' +
+            '</style></head><body>';
+
+        pageImages.forEach(pi => {
+            html += '<div class="page-wrap" style="width:' + pi.w + 'px">';
+            html += '<img class="pdf-img" src="' + pi.dataUrl + '" width="' + pi.w + '" height="' + pi.h + '">';
+            /* 서명/도장/이미지 오버레이 */
+            imgOverlays.forEach(f => {
+                if ((f.page || 1) !== pi.pg) return;
+                const x = (f.x_pct || 0) / 100 * pi.w;
+                const y = (f.y_pct || 0) / 100 * pi.h;
+                const w = (f.w_pct || 10) / 100 * pi.w;
+                const h = (f.h_pct || 3) / 100 * pi.h;
+                html += '<div class="pv-ovl" style="left:' + x + 'px;top:' + y + 'px;width:' + w + 'px;height:' + h + 'px;">';
+                html += '<img src="' + f.default_value.replace(/"/g, '&quot;') + '">';
+                html += '</div>';
+            });
+            html += '</div>';
+        });
+
+        html += '</body></html>';
+        win.document.write(html);
+        win.document.close();
+    } catch (e) {
+        alert('미리보기 실패: ' + e.message);
+        console.error('미리보기 오류:', e);
+    }
+}
+
+/* ── 캔버스 영역 클릭 시 선택 해제 ── */
+document.getElementById('canvasArea').addEventListener('click', e => {
+    if (e.target.id === 'canvasArea' || e.target.id === 'pageWrap' || e.target.id === 'pdfCanvas') {
+        selIdx = null; renderFields(); updatePropsPanel();
+    }
+});
+
+/* ── 키보드 단축키 ── */
+document.addEventListener('keydown', e => {
+    const tag = e.target.tagName;
+    const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+
+    /* 화살표 키: 선택된 필드 미세 이동 (입력 필드에 포커스 없을 때만) */
+    if (!isInput && selIdx !== null && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault();
+        const f = fields[selIdx];
+        const step = e.shiftKey ? 1 : 0.1; /* Shift: 1%, 일반: 0.1% */
+        switch (e.key) {
+            case 'ArrowLeft':  f.x_pct = clamp((f.x_pct || 0) - step, 0, 100 - (f.w_pct || 10)); break;
+            case 'ArrowRight': f.x_pct = clamp((f.x_pct || 0) + step, 0, 100 - (f.w_pct || 10)); break;
+            case 'ArrowUp':    f.y_pct = clamp((f.y_pct || 0) - step, 0, 100 - (f.h_pct || 3)); break;
+            case 'ArrowDown':  f.y_pct = clamp((f.y_pct || 0) + step, 0, 100 - (f.h_pct || 3)); break;
+        }
+        renderFields(); updatePropsPanel();
+        /* 디바운스된 snap 호출 */
+        clearTimeout(_snapTimer);
+        _snapTimer = setTimeout(snap, 400);
+        return;
+    }
+
+    /* 기존 단축키 (입력 필드에서는 무시) */
+    if (isInput) return;
+    if (e.key === 'Delete' || e.key === 'Backspace') deleteSelectedField();
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveTemplate(); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); redo(); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'd') { e.preventDefault(); copyField(); }
+    if (e.key === '+' || e.key === '=') { if (e.ctrlKey) { e.preventDefault(); zoomIn(); } }
+    if (e.key === '-') { if (e.ctrlKey) { e.preventDefault(); zoomOut(); } }
+});
+
+/* ── 초기화 ── */
+renderRoles();
+loadPdf();
+</script>
+{% endblock %}

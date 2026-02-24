@@ -6,8 +6,9 @@ from flask import Blueprint, jsonify, render_template, request
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
-from models import Employee, Site, db
+from models import Employee, Site, WageConfig, db
 from routes.utils import require_admin
+from services.wage_service import get_wage_config, save_wage_config
 
 logger = logging.getLogger(__name__)
 
@@ -136,3 +137,81 @@ def unassign_employees(site_id):
             count += 1
     db.session.commit()
     return jsonify({"success": True, "unassigned": count})
+
+
+# ── 급여 설정 API ──────────────────────────────────
+
+
+@site_bp.route("/api/sites/<int:site_id>/wage-config")
+@require_admin
+def get_site_wage_config(site_id):
+    """현장의 급여 설정 조회 (해석된 값 + 원본)."""
+    site = db.session.get(Site, site_id)
+    if not site:
+        return jsonify({"error": "현장을 찾을 수 없습니다."}), 404
+
+    resolved = get_wage_config(site_id=site_id)
+
+    raw = WageConfig.query.filter_by(config_type="site", target_id=site_id).first()
+    raw_data = raw.to_dict() if raw else {}
+
+    return jsonify({
+        "success": True,
+        "resolved": resolved,
+        "raw": raw_data,
+        "site_name": site.name,
+    })
+
+
+@site_bp.route("/api/sites/<int:site_id>/wage-config", methods=["PUT"])
+@require_admin
+def update_site_wage_config(site_id):
+    """현장의 급여 설정 저장."""
+    site = db.session.get(Site, site_id)
+    if not site:
+        return jsonify({"error": "현장을 찾을 수 없습니다."}), 404
+
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"error": "JSON body required"}), 400
+
+    try:
+        cfg = save_wage_config("site", site_id, data)
+        return jsonify({"success": True, "config": cfg.to_dict()})
+    except Exception as exc:
+        db.session.rollback()
+        logger.error("Site wage config save error: %s", exc)
+        return jsonify({"error": "저장 실패"}), 500
+
+
+@site_bp.route("/api/wage-config/system")
+@require_admin
+def get_system_wage_config():
+    """시스템 기본 급여 설정 조회."""
+    from models.wage_config import WAGE_DEFAULTS
+
+    raw = WageConfig.query.filter_by(config_type="system").first()
+    raw_data = raw.to_dict() if raw else {}
+
+    return jsonify({
+        "success": True,
+        "defaults": WAGE_DEFAULTS,
+        "raw": raw_data,
+    })
+
+
+@site_bp.route("/api/wage-config/system", methods=["PUT"])
+@require_admin
+def update_system_wage_config():
+    """시스템 기본 급여 설정 저장."""
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"error": "JSON body required"}), 400
+
+    try:
+        cfg = save_wage_config("system", None, data)
+        return jsonify({"success": True, "config": cfg.to_dict()})
+    except Exception as exc:
+        db.session.rollback()
+        logger.error("System wage config save error: %s", exc)
+        return jsonify({"error": "저장 실패"}), 500

@@ -1,0 +1,153 @@
+{% extends "base_admin.html" %}
+
+{% block admin_title %}HUMETIX - 퇴직금{% endblock %}
+{% block page_title %}퇴직금 시뮬레이션{% endblock %}
+{% block page_desc %}퇴직급여법에 따라 직원별 퇴직금을 시뮬레이션합니다.{% endblock %}
+
+{% block page_css %}
+.sim-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 24px;
+}
+.sim-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+.sim-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+.result-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    display: none;
+}
+.result-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+}
+.result-item { text-align: center; }
+.result-item .val { font-size: 22px; font-weight: 700; color: var(--primary); }
+.result-item .lbl { font-size: 12px; color: var(--text2); margin-top: 4px; }
+.result-total {
+    text-align: center;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 2px solid var(--primary);
+}
+.result-total .val { font-size: 32px; font-weight: 700; color: var(--primary); }
+.result-total .lbl { font-size: 14px; color: var(--text2); }
+.result-msg { text-align: center; color: var(--text2); padding: 12px; }
+@media (max-width: 768px) {
+    .sim-row { flex-direction: column; }
+    .sim-row .form-group { width: 100%; }
+    .result-grid { grid-template-columns: 1fr 1fr; }
+}
+{% endblock %}
+
+{% block content %}
+<div class="sim-card">
+    <h3>퇴직금 계산</h3>
+    <div class="sim-row">
+        <div class="form-group">
+            <label class="form-label">직원 선택</label>
+            <select id="empSelect" class="form-input" style="min-width:200px;">
+                <option value="">직원을 선택하세요</option>
+                {% for emp in employees %}
+                <option value="{{ emp.id }}">{{ emp.name }} ({{ emp.birth_date }}){% if emp.hire_date %} - 입사 {{ emp.hire_date.strftime('%Y-%m-%d') }}{% endif %}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <button class="btn btn-primary" id="calcBtn" onclick="calcSeverance()">계산</button>
+        </div>
+    </div>
+</div>
+
+<div class="result-card" id="resultCard">
+    <div id="resultContent"></div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+function esc(str) {
+    const d = document.createElement('div');
+    d.textContent = str || '';
+    return d.innerHTML;
+}
+
+async function calcSeverance() {
+    const empId = document.getElementById('empSelect').value;
+    if (!empId) { showToast('직원을 선택해주세요.'); return; }
+
+    const btn = document.getElementById('calcBtn');
+    setButtonLoading(btn, true);
+    try {
+        const res = await fetch('/api/severance/' + empId, {
+            headers: { 'X-CSRFToken': window.csrfToken }
+        });
+        const data = await res.json();
+        const card = document.getElementById('resultCard');
+        const content = document.getElementById('resultContent');
+
+        if (data.error) {
+            content.innerHTML = '<div class="result-msg">' + esc(data.error) + '</div>';
+            card.style.display = '';
+            return;
+        }
+
+        if (!data.eligible) {
+            content.innerHTML = '<div class="result-msg">' +
+                '<strong>' + esc(data.employee_name) + '</strong><br>' +
+                '근속일수: ' + esc(String(data.service_days)) + '일<br>' +
+                esc(data.message) + '</div>';
+            card.style.display = '';
+            return;
+        }
+
+        if (data.severance === 0) {
+            content.innerHTML = '<div class="result-msg">' +
+                '<strong>' + esc(data.employee_name) + '</strong><br>' +
+                esc(data.message) + '</div>';
+            card.style.display = '';
+            return;
+        }
+
+        content.innerHTML = `
+            <div class="result-grid">
+                <div class="result-item">
+                    <div class="val">${esc(data.employee_name)}</div>
+                    <div class="lbl">직원명</div>
+                </div>
+                <div class="result-item">
+                    <div class="val">${esc(data.hire_date)}</div>
+                    <div class="lbl">입사일</div>
+                </div>
+                <div class="result-item">
+                    <div class="val">${esc(String(data.service_years))}년</div>
+                    <div class="lbl">근속기간 (${esc(String(data.service_days))}일)</div>
+                </div>
+                <div class="result-item">
+                    <div class="val">${esc(String(data.recent_months))}개월</div>
+                    <div class="lbl">급여 데이터</div>
+                </div>
+                <div class="result-item">
+                    <div class="val">${Number(data.avg_daily_wage).toLocaleString()}원</div>
+                    <div class="lbl">평균일급</div>
+                </div>
+                <div class="result-item">
+                    <div class="val">${Number(data.total_gross_3m).toLocaleString()}원</div>
+                    <div class="lbl">최근 3개월 총급여</div>
+                </div>
+            </div>
+            <div class="result-total">
+                <div class="val">${Number(data.severance).toLocaleString()}원</div>
+                <div class="lbl">예상 퇴직금</div>
+            </div>
+        `;
+        card.style.display = '';
+    } finally {
+        setButtonLoading(btn, false);
+    }
+}
+{% endblock %}
