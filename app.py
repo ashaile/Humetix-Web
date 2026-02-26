@@ -1,5 +1,5 @@
 ﻿import os
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, send_from_directory
 from dotenv import load_dotenv
 from flask_wtf.csrf import CSRFProtect
 from flask_migrate import Migrate
@@ -54,6 +54,10 @@ def index():
 @app.route('/privacy')
 def privacy():
     return render_template('privacy.html')
+
+@app.route('/robots.txt')
+def robots():
+    return send_from_directory('static', 'robots.txt', mimetype='text/plain')
 
 @app.route('/health')
 def health():
