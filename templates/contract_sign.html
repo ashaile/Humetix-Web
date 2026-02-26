@@ -1192,6 +1192,8 @@ async function doSubmitSign() {
     btn.innerHTML = '<span>처리중...</span>';
 
     try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30000);
         const res = await fetch('/api/sign/' + SIGN_TOKEN, {
             method: 'POST',
             headers: {
@@ -1199,7 +1201,10 @@ async function doSubmitSign() {
                 'X-CSRFToken': CSRF_TOKEN,
             },
             body: JSON.stringify({ field_values: values }),
+            signal: controller.signal,
         });
+        clearTimeout(timeout);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
         if (data.success) {
             showToast('서명이 완료되었습니다!', 2000);
@@ -1210,7 +1215,10 @@ async function doSubmitSign() {
             btn.innerHTML = '&#9997;&#65039; 서명 완료';
         }
     } catch (e) {
-        showToast('오류가 발생했습니다. 다시 시도해 주세요.');
+        const msg = e.name === 'AbortError'
+            ? '요청 시간이 초과되었습니다. 다시 시도해 주세요.'
+            : '오류가 발생했습니다. 다시 시도해 주세요.';
+        showToast(msg);
         btn.disabled = false;
         btn.innerHTML = '&#9997;&#65039; 서명 완료';
     }

@@ -779,7 +779,8 @@ function collectPreSignValues(roleKey) {
     const container = document.getElementById('preSignFields_' + roleKey);
     if (container) {
         container.querySelectorAll('.sign-field-item').forEach(item => {
-            const idx = parseInt(item.dataset.fieldIdx);
+            const idx = parseInt(item.dataset.fieldIdx, 10);
+            if (isNaN(idx)) return;
             const textInput = item.querySelector('input[type="text"][data-vidx]');
             const dateInput = item.querySelector('input[type="date"][data-vidx]');
             const sigImg = item.querySelector('img.sig-preview[data-vidx]');
@@ -800,7 +801,13 @@ function collectPreSignValues(roleKey) {
 }
 
 /* ── 계약 제출 (다중 근로자 지원) ── */
+let _submitLock = false;
 async function submitContract() {
+    if (_submitLock) return;
+    _submitLock = true;
+    try { await _doSubmitContract(); } finally { _submitLock = false; }
+}
+async function _doSubmitContract() {
     const tid = document.getElementById('templateSelect').value;
     if (!tid || !currentTemplate) { showToast('서식을 선택하세요.'); return; }
 
@@ -829,13 +836,13 @@ async function submitContract() {
     const secondaryRole = roles.length > 1 ? roles[1] : null;
     const workers = [];
     if (secondaryRole) {
+        const preSign2 = collectPreSignValues(secondaryRole.key);
         for (const wr of workerRows) {
             const nameEl = document.getElementById('name_' + secondaryRole.key + '_' + wr.id);
             const phoneEl = document.getElementById('phone_' + secondaryRole.key + '_' + wr.id);
             const name = nameEl ? nameEl.value.trim() : '';
             if (!name) { showToast(secondaryRole.label + ' 이름을 모두 입력하세요.'); return; }
 
-            const preSign2 = collectPreSignValues(secondaryRole.key);
             workers.push({
                 role_key: secondaryRole.key,
                 name,
@@ -890,6 +897,10 @@ async function submitContract() {
             const res = await fetch('/api/contracts', {
                 method: 'POST', headers: apiHeaders, body: JSON.stringify(body)
             });
+            if (!res.ok) {
+                lastError = '서버 오류 (HTTP ' + res.status + ')';
+                continue;
+            }
             const data = await res.json();
             if (data.success) {
                 successCount++;
