@@ -18,12 +18,18 @@
     width: 100%; padding-left: 36px;
 }
 .search-input-wrap::before {
-    content: '\1F50D'; position: absolute;
+    content: ''; position: absolute;
     left: 10px; top: 50%; transform: translateY(-50%);
-    font-size: 14px; pointer-events: none;
+    width: 14px; height: 14px; pointer-events: none;
+    background: currentColor; opacity: .45;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") center/contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") center/contain no-repeat;
 }
 .date-range { display: flex; gap: 6px; align-items: center; }
 .date-range span { font-size: 12px; color: var(--text2); white-space: nowrap; }
+@media (max-width: 600px) {
+    .date-range .date-sep { display: none; }
+}
 
 /* ── 미서명 알림 배너 ── */
 .reminder-banner {
@@ -47,6 +53,7 @@
 .stat-card .stat-value { font-size: 28px; font-weight: 700; color: var(--primary, var(--accent)); }
 .stat-card .stat-label { font-size: 12px; color: var(--text2); margin-top: 4px; }
 .stat-card.stat-expired .stat-value { color: var(--danger); }
+.stat-card.stat-scheduled .stat-value { color: #4338ca; }
 
 /* ── 상태 배지 ── */
 .badge-draft { background: var(--bg3); color: var(--text2); }
@@ -66,12 +73,40 @@
 
 /* ── 서명 링크 복사 영역 ── */
 .sign-link-box {
-    display: inline-flex; align-items: center; gap: 4px;
+    display: none; align-items: center; gap: 4px;
     font-size: 11px; margin-top: 2px;
+}
+.participants-list > div:hover .sign-link-box { display: inline-flex; }
+@media (max-width: 768px) {
+    .sign-link-box { display: inline-flex; }
 }
 
 /* ── 액션 버튼 ── */
 .action-btns { display: flex; gap: 4px; flex-wrap: wrap; }
+.action-dropdown { display: none; position: relative; }
+.action-dropdown-btn {
+    padding: 4px 10px; border: 1px solid var(--border); background: var(--bg2);
+    border-radius: 4px; cursor: pointer; font-size: 14px; font-family: inherit;
+}
+.action-dropdown-menu {
+    display: none; position: absolute; right: 0; top: 100%; z-index: 100;
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    box-shadow: var(--shadow); min-width: 120px; padding: 4px 0;
+}
+.action-dropdown-menu.show { display: block; }
+.action-dropdown-menu button,
+.action-dropdown-menu a {
+    display: block; width: 100%; padding: 8px 14px; border: none; background: none;
+    text-align: left; font-size: 13px; cursor: pointer; font-family: inherit;
+    color: var(--text); text-decoration: none;
+}
+.action-dropdown-menu button:hover,
+.action-dropdown-menu a:hover { background: var(--bg3); }
+.action-dropdown-menu .dropdown-danger { color: var(--danger); }
+@media (max-width: 768px) {
+    .action-btns > :not(.action-dropdown) { display: none; }
+    .action-dropdown { display: block; }
+}
 
 /* ── 계약명 링크 ── */
 .contract-title-link {
@@ -205,7 +240,7 @@ th.sortable.desc::after { content: '\2193'; opacity: 1; color: var(--accent); }
             <label class="form-label">생성일 (부터)</label>
             <input type="date" class="form-input" id="dateFrom" value="{{ date_from|default('') }}">
         </div>
-        <span style="margin-top:18px;">~</span>
+        <span class="date-sep" style="margin-top:18px;">~</span>
         <div class="form-group">
             <label class="form-label">생성일 (까지)</label>
             <input type="date" class="form-input" id="dateTo" value="{{ date_to|default('') }}">
@@ -240,8 +275,8 @@ th.sortable.desc::after { content: '\2193'; opacity: 1; color: var(--accent); }
         <div class="stat-label">전체 계약</div>
     </div>
     {% if scheduled_count > 0 %}
-    <div class="stat-card">
-        <div class="stat-value" style="color:#4338ca;">{{ scheduled_count }}</div>
+    <div class="stat-card stat-scheduled">
+        <div class="stat-value">{{ scheduled_count }}</div>
         <div class="stat-label">예약발송</div>
     </div>
     {% endif %}
@@ -365,6 +400,21 @@ th.sortable.desc::after { content: '\2193'; opacity: 1; color: var(--accent); }
                             <button class="btn btn-danger btn-sm" onclick='cancelContract({{ c.id }}, {{ c.title|tojson }})' title="계약 취소">취소</button>
                             {% endif %}
                             <button class="btn btn-sm" style="background:#6b7280;color:#fff;" onclick='hardDeleteContract({{ c.id }}, {{ c.title|tojson }})' title="완전 삭제">삭제</button>
+                            <!-- 모바일 드롭다운 -->
+                            <div class="action-dropdown">
+                                <button class="action-dropdown-btn" onclick="toggleActionMenu(this)">&#8943;</button>
+                                <div class="action-dropdown-menu">
+                                    {% if c.status == 'scheduled' %}
+                                    <button onclick="openScheduleModal({{ c.id }}, '{{ c.scheduled_at.strftime('%Y-%m-%dT%H:%M') if c.scheduled_at else '' }}')">예약관리</button>
+                                    {% endif %}
+                                    <button onclick='openPdfPreview({{ c.id }}, {{ c.title|tojson }})'>문서열람</button>
+                                    <a href="/admin/contracts/{{ c.id }}/pdf">PDF 다운로드</a>
+                                    {% if c.status != 'cancelled' %}
+                                    <button class="dropdown-danger" onclick='cancelContract({{ c.id }}, {{ c.title|tojson }})'>취소</button>
+                                    {% endif %}
+                                    <button class="dropdown-danger" onclick='hardDeleteContract({{ c.id }}, {{ c.title|tojson }})'>삭제</button>
+                                </div>
+                            </div>
                         </div>
                     </td>
                 </tr>
@@ -702,6 +752,20 @@ function cancelSchedule() {
     });
 }
 
+/* ── 모바일 액션 드롭다운 ── */
+function toggleActionMenu(btn) {
+    const menu = btn.nextElementSibling;
+    const isOpen = menu.classList.contains('show');
+    /* 다른 열린 메뉴 닫기 */
+    document.querySelectorAll('.action-dropdown-menu.show').forEach(m => m.classList.remove('show'));
+    if (!isOpen) menu.classList.add('show');
+}
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.action-dropdown')) {
+        document.querySelectorAll('.action-dropdown-menu.show').forEach(m => m.classList.remove('show'));
+    }
+});
+
 /* ── 테이블 컬럼 정렬 (클라이언트 사이드) ── */
 (function() {
     const table = document.getElementById('contractTable');
@@ -736,11 +800,11 @@ function cancelSchedule() {
                 let bVal = b.children[colIdx]?.textContent?.trim() || '';
 
                 if (dataType === 'date') {
-                    aVal = aVal === '-' ? '' : aVal;
-                    bVal = bVal === '-' ? '' : bVal;
+                    const aTime = aVal && aVal !== '-' ? new Date(aVal).getTime() || 0 : 0;
+                    const bTime = bVal && bVal !== '-' ? new Date(bVal).getTime() || 0 : 0;
                     return currentSort.dir === 'asc'
-                        ? aVal.localeCompare(bVal)
-                        : bVal.localeCompare(aVal);
+                        ? aTime - bTime
+                        : bTime - aTime;
                 }
 
                 return currentSort.dir === 'asc'

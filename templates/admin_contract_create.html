@@ -141,8 +141,8 @@
     flex: 1; font-size: 12px; min-width: 120px;
 }
 .sign-btn-small {
-    padding: 6px 12px; background: var(--bg2); border: 1px solid var(--border);
-    border-radius: 4px; cursor: pointer; font-size: 12px; font-family: inherit;
+    padding: 8px 16px; min-height: 36px; background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 4px; cursor: pointer; font-size: 13px; font-family: inherit;
 }
 .sign-btn-small:hover { background: var(--bg3); }
 .sig-preview {
@@ -364,6 +364,15 @@ function toggleSchedule() {
     }
 }
 
+let currentTemplate = null;
+let pdfDoc = null;
+let currentPage = 1;
+let canvasWidth = 0;
+let canvasHeight = 0;
+let signaturePad = null;
+let sigCallback = null;
+
+/* ── 역할 색상 ── */
 const ROLE_COLORS = [
     { border: '#3b82f6', bg: 'rgba(59,130,246,.12)', text: '#1d4ed8' },
     { border: '#ef4444', bg: 'rgba(239,68,68,.12)', text: '#b91c1c' },
@@ -377,14 +386,6 @@ function getRoleColor(roleKey) {
     const idx = roles.findIndex(r => r.key === roleKey);
     return ROLE_COLORS[(idx < 0 ? 0 : idx) % ROLE_COLORS.length];
 }
-
-let currentTemplate = null;
-let pdfDoc = null;
-let currentPage = 1;
-let canvasWidth = 0;
-let canvasHeight = 0;
-let signaturePad = null;
-let sigCallback = null;
 
 /* ── 근로자 다중 관리 ── */
 let workerRows = [{ id: 1 }];
@@ -549,7 +550,8 @@ function renderParticipants() {
             const wrapper = document.createElement('div');
             wrapper.className = 'participant-row';
 
-            let wrapHtml = '<h4><span class="role-dot" style="background:#ef4444"></span>' +
+            const rc2 = getRoleColor(role.key);
+            let wrapHtml = '<h4><span class="role-dot" style="background:' + rc2.border + '"></span>' +
                            escHtml(role.label) + ' <span style="font-size:12px;color:var(--text2);font-weight:400;">(' + workerRows.length + '명)</span></h4>';
             wrapper.innerHTML = wrapHtml;
             container.appendChild(wrapper);
@@ -575,9 +577,9 @@ function renderParticipants() {
                 wh += '</div>';
 
                 wh += '<div class="participant-fields">';
-                wh += '<div class="form-group"><label class="form-label">이름 *</label>';
+                wh += '<div class="form-group"><label class="form-label" for="name_' + rk + '_' + wr.id + '">이름 *</label>';
                 wh += '<input type="text" class="form-input" id="name_' + rk + '_' + wr.id + '"></div>';
-                wh += '<div class="form-group"><label class="form-label">연락처</label>';
+                wh += '<div class="form-group"><label class="form-label" for="phone_' + rk + '_' + wr.id + '">연락처</label>';
                 wh += '<input type="text" class="form-input" id="phone_' + rk + '_' + wr.id + '" placeholder="010-0000-0000" oninput="formatPhone(this)"></div>';
                 wh += '</div>';
 
@@ -643,9 +645,9 @@ function renderParticipants() {
                    escHtml(role.label) + '</h4>';
 
         html += '<div class="participant-fields">';
-        html += '<div class="form-group"><label class="form-label">이름 *</label>';
+        html += '<div class="form-group"><label class="form-label" for="name_' + role.key + '">이름 *</label>';
         html += '<input type="text" class="form-input" id="name_' + role.key + '" data-role="' + role.key + '" data-field="name"></div>';
-        html += '<div class="form-group"><label class="form-label">연락처</label>';
+        html += '<div class="form-group"><label class="form-label" for="phone_' + role.key + '">연락처</label>';
         html += '<input type="text" class="form-input" id="phone_' + role.key + '" data-role="' + role.key + '" data-field="phone" placeholder="010-0000-0000" oninput="formatPhone(this)"></div>';
         html += '</div>';
 

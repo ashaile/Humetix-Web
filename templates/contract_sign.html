@@ -350,6 +350,14 @@ body {
 }
 .submit-btn:hover { background: var(--primary-hover); }
 .submit-btn:disabled { opacity: .5; cursor: not-allowed; }
+.download-btn {
+    display: block; width: 100%; margin-top: 16px; padding: 14px;
+    background: var(--primary); color: #fff; border: none;
+    border-radius: 10px; text-align: center; text-decoration: none;
+    font-size: 15px; font-weight: 600; cursor: pointer;
+    font-family: inherit; transition: background .15s;
+}
+.download-btn:hover { background: var(--primary-hover); }
 
 /* ============================================
    상태 배너 (서명 완료 / 만료 / 취소)
@@ -428,6 +436,19 @@ body {
 .modal-btn-cancel:hover { background: #e4e4e4; }
 .modal-btn-confirm { background: var(--primary); color: #fff; }
 .modal-btn-confirm:hover { background: var(--primary-hover); }
+.modal-btn-confirm:disabled { opacity: .5; cursor: not-allowed; }
+
+/* 서명 최종확인 모달 수정자 */
+.modal-card.confirm-variant { max-width: 440px; text-align: left; }
+.modal-card.confirm-variant .confirm-header { text-align: center; }
+.modal-card.confirm-variant .confirm-header .modal-icon { font-size: 44px; }
+.modal-card.confirm-variant .confirm-header .modal-title { font-size: 18px; }
+.modal-card.confirm-variant .confirm-header .modal-desc { margin-bottom: 20px; }
+.confirm-checks { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+.confirm-checks label { align-items: flex-start; }
+.confirm-checks span { font-size: 14px; line-height: 1.5; }
+.confirm-actions { flex-direction: column; gap: 8px; }
+.confirm-actions button { width: 100%; }
 
 /* ============================================
    서명 패드 모달
@@ -554,7 +575,7 @@ body {
                 <button class="zoom-btn" onclick="zoomOut()">−</button>
                 <span class="zoom-level" id="zoomLevel">100%</span>
                 <button class="zoom-btn" onclick="zoomIn()">+</button>
-                <button class="zoom-btn" onclick="zoomReset()" style="font-size:12px;">↺</button>
+                <button class="zoom-btn" onclick="zoomReset()">↺</button>
             </div>
         </div>
         <div class="pdf-viewer-body" id="pdfViewerBody">
@@ -578,9 +599,7 @@ body {
                 {% endif %}
             </div>
             {% if contract.final_pdf_path %}
-            <a href="/sign/{{ participant.sign_token }}/download"
-               style="display:block;margin-top:16px;padding:14px;background:var(--primary);color:#fff;
-                      border-radius:10px;text-align:center;text-decoration:none;font-size:15px;font-weight:600;">
+            <a href="/sign/{{ participant.sign_token }}/download" class="download-btn">
                 &#128196; 완성된 계약서 다운로드
             </a>
             {% endif %}
@@ -596,7 +615,7 @@ body {
                 <button class="zoom-btn" onclick="zoomOut()">−</button>
                 <span class="zoom-level" id="zoomLevel">100%</span>
                 <button class="zoom-btn" onclick="zoomIn()">+</button>
-                <button class="zoom-btn" onclick="zoomReset()" style="font-size:12px;">↺</button>
+                <button class="zoom-btn" onclick="zoomReset()">↺</button>
             </div>
         </div>
         <div class="pdf-viewer-body" id="pdfViewerBody">
@@ -640,32 +659,32 @@ body {
 
 <!-- 서명 확인 모달 -->
 <div class="modal-overlay" id="confirmModal">
-    <div class="modal-card" style="max-width:440px;text-align:left;">
-        <div style="text-align:center;">
-            <span class="modal-icon" style="font-size:44px;">&#9888;&#65039;</span>
-            <div class="modal-title" style="font-size:18px;">최종 확인</div>
-            <div class="modal-desc" style="margin-bottom:20px;">
+    <div class="modal-card confirm-variant">
+        <div class="confirm-header">
+            <span class="modal-icon">&#9888;&#65039;</span>
+            <div class="modal-title">최종 확인</div>
+            <div class="modal-desc">
                 모든 조건이 정확히 입력되었는지 확인해주세요.<br>
                 서명 완료 후에는 내용을 수정할 수 없습니다.
             </div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px;">
-            <label class="check-field" style="align-items:flex-start;">
+        <div class="confirm-checks">
+            <label class="check-field">
                 <input type="checkbox" class="confirm-agree-cb" onchange="updateConfirmBtn()">
-                <span style="font-size:14px;line-height:1.5;">전자계약 및 전자서명의 법적 효력에 대해 동의합니다.</span>
+                <span>전자계약 및 전자서명의 법적 효력에 대해 동의합니다.</span>
             </label>
-            <label class="check-field" style="align-items:flex-start;">
+            <label class="check-field">
                 <input type="checkbox" class="confirm-agree-cb" onchange="updateConfirmBtn()">
-                <span style="font-size:14px;line-height:1.5;">서명 완료 후 전자계약 문서를 원본으로 인정합니다.</span>
+                <span>서명 완료 후 전자계약 문서를 원본으로 인정합니다.</span>
             </label>
-            <label class="check-field" style="align-items:flex-start;">
+            <label class="check-field">
                 <input type="checkbox" class="confirm-agree-cb" onchange="updateConfirmBtn()">
-                <span style="font-size:14px;line-height:1.5;">모든 서명자는 본 계약 내용을 확인하고 서명한 것에 동의합니다.</span>
+                <span>모든 서명자는 본 계약 내용을 확인하고 서명한 것에 동의합니다.</span>
             </label>
         </div>
-        <div class="modal-actions" style="flex-direction:column;gap:8px;">
-            <button class="modal-btn-confirm" id="confirmSignBtn" onclick="doSubmitSign()" style="width:100%;padding:15px;font-size:15px;" disabled>서명 완료 (전체 동의)</button>
-            <button class="modal-btn-cancel" onclick="closeConfirmModal()" style="width:100%;padding:13px;">취소</button>
+        <div class="modal-actions confirm-actions">
+            <button class="modal-btn-cancel" onclick="closeConfirmModal()">취소</button>
+            <button class="modal-btn-confirm" id="confirmSignBtn" onclick="doSubmitSign()" disabled>서명 완료 (전체 동의)</button>
         </div>
     </div>
 </div>
