@@ -650,21 +650,21 @@ body {
             </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px;">
-            <div style="display:flex;align-items:flex-start;gap:10px;font-size:14px;line-height:1.5;">
-                <span style="color:var(--primary);font-size:18px;flex-shrink:0;">&#10003;</span>
-                <span>전자계약 및 전자서명의 법적 효력에 대해 동의합니다.</span>
-            </div>
-            <div style="display:flex;align-items:flex-start;gap:10px;font-size:14px;line-height:1.5;">
-                <span style="color:var(--primary);font-size:18px;flex-shrink:0;">&#10003;</span>
-                <span>서명 완료 후 전자계약 문서를 원본으로 인정합니다.</span>
-            </div>
-            <div style="display:flex;align-items:flex-start;gap:10px;font-size:14px;line-height:1.5;">
-                <span style="color:var(--primary);font-size:18px;flex-shrink:0;">&#10003;</span>
-                <span>모든 서명자는 본 계약 내용을 확인하고 서명한 것에 동의합니다.</span>
-            </div>
+            <label class="check-field" style="align-items:flex-start;">
+                <input type="checkbox" class="confirm-agree-cb" onchange="updateConfirmBtn()">
+                <span style="font-size:14px;line-height:1.5;">전자계약 및 전자서명의 법적 효력에 대해 동의합니다.</span>
+            </label>
+            <label class="check-field" style="align-items:flex-start;">
+                <input type="checkbox" class="confirm-agree-cb" onchange="updateConfirmBtn()">
+                <span style="font-size:14px;line-height:1.5;">서명 완료 후 전자계약 문서를 원본으로 인정합니다.</span>
+            </label>
+            <label class="check-field" style="align-items:flex-start;">
+                <input type="checkbox" class="confirm-agree-cb" onchange="updateConfirmBtn()">
+                <span style="font-size:14px;line-height:1.5;">모든 서명자는 본 계약 내용을 확인하고 서명한 것에 동의합니다.</span>
+            </label>
         </div>
         <div class="modal-actions" style="flex-direction:column;gap:8px;">
-            <button class="modal-btn-confirm" onclick="doSubmitSign()" style="width:100%;padding:15px;font-size:15px;">서명 완료 (전체 동의)</button>
+            <button class="modal-btn-confirm" id="confirmSignBtn" onclick="doSubmitSign()" style="width:100%;padding:15px;font-size:15px;" disabled>서명 완료 (전체 동의)</button>
             <button class="modal-btn-cancel" onclick="closeConfirmModal()" style="width:100%;padding:13px;">취소</button>
         </div>
     </div>
@@ -1109,6 +1109,16 @@ function onSubmitClick() {
 
 function closeConfirmModal() {
     document.getElementById('confirmModal').classList.remove('show');
+    /* 체크박스 리셋 */
+    document.querySelectorAll('.confirm-agree-cb').forEach(cb => { cb.checked = false; });
+    updateConfirmBtn();
+}
+
+function updateConfirmBtn() {
+    const cbs = document.querySelectorAll('.confirm-agree-cb');
+    const allChecked = cbs.length > 0 && Array.from(cbs).every(cb => cb.checked);
+    const btn = document.getElementById('confirmSignBtn');
+    if (btn) btn.disabled = !allChecked;
 }
 
 /* ============================================
@@ -1149,6 +1159,12 @@ function validateFields() {
    서명 제출
    ============================================ */
 async function doSubmitSign() {
+    /* 동의 체크 방어 검증 */
+    const cbs = document.querySelectorAll('.confirm-agree-cb');
+    if (!Array.from(cbs).every(cb => cb.checked)) {
+        showToast('모든 약관에 동의해야 합니다.');
+        return;
+    }
     closeConfirmModal();
 
     const values = [];

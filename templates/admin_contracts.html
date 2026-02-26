@@ -359,12 +359,12 @@ th.sortable.desc::after { content: '\2193'; opacity: 1; color: var(--accent); }
                             {% if c.status == 'scheduled' %}
                             <button class="btn btn-sm" style="background:#4338ca;color:#fff;" onclick="openScheduleModal({{ c.id }}, '{{ c.scheduled_at.strftime('%Y-%m-%dT%H:%M') if c.scheduled_at else '' }}')" title="예약 관리">예약관리</button>
                             {% endif %}
-                            <button class="btn btn-outline btn-sm" onclick="openPdfPreview({{ c.id }}, '{{ c.title|replace("'", "\\'") }}')" title="문서 미리보기">문서열람</button>
+                            <button class="btn btn-outline btn-sm" onclick="openPdfPreview({{ c.id }}, {{ c.title|tojson }})" title="문서 미리보기">문서열람</button>
                             <a href="/admin/contracts/{{ c.id }}/pdf" class="btn btn-success btn-sm" title="PDF 다운로드">PDF</a>
                             {% if c.status != 'cancelled' %}
-                            <button class="btn btn-danger btn-sm" onclick="cancelContract({{ c.id }}, '{{ c.title|replace("'", "\\'") }}')" title="계약 취소">취소</button>
+                            <button class="btn btn-danger btn-sm" onclick="cancelContract({{ c.id }}, {{ c.title|tojson }})" title="계약 취소">취소</button>
                             {% endif %}
-                            <button class="btn btn-sm" style="background:#6b7280;color:#fff;" onclick="hardDeleteContract({{ c.id }}, '{{ c.title|replace("'", "\\'") }}')" title="완전 삭제">삭제</button>
+                            <button class="btn btn-sm" style="background:#6b7280;color:#fff;" onclick="hardDeleteContract({{ c.id }}, {{ c.title|tojson }})" title="완전 삭제">삭제</button>
                         </div>
                     </td>
                 </tr>

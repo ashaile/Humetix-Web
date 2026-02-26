@@ -523,6 +523,10 @@ function escHtml(str) {
     return d.innerHTML;
 }
 
+function escJsStr(str) {
+    return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+}
+
 function prevPage() { if (currentPage > 1) showPage(currentPage - 1); }
 function nextPage() { if (pdfDoc && currentPage < pdfDoc.numPages) showPage(currentPage + 1); }
 
@@ -567,7 +571,7 @@ function renderParticipants() {
                     wh += '<option value="' + eid + '">' + escHtml(emp.name) + (emp.phone ? ' (' + emp.phone + ')' : '') + '</option>';
                 }
                 wh += '</select>';
-                wh += '<button type="button" class="emp-load-btn" onclick="loadFromEmployee(\'' + rk + '\',' + wr.id + ')">불러오기</button>';
+                wh += '<button type="button" class="emp-load-btn" onclick="loadFromEmployee(\'' + escJsStr(rk) + '\',' + wr.id + ')">불러오기</button>';
                 wh += '</div>';
 
                 wh += '<div class="participant-fields">';
@@ -611,7 +615,7 @@ function renderParticipants() {
                         psHtml += '<input type="date" data-vidx="' + f._idx + '" value="' + escHtml(defaultVal) + '">';
                     } else if (f.type === 'signature' || f.type === 'stamp') {
                         psHtml += '<img class="sig-preview" data-vidx="' + f._idx + '" src="" style="display:none;">';
-                        psHtml += '<button class="sign-btn-small" onclick="openSigModal(' + f._idx + ',\'' + f.type + '\')">' +
+                        psHtml += '<button class="sign-btn-small" onclick="openSigModal(' + f._idx + ',\'' + escJsStr(f.type) + '\')">' +
                                   (f.type === 'signature' ? '서명' : '도장') + '</button>';
                     } else if (f.type === 'checkbox') {
                         psHtml += '<input type="checkbox" data-vidx="' + f._idx + '">';
@@ -673,7 +677,7 @@ function renderParticipants() {
                             (isReadOnly ? ' disabled' : '') + '>';
                 } else if (f.type === 'signature' || f.type === 'stamp') {
                     html += '<img class="sig-preview" data-vidx="' + f._idx + '" src="" style="display:none;">';
-                    html += '<button class="sign-btn-small" onclick="openSigModal(' + f._idx + ',\'' + f.type + '\')">' +
+                    html += '<button class="sign-btn-small" onclick="openSigModal(' + f._idx + ',\'' + escJsStr(f.type) + '\')">' +
                             (f.type === 'signature' ? '서명' : '도장') + '</button>';
                 } else if (f.type === 'checkbox') {
                     html += '<input type="checkbox" data-vidx="' + f._idx + '">';
