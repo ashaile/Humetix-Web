@@ -427,8 +427,8 @@
                 <label class="filter-group-title">성별</label>
                 <select name="gender" class="form-select">
                     <option value="">전체</option>
-                    <option value="남자" {% if filters.gender=='남자' %}selected{% endif %}>남자</option>
-                    <option value="여자" {% if filters.gender=='여자' %}selected{% endif %}>여자</option>
+                    <option value="남" {% if filters.gender=='남' %}selected{% endif %}>남자</option>
+                    <option value="여" {% if filters.gender=='여' %}selected{% endif %}>여자</option>
                 </select>
             </div>
             <div>
@@ -537,9 +537,9 @@
                     style="transform: scale(1.2); margin-right: 12px;">
                 <span style="font-weight: 700; font-size: 1.1rem; margin-right: 8px;">{{ entry.info.name }}</span>
 
-                {% if entry.info.gender == '남자' %}
+                {% if entry.info.gender == '남' %}
                 <span class="badge" style="background-color: #007bff;">남</span>
-                {% elif entry.info.gender == '여자' %}
+                {% elif entry.info.gender == '여' %}
                 <span class="badge" style="background-color: #dc3545;">여</span>
                 {% endif %}
 
