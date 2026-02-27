@@ -276,7 +276,7 @@
                     <td>
                         <div class="action-btns">
                             <button class="btn-icon" title="수정"
-                                onclick="openEdit({{ b.id }}, '{{ b.employee.name if b.employee else '' }}', {{ b.entitled }}, {{ b.used }})">
+                                onclick="openEdit({{ b.id }}, {{ (b.employee.name if b.employee else '')|tojson }}, {{ b.entitled }}, {{ b.used }})">
                                 &#9998;
                             </button>
                             <button class="btn-icon recalc" title="재계산"
@@ -284,7 +284,7 @@
                                 &#8635;
                             </button>
                             <button class="btn-icon danger" title="삭제"
-                                onclick="deleteLeave({{ b.id }}, '{{ b.employee.name if b.employee else '' }}')">
+                                onclick="deleteLeave({{ b.id }}, {{ (b.employee.name if b.employee else '')|tojson }})">
                                 &#10005;
                             </button>
                             <a href="/admin/leave/{{ b.employee_id }}/detail?year={{ year }}"

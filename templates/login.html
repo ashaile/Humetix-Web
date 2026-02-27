@@ -59,6 +59,18 @@ body {
         지원서 관리 페이지 접근을 위해<br>관리자 비밀번호를 입력해 주세요.
     </p>
 
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div style="margin-bottom:12px;padding:10px 14px;border-radius:8px;font-size:13px;
+        background:{% if category=='error' %}#f8d7da{% else %}#d4edda{% endif %};
+        color:{% if category=='error' %}#721c24{% else %}#155724{% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
     <form action="/login" method="POST">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div style="margin-bottom:12px;">

@@ -102,7 +102,7 @@ def inject_nav_context():
         'contract': [
             'contract.admin_templates', 'contract.admin_contracts',
             'contract.bulk_send_page', 'contract.new_contract',
-            'contract.template_edit',
+            'contract.edit_template',
         ],
         'ops': [
             'site.admin_sites', 'notice.admin_notices', 'admin.inquiries',

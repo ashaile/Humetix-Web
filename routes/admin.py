@@ -191,7 +191,9 @@ def master_view():
         Application.timestamp.desc()
     ).limit(5).all()
 
-    recent_advances = AdvanceRequest.query.order_by(
+    recent_advances = AdvanceRequest.query.options(
+        joinedload(AdvanceRequest.employee)
+    ).order_by(
         AdvanceRequest.created_at.desc()
     ).limit(5).all()
 
