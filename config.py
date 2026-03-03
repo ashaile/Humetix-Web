@@ -96,7 +96,7 @@ class Config:
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_SECURE = _env_bool("SESSION_COOKIE_SECURE", False)
-    PERMANENT_SESSION_LIFETIME = timedelta(minutes=30)
+    PERMANENT_SESSION_LIFETIME = timedelta(days=60)
     WTF_CSRF_TIME_LIMIT = 7200
 
     @staticmethod
